@@ -237,11 +237,6 @@ AC_CHECK_HEADERS([netinet/in.h stdint.h stdlib.h string.h unistd.h math.h float.
 AC_CHECK_LIB([m], [sqrt], [], [LIBM="-lm"])
 AC_CHECK_LIB([rrd], [rrd_fetch_r], [LIBRRD=-lrrd])
 
-if test "x$ac_cv_lib_rrd_rrd_fetch_r" = xyes; then :
-   AC_DEFINE_UNQUOTED(HAVE_RRDTOOL, "1", [rrdtool is present])
-   EXTRA_TARGETS="$EXTRA_TARGETS rrdtool"
-fi
-
 GLOBAL_CONTEXT_ENABLED=0
 AS_IF([test "x$enable_global_context_support" != "xno"], [
   AC_CHECK_LIB([pthread], [pthread_mutex_init])
@@ -438,7 +433,7 @@ dnl>   ADDITIONAL_LIBS="${ADDITIONAL_LIBS} -lcurl"
 dnl>   AC_DEFINE_UNQUOTED(HAVE_CURL, 1, [curl is present])
 dnl> fi
 
-AC_CONFIG_FILES([Makefile example/Makefile example/Makefile.dpdk tests/Makefile tests/unit/Makefile tests/performance/Makefile tests/dga/Makefile rrdtool/Makefile influxdb/Makefile libndpi.pc src/include/ndpi_define.h src/lib/Makefile fuzz/Makefile doc/Doxyfile.cfg])
+AC_CONFIG_FILES([Makefile example/Makefile example/Makefile.dpdk tests/Makefile tests/unit/Makefile tests/performance/Makefile tests/dga/Makefile influxdb/Makefile libndpi.pc src/include/ndpi_define.h src/lib/Makefile])
 AC_CONFIG_FILES([tests/do.sh], [chmod +x tests/do.sh])
 AC_CONFIG_HEADERS(src/include/ndpi_config.h)
 AC_SUBST(GIT_RELEASE)

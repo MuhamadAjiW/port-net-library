@@ -1,0 +1,50 @@
+INC=-I ../../src/include/ -I ../../src/lib/third_party/include/
+LIB=../../src/lib/libndpi.a -lm -lpthread 
+
+TOOLS=substringsearch patriciasearch gcrypt-int gcrypt-gnu strnstr
+TESTS=substring_test patricia_test strnstr_test
+
+
+all: $(TESTS)
+
+tools: $(TOOLS)
+
+gcrypt-int: gcrypt.c Makefile
+	$(CC) $(INC) -g -O2 gcrypt.c -o $@
+
+gcrypt-gnu: gcrypt.c Makefile
+	$(CC) $(INC) -g -O2 -DHAVE_LIBGCRYPT gcrypt.c -o $@ -lgcrypt
+
+substringsearch: substringsearch.c Makefile
+	$(CC) $(INC) -g -O2 substringsearch.c -o substringsearch $(LIB)
+
+strnstr: strnstr.cpp Makefile
+	$(CXX) $(INC) -g -O2 strnstr.cpp -o strnstr
+
+substring_test: substringsearch top-1m.csv
+	./substringsearch
+
+strnstr_test: strnstr
+	./strnstr
+
+#
+
+patriciasearch: patriciasearch.c Makefile
+	$(CC) $(INC) -g -O2 patriciasearch.c -o patriciasearch $(LIB)
+
+patricia_test: patriciasearch blacklist-ip.txt
+	./patriciasearch
+
+
+# Alexa Top 1 Million
+top-1m.csv:
+	wget http://s3.amazonaws.com/alexa-static/top-1m.csv.zip
+	unzip top-1m.csv.zip
+
+blacklist-ip.txt:
+	wget http://blacklists.ntop.org/blacklist-ip.txt
+
+clean:
+	/bin/rm -f *zip top-1m.csv blacklist-ip.txt
+
+
