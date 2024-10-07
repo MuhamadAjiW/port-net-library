@@ -20,7 +20,7 @@ endif
 ifneq ($(OS),Windows_NT)
 CFLAGS     += -fPIC -DPIC
 endif
-CFLAGS     += -I. -I../include -Ithird_party/include -DNDPI_LIB_COMPILATION -W -Wall -Wno-address-of-packed-member  -D_DEFAULT_SOURCE=1 -D_GNU_SOURCE=1 -O2 -DUSE_GLOBAL_CONTEXT   
+CFLAGS     += -I. -I../include -Ithird_party/include -DNDPI_LIB_COMPILATION=1 -W -Wall -Wno-address-of-packed-member  -D_DEFAULT_SOURCE=1 -D_GNU_SOURCE=1 -O2 -DUSE_GLOBAL_CONTEXT   
 CFLAGS_ndpi_bitmap.c := -Wno-unused-function
 CFLAGS_ndpi_bitmap64_fuse.c := -Wno-unused-function
 CFLAGS_third_party/src/gcrypt_light.c := -Wno-unused-function -Wno-unused-parameter

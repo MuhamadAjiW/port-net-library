@@ -1,0 +1,18 @@
+DPI Packets (TCP):	108	(8.31 pkts/flow)
+DPI Packets (UDP):	33	(1.38 pkts/flow)
+DPI Packets (other):	4	(1.00 pkts/flow)
+Confidence Unknown          : 16 (flows)
+Confidence DPI              : 25 (flows)
+
+Unknown	23	4507	16
+MDNS	29	9130	6
+DHCP	8	4003	2
+ICMP	1	60	1
+IGMP	17	1006	2
+OSPF	5	410	1
+TLS	4388	1058186	11
+UbuntuONE	11	1278	2
+
+Safe                          4388 1058186       11           
+Acceptable                      71 15887         14           
+Unrated                         23 4507          16           

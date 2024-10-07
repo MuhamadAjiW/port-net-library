@@ -62,6 +62,7 @@
 #include <errno.h>
 
 #include "reader_util.h"
+#include <zmq.h>
 
 #define ntohl64(x) ( ( (uint64_t)(ntohl( (uint32_t)((x << 32) >> 32) )) << 32) | ntohl( ((uint32_t)(x >> 32)) ) )
 #define htonl64(x) ntohl64(x)
@@ -273,6 +274,9 @@ static int dpdk_port_id = 0, dpdk_run_capture = 1;
 #endif
 
 void test_lib(); /* Forward */
+
+// void *context;
+// void *socket;
 
 extern void ndpi_report_payload_stats(FILE *out);
 extern int parse_proto_name_list(char *str, NDPI_PROTOCOL_BITMASK *bitmask, int inverted_logic);
@@ -1019,7 +1023,9 @@ static int parse_three_strings(char *param, char **s1, char **s2, char **s3)
           ndpi_free(s3);
           return -1;
         }
-        return 0;
+        
+  zmq_close(socket);
+return 0;
       }
     }
   }
@@ -1037,7 +1043,9 @@ int reader_add_cfg(char *proto, char *param, char *value, int dup)
   cfgs[num_cfgs].param = dup ? ndpi_strdup(param) : param;
   cfgs[num_cfgs].value = dup ? ndpi_strdup(value) : value;
   num_cfgs++;
-  return 0;
+  
+  zmq_close(socket);
+return 0;
 }
 
 /* ********************************** */
@@ -2336,7 +2344,9 @@ int updateIpTree(u_int32_t key, u_int8_t version,
   addr_node **rootp = vrootp;
 
   if(rootp == (addr_node **)0)
-    return 0;
+    
+  zmq_close(socket);
+return 0;
 
   while(*rootp != (addr_node *)0) {
     /* Knuth's T1: */
@@ -2775,7 +2785,9 @@ static int is_realtime_protocol(ndpi_protocol proto)
     }
   }
 
-  return 0;
+  
+  zmq_close(socket);
+return 0;
 }
 
 static void dump_realtime_protocol(struct ndpi_workflow * workflow, struct ndpi_flow_info *flow)
@@ -3848,6 +3860,24 @@ static void printResults(u_int64_t processing_time_usec, u_int64_t setup_time_us
     cumulative_stats.total_ip_bytes += ndpi_thread_info[thread_id].workflow->stats.total_ip_bytes;
     cumulative_stats.total_discarded_bytes += ndpi_thread_info[thread_id].workflow->stats.total_discarded_bytes;
 
+    // /* Get protocol, source IP, and destination IP */
+    // const char *protocol_name = ndpi_get_proto_name(ndpi_thread_info[thread_id].workflow->ndpi_struct,
+    //                                                 ndpi_thread_info[thread_id].workflow->detected_protocol);
+    // const char *src_ip = inet_ntoa(ndpi_thread_info[thread_id].workflow->src_ip);
+    // const char *dst_ip = inet_ntoa(ndpi_thread_info[thread_id].workflow->dst_ip);
+
+    // /* Real-time output to terminal */
+    // printf("Thread %d: Protocol=%s, Src IP=%s, Dst IP=%s\n",
+    //        thread_id, protocol_name, src_ip, dst_ip);
+
+    // /* Prepare and send message via ZeroMQ */
+    // char message[256];
+    // snprintf(message, sizeof(message), 
+    //          "{\"protocol\":\"%s\", \"src_ip\":\"%s\", \"dst_ip\":\"%s\"}", 
+    //          protocol_name, src_ip, dst_ip);
+
+    // zmq_send(socket, message, strlen(message), 0);
+
     for(i = 0; i < ndpi_get_num_supported_protocols(ndpi_thread_info[0].workflow->ndpi_struct); i++) {
       cumulative_stats.protocol_counter[i] += ndpi_thread_info[thread_id].workflow->stats.protocol_counter[i];
       cumulative_stats.protocol_counter_bytes[i] += ndpi_thread_info[thread_id].workflow->stats.protocol_counter_bytes[i];
@@ -4243,7 +4273,9 @@ static void printResults(u_int64_t processing_time_usec, u_int64_t setup_time_us
     }
   }
   if(results_file) {
+    fprintf(stderr, "\n\nProtocol ------:\n");
     fprintf(results_file, "\n");
+    fprintf(stderr, "\n\nProtocol +++++++:\n");
     for(i=0; i < NUM_BREEDS; i++) {
       if(breed_stats_pkts[i] > 0) {
 	fprintf(results_file, "%-20s %13llu %-13llu %-13llu\n",
@@ -4344,7 +4376,10 @@ static int getNextPcapFileFromPlaylist(u_int16_t thread_id, char filename[], u_i
     int l = strlen(filename);
     if(filename[0] == '\0' || filename[0] == '#') goto next_line;
     if(filename[l-1] == '\n') filename[l-1] = '\0';
-    return 0;
+    
+  zmq_close(socket);
+  // zmq_ctx_destroy(context);
+return 0;
   } else {
     fclose(playlist_fp[thread_id]);
     playlist_fp[thread_id] = NULL;
@@ -6231,6 +6266,16 @@ void domainSearchUnitTest2() {
    @brief MAIN FUNCTION
 **/
 int main(int argc, char **argv) {
+  /* ZeroMQ setup */
+  void *context = zmq_ctx_new();
+
+  void *socket = zmq_socket(context, ZMQ_PUB);
+  int rc = zmq_bind(socket, "tcp://*:5556");
+  if (rc != 0) {
+      fprintf(stderr, "Failed to bind to ZeroMQ socket: %s\n", zmq_strerror(errno));
+      return 0;
+  }
+
   int i;
 #ifdef NDPI_EXTENDED_SANITY_CHECKS
   int skip_unit_tests = 0;
@@ -6358,7 +6403,6 @@ int main(int argc, char **argv) {
   if(extcap_dumper) pcap_dump_close(extcap_dumper);
   if(extcap_fifo_h) pcap_close(extcap_fifo_h);
   if(enable_malloc_bins) ndpi_free_bin(&malloc_bins);
-  if(csv_fp)        fclose(csv_fp);
 
   ndpi_free(_disabled_protocols);
 
@@ -6371,8 +6415,56 @@ int main(int argc, char **argv) {
 #ifdef DEBUG_TRACE
   if(trace) fclose(trace);
 #endif
+  
+    // send csv with zmq
+  if (csv_fp) {
+      fprintf(stderr, "Sending CSV file via ZeroMQ\n");
+      fseek(csv_fp, 0, SEEK_END);
+      long fsize = ftell(csv_fp);
+      fseek(csv_fp, 0, SEEK_SET);
 
-  return 0;
+      if (fsize <= 0) {
+          fprintf(stderr, "File is empty or size is invalid\n");
+          fclose(csv_fp);
+          return 0;
+      }
+
+      char *csv_data = ndpi_malloc(fsize + 1); 
+      if (csv_data == NULL) {
+          fprintf(stderr, "Memory allocation failed\n");
+          fclose(csv_fp);
+          return 0;
+      }
+
+      // size_t bytes_read = fread(csv_data, 1, fsize, csv_fp);
+      // fclose(csv_fp);
+      
+      // if (bytes_read != fsize) {
+      //     fprintf(stderr, "Error reading file\n");
+      //     ndpi_free(csv_data);
+      //     return 0;
+      // }
+
+      csv_data[fsize] = '\0';  
+
+      //print csv_fp
+
+      fprintf(stderr, "Sending %ld bytes\n", fsize);
+      fprintf(csv_fp, "\n");
+      int rc = zmq_send(socket, csv_fp, fsize, 0);
+      fprintf(stderr, "Data Send Success\n");
+      if (rc == -1) {
+          fprintf(stderr, "Failed to send message via ZeroMQ: %s\n", zmq_strerror(errno));
+      }
+      zmq_close(socket);
+      zmq_ctx_destroy(context);
+      fclose(csv_fp);
+      ndpi_free(csv_data);
+  }
+  
+  zmq_close(socket);
+  zmq_ctx_destroy(context);
+return 0;
 }
 
 #ifdef _MSC_BUILD
@@ -6435,6 +6527,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
       tz->tz_dsttime = _daylight;
     }
 
-    return 0;
+    
+  zmq_close(socket);
+  zmq_ctx_destroy(context);
+return 0;
   }
 #endif /* WIN32 */

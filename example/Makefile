@@ -18,7 +18,7 @@ endif
 CFLAGS+=-I$(SRCHOME)/include -W -Wall -Wno-address-of-packed-member  -D_DEFAULT_SOURCE=1 -D_GNU_SOURCE=1 -O2 -DUSE_GLOBAL_CONTEXT  
 LDFLAGS+=
 LIBNDPI=$(SRCHOME)/lib/libndpi.a
-LIBS=$(LIBNDPI) -lpcap -lm -lpthread  
+LIBS=$(LIBNDPI) -lpcap -lm -lpthread -lzmq
 HEADERS=reader_util.h $(SRCHOME)/include/ndpi_api.h \
         $(SRCHOME)/include/ndpi_typedefs.h $(SRCHOME)/include/ndpi_protocol_ids.h
 PREFIX?=/usr
