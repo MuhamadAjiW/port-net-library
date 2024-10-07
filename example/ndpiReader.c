@@ -91,6 +91,7 @@ static FILE *serialization_fp       = NULL; /**< for TLV,CSV,JSON export */
 static ndpi_serialization_format serialization_format = ndpi_serialization_format_unknown;
 static char* domain_to_check = NULL;
 static char* ip_port_to_check = NULL;
+char *name_file;
 static u_int8_t ignore_vlanid = 0;
 /** User preferences **/
 u_int8_t enable_realtime_output = 0, enable_protocol_guess = NDPI_GIVEUP_GUESS_BY_PORT | NDPI_GIVEUP_GUESS_BY_IP, enable_payload_analyzer = 0, num_bin_clusters = 0, extcap_exit = 0;
@@ -1170,6 +1171,7 @@ static void parseOptions(int argc, char **argv) {
 
     case 'C':
       errno = 0;
+      name_file = optarg;
       if((csv_fp = fopen(optarg, "w")) == NULL)
       {
         printf("Unable to write on CSV file %s: %s\n", optarg, strerror(errno));
@@ -6400,9 +6402,6 @@ int main(int argc, char **argv) {
 
   if(results_path)  ndpi_free(results_path);
   if(results_file)  fclose(results_file);
-  if(extcap_dumper) pcap_dump_close(extcap_dumper);
-  if(extcap_fifo_h) pcap_close(extcap_fifo_h);
-  if(enable_malloc_bins) ndpi_free_bin(&malloc_bins);
 
   ndpi_free(_disabled_protocols);
 
@@ -6416,7 +6415,8 @@ int main(int argc, char **argv) {
   if(trace) fclose(trace);
 #endif
   
-  FILE *results_file = fopen("./test.csv", "r");
+  fprintf(stderr, "name file : %s\n", name_file);
+  FILE *results_file = fopen(name_file, "r");
   if (results_file == NULL) {
       fprintf(stderr, "Error: Unable to open CSV file.\n");
       return -1;  
@@ -6425,45 +6425,52 @@ int main(int argc, char **argv) {
   if (results_file) {
       fprintf(stderr, "Sending CSV file via ZeroMQ line by line\n");
 
-      char line[4096];  
+    char *line = NULL;
+    size_t len = 0;
 
-      while (fgets(line, sizeof(line), results_file) != NULL) {
-          fprintf(stderr, "Read line: %s", line);
+    while (1) {
+        ssize_t read = getline(&line, &len, results_file);
+        
+        if (read == -1) {
+            if (feof(results_file)) {
+                fprintf(stderr, "End of CSV file reached.\n");
+            } else {
+                fprintf(stderr, "Error reading the CSV file.\n");
+            }
+            break;  
+        }
 
-          // Hapus newline jika ada di akhir baris
-          size_t len = strlen(line);
-          if (len > 0 && line[len - 1] == '\n') {
-              line[len - 1] = '\0';
-          }
+        fprintf(stderr, "Read line: %s", line);
 
-          // Kirim baris CSV melalui ZeroMQ
-          int rc = zmq_send(socket, line, strlen(line), 0);
-          if (rc == -1) {
-              fprintf(stderr, "Failed to send message via ZeroMQ: %s\n", zmq_strerror(errno));
-              break;  
-          }
+        int send_rc = zmq_send(socket, line, strlen(line), 0);
+        if (send_rc == -1) {
+            fprintf(stderr, "Failed to send message via ZeroMQ: %s\n", zmq_strerror(errno));
+            break;  
+        }
 
-          fprintf(stderr, "Sent line: %s\n", line);
-      }
+        fprintf(stderr, "Sent line: %s\n", line);
 
-      if (feof(results_file)) {
-          fprintf(stderr, "End of CSV file reached.\n");
-      } else if (ferror(results_file)) {
-          fprintf(stderr, "Error reading the CSV file.\n");
-      }
+        //clear line buffer
+        memset(line, 0, len);
+    }
 
       zmq_close(socket);
       zmq_ctx_destroy(context);
       fclose(results_file);  
+      free(line);
 
       fprintf(stderr, "CSV file sending complete\n");
   } else {
       fprintf(stderr, "File pointer is NULL, cannot proceed.\n");
   }
 
-    fclose(results_file);
-    zmq_close(socket);
-    zmq_ctx_destroy(context);
+  if(extcap_dumper) pcap_dump_close(extcap_dumper);
+  if(extcap_fifo_h) pcap_close(extcap_fifo_h);
+  if(enable_malloc_bins) ndpi_free_bin(&malloc_bins);
+  if(csv_fp) fclose(csv_fp);
+
+  zmq_close(socket);
+  zmq_ctx_destroy(context);
   return 0;
   }
 
