@@ -6416,56 +6416,56 @@ int main(int argc, char **argv) {
   if(trace) fclose(trace);
 #endif
   
-    // send csv with zmq
-  if (csv_fp) {
-      fprintf(stderr, "Sending CSV file via ZeroMQ\n");
-      fseek(csv_fp, 0, SEEK_END);
-      long fsize = ftell(csv_fp);
-      fseek(csv_fp, 0, SEEK_SET);
+  FILE *results_file = fopen("./test.csv", "r");
+  if (results_file == NULL) {
+      fprintf(stderr, "Error: Unable to open CSV file.\n");
+      return -1;  
+  }
 
-      if (fsize <= 0) {
-          fprintf(stderr, "File is empty or size is invalid\n");
-          fclose(csv_fp);
-          return 0;
+  if (results_file) {
+      fprintf(stderr, "Sending CSV file via ZeroMQ line by line\n");
+
+      char line[4096];  
+
+      while (fgets(line, sizeof(line), results_file) != NULL) {
+          fprintf(stderr, "Read line: %s", line);
+
+          // Hapus newline jika ada di akhir baris
+          size_t len = strlen(line);
+          if (len > 0 && line[len - 1] == '\n') {
+              line[len - 1] = '\0';
+          }
+
+          // Kirim baris CSV melalui ZeroMQ
+          int rc = zmq_send(socket, line, strlen(line), 0);
+          if (rc == -1) {
+              fprintf(stderr, "Failed to send message via ZeroMQ: %s\n", zmq_strerror(errno));
+              break;  
+          }
+
+          fprintf(stderr, "Sent line: %s\n", line);
       }
 
-      char *csv_data = ndpi_malloc(fsize + 1); 
-      if (csv_data == NULL) {
-          fprintf(stderr, "Memory allocation failed\n");
-          fclose(csv_fp);
-          return 0;
+      if (feof(results_file)) {
+          fprintf(stderr, "End of CSV file reached.\n");
+      } else if (ferror(results_file)) {
+          fprintf(stderr, "Error reading the CSV file.\n");
       }
 
-      // size_t bytes_read = fread(csv_data, 1, fsize, csv_fp);
-      // fclose(csv_fp);
-      
-      // if (bytes_read != fsize) {
-      //     fprintf(stderr, "Error reading file\n");
-      //     ndpi_free(csv_data);
-      //     return 0;
-      // }
-
-      csv_data[fsize] = '\0';  
-
-      //print csv_fp
-
-      fprintf(stderr, "Sending %ld bytes\n", fsize);
-      fprintf(csv_fp, "\n");
-      int rc = zmq_send(socket, csv_fp, fsize, 0);
-      fprintf(stderr, "Data Send Success\n");
-      if (rc == -1) {
-          fprintf(stderr, "Failed to send message via ZeroMQ: %s\n", zmq_strerror(errno));
-      }
       zmq_close(socket);
       zmq_ctx_destroy(context);
-      fclose(csv_fp);
-      ndpi_free(csv_data);
+      fclose(results_file);  
+
+      fprintf(stderr, "CSV file sending complete\n");
+  } else {
+      fprintf(stderr, "File pointer is NULL, cannot proceed.\n");
   }
-  
-  zmq_close(socket);
-  zmq_ctx_destroy(context);
-return 0;
-}
+
+    fclose(results_file);
+    zmq_close(socket);
+    zmq_ctx_destroy(context);
+  return 0;
+  }
 
 #ifdef _MSC_BUILD
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
