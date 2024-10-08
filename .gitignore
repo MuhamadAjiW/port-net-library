@@ -19,6 +19,7 @@ config.log
 config.status
 config.sub
 configure
+configure~
 install-sh
 libndpi.pc
 libtool
@@ -41,6 +42,8 @@ test-driver
 # Test artifacts
 *.trs
 *log
+tests/csv/
+tests/results/
 
 # Cache
 autom4te.cache/
