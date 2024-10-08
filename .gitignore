@@ -1,11 +1,15 @@
 # Build programs
+example/libndpiReader.a
 example/ndpiReader
+tests/unit/unit
+tests/dga/dga_evaluate
 
 # Compilation artifacts
 *.o
 *.so*
 *.a*
 *.exe
+src/include/stamp-h1
 
 # autogen.sh artifacts
 aclocal.m4
@@ -23,6 +27,12 @@ Makefile
 Makefile.in
 missing
 test-driver
+*Makefile*
+m4/libtool.m4
+m4/ltoptions.m4
+m4/ltsugar.m4
+m4/ltversion.m4
+m4/lt~obsolete.m4
 
 #cache
 autom4te.cache/
