@@ -1,0 +1,31 @@
+# Build programs
+example/ndpiReader
+
+# Compilation artifacts
+*.o
+*.so*
+*.a*
+*.exe
+
+# autogen.sh artifacts
+aclocal.m4
+compile
+config.guess
+config.log
+config.status
+config.sub
+configure
+install-sh
+libndpi.pc
+libtool
+ltmain.sh
+Makefile
+Makefile.in
+missing
+test-driver
+
+#cache
+autom4te.cache/
+
+# Mark for ignore
+*.ignore
