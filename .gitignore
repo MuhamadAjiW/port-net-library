@@ -38,6 +38,10 @@ tests/do.sh
 missing
 test-driver
 
+# Test artifacts
+*.trs
+*log
+
 # Cache
 autom4te.cache/
 
