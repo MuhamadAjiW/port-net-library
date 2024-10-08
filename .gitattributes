@@ -1,6 +1,7 @@
-*.sh     -crlf
-*.ac     -crlf
-*.am     -crlf
+# *.sh     -crlf
+# *.ac     -crlf
+# *.am     -crlf
+* text=auto eol=lf
 
 #Content files are C file
 *.inc linguist-language=C

@@ -144,48 +144,54 @@ run_single_pcap()
         return 0
     fi
 
-    CMD="$READER -i pcap/$f -w /tmp/reader.$$.out $READER_EXTRA_PARAM"
+    > "../../csv/$f.csv"
+    > "../../results/$f"
+    CMD="$READER -i pcap/$f -C ../../csv/$f.csv -w ../../results/$f $READER_EXTRA_PARAM"
     CPUPROFILE=./result/$f.cprof HEAPPROFILE=./result/$f $CMD
     CMD_RET=$?
-    if [ $CMD_RET -eq 0 ] && [ -f /tmp/reader.$$.out ]; then
+    if [ $CMD_RET -eq 0 ] && [ -f ../../results/$f ]; then
 	# create result files if not present
         if [ ! -f "result/$f.out" ]; then
-            cp /tmp/reader.$$.out "result/$f.out"
-	fi
-        NUM_DIFF=$(${CMD_DIFF} "result/$f.out" /tmp/reader.$$.out | wc -l)
-    else
-        if [ $FORCE_PARALLEL_UTESTS -eq 1 ]; then
-            printf "ERROR (ndpiReader${EXE_SUFFIX} exit code: ${CMD_RET})\n"
+            cp ../../results/$f "result/$f.out"
+	    fi
+        NUM_DIFF=$(${CMD_DIFF} "result/$f.out" "../../results/$f" | wc -l)
         else
-            printf "%-48s\tERROR (ndpiReader${EXE_SUFFIX} exit code: ${CMD_RET})\n" "$f"
-	    FAILURES+=("$f") #TODO: find a way to update this variable also in parallel mode
-        fi
-	return 1
+            if [ $FORCE_PARALLEL_UTESTS -eq 1 ]; then
+                printf "ERROR (ndpiReader${EXE_SUFFIX} exit code: ${CMD_RET})\n"
+            else
+                printf "%-48s\tERROR (ndpiReader${EXE_SUFFIX} exit code: ${CMD_RET})\n" "$f"
+            FAILURES+=("$f") #TODO: find a way to update this variable also in parallel mode
+            fi
+	    return 1
     fi
 
     if [ "$NUM_DIFF" -eq 0 ]; then
         if [ $FORCE_PARALLEL_UTESTS -eq 0 ]; then
             printf "%-48s\tOK\n" "$f"
         fi
+        # /bin/rm -f ../../results/$f
+        # /bin/rm -f ../../csv/$f.csv
         return 0
     else
         if [ $FORCE_PARALLEL_UTESTS -eq 1 ]; then
-            printf "ERROR\n"
+            printf "ERROR forced parallel error\n"
         else
-            printf "%-48s\tERROR\n" "$f"
-	    FAILURES+=("$f") #TODO: find a way to update this variable also in parallel mode
-	fi
+            printf "%-48s\tERROR unknown error\n" "$f"
+            FAILURES+=("$f") #TODO: find a way to update this variable also in parallel mode
+        fi
+        echo "Difference:\n"
         echo "$CMD [old vs new]"
-        ${CMD_DIFF} "result/$f.out" /tmp/reader.$$.out
+        ${CMD_DIFF} "result/$f.out" ../../results/$f
         if [ ! -z "${CMD_COLORDIFF}" ] && [ ! -z "${CMD_WDIFF}" ]; then
-            ${CMD_WDIFF} -n -3 "result/$f.out" /tmp/reader.$$.out | sort | uniq | ${CMD_COLORDIFF}
+            ${CMD_WDIFF} -n -3 "result/$f.out" ../../results/$f | sort | uniq | ${CMD_COLORDIFF}
         fi
         if [ $FORCE_UPDATING_UTESTS_RESULTS -eq 1 ]; then
-            cp /tmp/reader.$$.out "result/$f.out"
+            cp ../../results/$f "result/$f.out"
         fi
     fi
 
-    /bin/rm -f /tmp/reader.$$.out
+    # /bin/rm -f ../../results/$f
+    # /bin/rm -f ../../csv/$f.csv
 
     return 1
 }

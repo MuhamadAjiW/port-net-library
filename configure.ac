@@ -335,6 +335,15 @@ case "$host" in
             AC_MSG_ERROR([Missing libpcap(-dev) library required to compile the example application.])
          fi
       fi
+
+      AC_CHECK_LIB([zmq], [zmq_ctx_new], [
+        AC_DEFINE([HAVE_ZMQ], [1], [Define if libzmq is available])
+        ZMQ_LIB="-lzmq"
+        LIBS="${LIBS} ${ZMQ_LIB}"
+      ], [
+        AC_MSG_ERROR([Missing libzmq(-dev) library required to compile the example application.])
+      ])
+
       EXE_SUFFIX=""
       AS_IF([test "${enable_npcap+set}" = set],AC_MSG_ERROR([--disable-npcap does only work with msys2/mingw CCs]))
       ;;
@@ -443,6 +452,7 @@ AC_SUBST(NDPI_PATCH)
 AC_SUBST(NDPI_VERSION_SHORT)
 AC_SUBST(PCAP_INC)
 AC_SUBST(PCAP_LIB)
+AC_SUBST(ZMQ_LIB)
 AC_SUBST(LIBRRD)
 AC_SUBST(ADDITIONAL_INCS)
 AC_SUBST(ADDITIONAL_LIBS)
