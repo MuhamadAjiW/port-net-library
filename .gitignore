@@ -23,17 +23,20 @@ install-sh
 libndpi.pc
 libtool
 ltmain.sh
-Makefile
-Makefile.in
-missing
-test-driver
-Makefile
-**/Makefile
 m4/libtool.m4
 m4/ltoptions.m4
 m4/ltsugar.m4
 m4/ltversion.m4
 m4/lt~obsolete.m4
+Makefile
+Makefile.in
+**/Makefile
+example/Makefile.dpdk
+src/include/ndpi_config.h*
+tests/Makefile.in
+tests/do.sh
+missing
+test-driver
 
 #cache
 autom4te.cache/
