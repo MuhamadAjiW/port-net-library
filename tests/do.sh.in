@@ -51,7 +51,7 @@ NBPF_ENABLED=@NBPF_ENABLED@
 NBPF_PCAPS="h323-overflow.pcap"
 GLOBAL_CONTEXT_ENABLED=@GLOBAL_CONTEXT_ENABLED@
 GLOBAL_CONTEXT_CFGS="caches_global"
-READER="${CMD_PREFIX} ../../../app/ndpiReader${EXE_SUFFIX} --cfg=filename.config,../../../app/config.txt -A -p ../../../app/protos.txt -c ../../../app/categories.txt -r ../../../app/risky_domains.txt -j ../../../app/ja3_fingerprints.csv -S ../../../app/sha1_fingerprints.csv -G ../../../lists -q -K JSON -k /dev/null -t -v 2"
+READER="${CMD_PREFIX} ../../../app/ndpiReader${EXE_SUFFIX} --cfg=filename.config,../../../app/etc/config.txt -A -p ../../../app/etc/protos.txt -c ../../../app/etc/categories.txt -r ../../../app/etc/risky_domains.txt -j ../../../app/etc/ja3_fingerprints.csv -S ../../../app/etc/sha1_fingerprints.csv -G ../../../lists -q -K JSON -k /dev/null -t -v 2"
 
 
 #These exports are used in parallel mode
@@ -100,11 +100,11 @@ fi
 
 fuzzy_testing() {
     if [ -f ../fuzz/fuzz_ndpi_reader ]; then
-	cp ../app/protos.txt .
-	cp ../app/categories.txt .
-	cp ../app/risky_domains.txt .
-	cp ../app/ja3_fingerprints.csv .
-	cp ../app/sha1_fingerprints.csv .
+	cp ../app/etc/protos.txt .
+	cp ../app/etc/categories.txt .
+	cp ../app/etc/risky_domains.txt .
+	cp ../app/etc/ja3_fingerprints.csv .
+	cp ../app/etc/sha1_fingerprints.csv .
 	../fuzz/fuzz_ndpi_reader -dict=../fuzz/dictionary.dict -max_total_time="${MAX_TOTAL_TIME:-592}" -print_pcs=1 -workers="${FUZZY_WORKERS:-0}" -jobs="${FUZZY_JOBS:-0}" cfgs/default/pcap/
 	rm -f protos.txt categories.txt risky_domains.txt ja3_fingerprints.csv sha1_fingerprints.csv
     fi
@@ -252,7 +252,7 @@ for d in $(find ./cfgs/* -type d -maxdepth 0 2>/dev/null) ; do
     fi
     FAILURES=()
     READER_EXTRA_PARAM=""
-    [ -f config.txt ] && READER_EXTRA_PARAM=$(< config.txt)
+    [ -f etc/config.txt ] && READER_EXTRA_PARAM=$(< etc/config.txt)
     export READER_EXTRA_PARAM
 
     echo "Run configuration \"$(basename "$d")\" [$READER_EXTRA_PARAM]"

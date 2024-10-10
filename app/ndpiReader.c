@@ -635,7 +635,7 @@ static void help(u_int long_help) {
     "  -f <BPF filter>           | Specify a BPF filter for filtering selected traffic\n"
     "  -s <duration>             | Maximum capture duration in seconds (live traffic capture only)\n"
     "  -m <duration>             | Split analysis duration in <duration> max seconds\n"
-    "  -p <file>.protos          | Specify a protocol file (eg. protos.txt)\n"
+    "  -p <file>.protos          | Specify a protocol file (eg. etc/protos.txt)\n"
     "  -l <num loops>            | Number of detection loops (test only)\n"
     "  -n <num threads>          | Number of threads. Default: number of interfaces in -i.\n"
     "                            | Ignored with pcap files.\n"
@@ -6213,7 +6213,7 @@ void encodeDomainsUnitTest() {
     str = (char*)"www.bbc.co.uk"; assert(ndpi_encode_domain(ndpi_str, str, out, sizeof(out)) == 8);
 
     assert(ndpi_load_categories_dir(ndpi_str, "../lists"));
-    assert(ndpi_load_categories_file(ndpi_str, "./categories.txt", "categories.txt"));
+    assert(ndpi_load_categories_file(ndpi_str, "./etc/categories.txt", "etc/categories.txt"));
 
     str = (char*)"2001:db8:1::1"; assert(ndpi_get_custom_category_match(ndpi_str, str, strlen(str), &id) == 0); assert(id == 100);
     str = (char*)"www.internetbadguys.com"; assert(ndpi_get_custom_category_match(ndpi_str, str, strlen(str), &id) == 0); assert(id == 100);

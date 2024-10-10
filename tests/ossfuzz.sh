@@ -55,12 +55,12 @@ cp fuzz/*.zip "$OUT"/
 # Copy options
 cp fuzz/*.options "$OUT"/
 # Copy configuration files
-cp app/protos.txt "$OUT"/
-cp app/categories.txt "$OUT"/
-cp app/risky_domains.txt "$OUT"/
-cp app/ja3_fingerprints.csv "$OUT"/
-cp app/sha1_fingerprints.csv "$OUT"/
-cp app/config.txt "$OUT"/
+cp app/etc/protos.txt "$OUT"/
+cp app/etc/categories.txt "$OUT"/
+cp app/etc/risky_domains.txt "$OUT"/
+cp app/etc/ja3_fingerprints.csv "$OUT"/
+cp app/etc/sha1_fingerprints.csv "$OUT"/
+cp app/etc/config.txt "$OUT"/
 cp lists/public_suffix_list.dat "$OUT"/
 cp fuzz/ipv*_addresses.txt "$OUT"/
 cp fuzz/bd_param.txt "$OUT"/
