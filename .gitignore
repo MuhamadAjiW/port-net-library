@@ -1,6 +1,6 @@
 # Build programs
-example/libndpiReader.a
-example/ndpiReader
+app/libndpiReader.a
+app/ndpiReader
 tests/unit/unit
 tests/dga/dga_evaluate
 
@@ -30,11 +30,9 @@ m4/ltsugar.m4
 m4/ltversion.m4
 m4/lt~obsolete.m4
 Makefile
-Makefile.in
 **/Makefile
-example/Makefile.dpdk
+app/Makefile.dpdk
 src/include/ndpi_config.h*
-tests/Makefile.in
 tests/do.sh
 missing
 test-driver
