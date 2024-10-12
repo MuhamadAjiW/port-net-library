@@ -99,7 +99,7 @@ typedef enum {
   NOTE
   When the typedef below is modified don't forget to update
   - nDPI/wireshark/ndpi.lua
-  - ndpi_risk2str (in ndpi_utils.c)
+  - ndpi_risk2str, ndpi_risk2code, ndpi_code2risk (in ndpi_utils.c)
   - doc/flow_risks.rst
   - ndpi_known_risks (ndpi_main.c)
 
@@ -139,7 +139,7 @@ typedef enum {
   NDPI_HTTP_SUSPICIOUS_CONTENT,
   NDPI_RISKY_ASN,
   NDPI_RISKY_DOMAIN,
-  NDPI_MALICIOUS_JA3,
+  NDPI_MALICIOUS_FINGERPRINT,
   NDPI_MALICIOUS_SHA1_CERTIFICATE,
   NDPI_DESKTOP_OR_FILE_SHARING_SESSION, /* 30 */
   NDPI_TLS_UNCOMMON_ALPN,
@@ -163,13 +163,14 @@ typedef enum {
   NDPI_HTTP_OBSOLETE_SERVER,
   NDPI_PERIODIC_FLOW,          /* Set in case a flow repeats at a specific pace [used by apps on top of nDPI] */
   NDPI_MINOR_ISSUES,           /* Generic packet issues (e.g. DNS with 0 TTL) */
-  NDPI_TCP_ISSUES,             /* 50 */ /* TCP issues such as connection failed or scan */
+  NDPI_TCP_ISSUES,    /* 50 */ /* TCP issues such as connection failed or scan */
   NDPI_FULLY_ENCRYPTED,        /* This (unknown) session is fully encrypted */
   NDPI_TLS_ALPN_SNI_MISMATCH,  /* Invalid ALPN/SNI combination */
   NDPI_MALWARE_HOST_CONTACTED, /* Flow client contacted a malware host */
   NDPI_BINARY_DATA_TRANSFER,   /* Attempt to transfer something in binary format */
   NDPI_PROBING_ATTEMPT,        /* Probing attempt (e.g. TCP connection with no data exchanged or unidirection traffic for bidirectional flows such as SSH) */
-  
+  NDPI_OBFUSCATED_TRAFFIC,
+
   /* Leave this as last member */
   NDPI_MAX_RISK /* must be <= 63 due to (**) */
 } ndpi_risk_enum;
@@ -644,7 +645,7 @@ struct ndpi_gre_basehdr {
  * Optional information about flow management (per packet)
  */
 struct ndpi_flow_input_info {
-  unsigned char in_pkt_dir;
+  unsigned char in_pkt_dir; /* If unknown, the library might *returns* to the application the direction calculated internally */
   unsigned char seen_flow_beginning;
 };
 
@@ -791,6 +792,15 @@ struct ndpi_lru_cache {
 /* Ookla */
 #define NDPI_AGGRESSIVENESS_OOKLA_TLS			0x01 /* Enable detection over TLS (using ookla cache) */
 
+/* OpenVPN */
+#define NDPI_HEURISTICS_OPENVPN_OPCODE			0x01 /* Enable heuristic based on opcode frequency */
+
+/* TLS */
+#define NDPI_HEURISTICS_TLS_OBFUSCATED_PLAIN		0x01 /* Enable heuristic to detect proxied/obfuscated TLS flows over generic/unknown flows */
+#define NDPI_HEURISTICS_TLS_OBFUSCATED_TLS		0x02 /* Enable heuristic to detect proxied/obfuscated TLS flows over TLS tunnels, i.e. TLS over TLS */
+#define NDPI_HEURISTICS_TLS_OBFUSCATED_HTTP		0x04 /* Enable heuristic to detect proxied/obfuscated TLS flows over HTTP/WebSocket */
+
+
 /* ************************************************** */
 
 struct ndpi_flow_tcp_struct {
@@ -840,6 +850,10 @@ struct ndpi_flow_tcp_struct {
 
   /* NDPI_PROTOCOL_TELNET */
   u_int32_t telnet_stage:2;			// 0 - 2
+
+  /* NDPI_PROTOCOL_RTMP */
+  u_int32_t rtmp_stage:2;
+  u_int16_t rtmp_client_buffer_len;
 
   struct {
     /* NDPI_PROTOCOL_TLS */
@@ -903,6 +917,7 @@ struct ndpi_flow_udp_struct {
   u_int32_t xbox_stage:1;
 
   /* NDPI_PROTOCOL_QUIC */
+  u_int32_t quic_server_cid_stage:2;
   u_int32_t quic_0rtt_found:1;
   u_int32_t quic_vn_pair:1;
 
@@ -938,6 +953,9 @@ struct ndpi_flow_udp_struct {
   u_int8_t *quic_reasm_buf;
   u_int8_t *quic_reasm_buf_bitmap;
   u_int32_t quic_reasm_buf_last_pos;
+#define QUIC_SERVER_CID_HEURISTIC_LENGTH	8
+  u_int8_t quic_server_cid[QUIC_SERVER_CID_HEURISTIC_LENGTH];
+  u_int8_t quic_client_last_byte;
   /* DCID of the first Initial sent by the client */
   u_int8_t quic_orig_dest_conn_id[20]; /* Max length is 20 on all QUIC versions */
   u_int8_t quic_orig_dest_conn_id_len;
@@ -1138,24 +1156,28 @@ typedef struct _ndpi_automa {
 
 typedef void ndpi_str_hash;
 
-struct ndpi_fpc_info {
-  u_int16_t master_protocol;
-  u_int16_t app_protocol;
-  ndpi_fpc_confidence_t confidence;
-};
-
-typedef struct ndpi_proto {
+typedef struct {
   /*
     Note
     below we do not use ndpi_protocol_id_t as users can define their own
     custom protocols and thus the typedef could be too short in size.
   */
-  u_int16_t master_protocol /* e.g. HTTP */, app_protocol /* e.g. FaceBook */, protocol_by_ip;
+  u_int16_t master_protocol /* e.g. HTTP */, app_protocol /* e.g. FaceBook */;
+} ndpi_master_app_protocol;
+
+struct ndpi_fpc_info {
+  ndpi_master_app_protocol proto;
+  ndpi_fpc_confidence_t confidence;
+};
+
+typedef struct ndpi_proto {
+  ndpi_master_app_protocol proto;
+  u_int16_t protocol_by_ip;
   ndpi_protocol_category_t category;
   void *custom_category_userdata;
 } ndpi_protocol;
 
-#define NDPI_PROTOCOL_NULL { NDPI_PROTOCOL_UNKNOWN , NDPI_PROTOCOL_UNKNOWN , NDPI_PROTOCOL_UNKNOWN, NDPI_PROTOCOL_CATEGORY_UNSPECIFIED, NULL }
+#define NDPI_PROTOCOL_NULL { { NDPI_PROTOCOL_UNKNOWN , NDPI_PROTOCOL_UNKNOWN }, NDPI_PROTOCOL_UNKNOWN, NDPI_PROTOCOL_CATEGORY_UNSPECIFIED, NULL }
 
 #define NUM_CUSTOM_CATEGORIES      5
 #define CUSTOM_CATEGORY_LABEL_LEN 32
@@ -1185,6 +1207,7 @@ typedef enum {
 } ndpi_cipher_weakness;
 
 #define MAX_NUM_TLS_SIGNATURE_ALGORITHMS 16
+#define MAX_NUM_DNS_RSP_ADDRESSES         4
 
 typedef struct {
   union {
@@ -1228,7 +1251,8 @@ struct ndpi_flow_struct {
     tcp sequence number connection tracking
   */
   u_int32_t next_tcp_seq_nr[2];
-
+  u_int16_t last_tcp_pkt_payload_len;
+  
   /* Flow addresses (useful for LRU lookups in ndpi_detection_giveup())
      and ports. All in *network* byte order.
      Client and server.
@@ -1286,6 +1310,7 @@ struct ndpi_flow_struct {
   struct {
     ndpi_http_method method;
     u_int8_t request_version; /* 0=1.0 and 1=1.1. Create an enum for this? */
+    u_int8_t websocket:1, _pad:7;
     u_int16_t response_status_code; /* 200, 404, etc. */
     char *url, *content_type /* response */, *request_content_type /* e.g. for POST */, *user_agent, *server;
     char *detected_os; /* Via HTTP/QUIC User-Agent */
@@ -1312,16 +1337,19 @@ struct ndpi_flow_struct {
 
   struct {
     message_t message[2]; /* Directions */
-    u_int8_t certificate_processed:1, _pad:7;
+    u_int8_t certificate_processed:1, change_cipher_from_client:1, change_cipher_from_server:1, from_opportunistic_tls:1, pad:4;
+    struct tls_obfuscated_heuristic_state *obfuscated_heur_state;
   } tls_quic; /* Used also by DTLS and POPS/IMAPS/SMTPS/FTPS */
 
   union {
     /* the only fields useful for nDPI and ntopng */
     struct {
-      u_int8_t num_queries, num_answers, reply_code;
-      u_int8_t is_query:1, is_rsp_addr_ipv6:1, pad:6;
+      u_int8_t num_queries, num_answers, reply_code, num_rsp_addr;
+      u_int8_t is_query:1, pad:7;
       u_int16_t query_type, query_class, rsp_type, edns0_udp_payload_size;
-      ndpi_ip_addr_t rsp_addr; /* The first address in a DNS response packet (A and AAAA) */
+      u_int8_t is_rsp_addr_ipv6[MAX_NUM_DNS_RSP_ADDRESSES];
+      ndpi_ip_addr_t rsp_addr[MAX_NUM_DNS_RSP_ADDRESSES]; /* The first num_rsp_addr address in a DNS response packet (A and AAAA) */
+      u_int32_t rsp_addr_ttl[MAX_NUM_DNS_RSP_ADDRESSES];
       char geolocation_iata_code[4];
       char ptr_domain_name[64 /* large enough but smaller than { } tls */];
     } dns;
@@ -1349,10 +1377,10 @@ struct ndpi_flow_struct {
     struct {
       char *server_names, *advertised_alpns, *negotiated_alpn, *tls_supported_versions, *issuerDN, *subjectDN;
       u_int32_t notBefore, notAfter;
-      char ja3_client[33], ja3_server[33], ja4_client[37];
+      char ja3_client[33], ja3_server[33], ja4_client[37], *ja4_client_raw;
       u_int16_t server_cipher;
       u_int8_t sha1_certificate_fingerprint[20];
-      u_int8_t hello_processed:1, ch_direction:1, subprotocol_detected:1, fingerprint_set:1, webrtc:1, _pad:3;
+      u_int8_t client_hello_processed:1, ch_direction:1, subprotocol_detected:1, server_hello_processed:1, fingerprint_set:1, webrtc:1, _pad:2;
 
 #ifdef TLS_HANDLE_SIGNATURE_ALGORITMS
       /* Under #ifdef to save memory for those who do not need them */
@@ -1422,6 +1450,7 @@ struct ndpi_flow_struct {
     } bittorrent;
 
     struct {
+      char options[48];
       char fingerprint[48];
       char class_ident[48];
     } dhcp;
@@ -1489,9 +1518,6 @@ struct ndpi_flow_struct {
   /* NDPI_PROTOCOL_FTP_CONTROL */
   u_int8_t ftp_control_stage:2;
 
-  /* NDPI_PROTOCOL_RTMP */
-  u_int8_t rtmp_stage:2;
-
   /* NDPI_PROTOCOL_STARCRAFT */
   u_int8_t starcraft_udp_stage : 3;	// 0-7
 
@@ -1510,6 +1536,14 @@ struct ndpi_flow_struct {
 
   /* NDPI_PROTOCOL_OPENVPN */
   u_int8_t ovpn_session_id[2][8];
+  u_int8_t ovpn_alg_standard_state : 2;
+  u_int8_t ovpn_alg_heur_opcode_state : 2;
+  u_int8_t ovpn_heur_opcode__codes_num : 4;
+  u_int8_t ovpn_heur_opcode__num_msgs;
+#define OPENVPN_HEUR_MAX_NUM_OPCODES 4
+  u_int8_t ovpn_heur_opcode__codes[OPENVPN_HEUR_MAX_NUM_OPCODES];
+  u_int8_t ovpn_heur_opcode__resets[2];
+  u_int16_t ovpn_heur_opcode__missing_bytes[2];
 
   /* NDPI_PROTOCOL_TINC */
   u_int8_t tinc_state;
@@ -1525,7 +1559,7 @@ struct ndpi_flow_struct {
   /* Flow payload */
   u_int16_t flow_payload_len;
   char *flow_payload;
-  
+
   /* 
      Leave this field below at the end
      The field below can be used by third
@@ -1536,11 +1570,11 @@ struct ndpi_flow_struct {
 
 #if !defined(NDPI_CFFI_PREPROCESSING) && defined(__linux__)
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
-_Static_assert(sizeof(((struct ndpi_flow_struct *)0)->protos) <= 256,
-               "Size of the struct member protocols increased to more than 256 bytes, "
+_Static_assert(sizeof(((struct ndpi_flow_struct *)0)->protos) <= 264,
+               "Size of the struct member protocols increased to more than 264 bytes, "
                "please check if this change is necessary.");
-_Static_assert(sizeof(struct ndpi_flow_struct) <= 1120,
-               "Size of the flow struct increased to more than 1120 bytes, "
+_Static_assert(sizeof(struct ndpi_flow_struct) <= 1160,
+               "Size of the flow struct increased to more than 1160 bytes, "
                "please check if this change is necessary.");
 #endif
 #endif
@@ -1759,6 +1793,22 @@ struct ndpi_bin {
 
 /* **************************************** */
 
+/* Implemented in third_party/src/kdtree.c */
+typedef void ndpi_kd_tree;
+typedef void ndpi_kd_tree_result;
+
+/* Implemented in third_party/src/ball.c */
+typedef void ndpi_btree;
+
+typedef struct {
+  double **distances;
+  int    **indices;
+  int    n_samples;
+  int    n_neighbors;
+} ndpi_knn;
+
+/* **************************************** */
+
 #define HW_HISTORY_LEN               4
 #define MAX_SQUARE_ERROR_ITERATIONS 64 /* MUST be < num_values_rollup (256 max) */
 
@@ -1808,6 +1858,21 @@ struct ndpi_des_struct {
 
   u_int32_t num_values;
   double sum_square_error, last_forecast, last_trend, last_value;
+};
+
+/* **************************************** */
+
+struct ndpi_address_cache_item {
+  ndpi_ip_addr_t addr; /* key */
+  char *hostname; /* value */
+  u_int32_t expire_epoch;
+  struct ndpi_address_cache_item *next; /* Linked list */
+};
+
+struct ndpi_address_cache {
+  u_int32_t num_cached_addresses, num_root_nodes;
+  u_int32_t num_entries, max_num_entries;
+  struct ndpi_address_cache_item **address_cache_root;
 };
 
 /* **************************************** */

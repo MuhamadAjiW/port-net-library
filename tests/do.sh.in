@@ -98,18 +98,6 @@ else
   GPROF=false
 fi
 
-fuzzy_testing() {
-    if [ -f ../fuzz/fuzz_ndpi_reader ]; then
-	cp ../app/etc/protos.txt .
-	cp ../app/etc/categories.txt .
-	cp ../app/etc/risky_domains.txt .
-	cp ../app/etc/ja3_fingerprints.csv .
-	cp ../app/etc/sha1_fingerprints.csv .
-	../fuzz/fuzz_ndpi_reader -dict=../fuzz/dictionary.dict -max_total_time="${MAX_TOTAL_TIME:-592}" -print_pcs=1 -workers="${FUZZY_WORKERS:-0}" -jobs="${FUZZY_JOBS:-0}" cfgs/default/pcap/
-	rm -f protos.txt categories.txt risky_domains.txt ja3_fingerprints.csv sha1_fingerprints.csv
-    fi
-}
-
 run_single_pcap()
 {
     f=$1
@@ -169,8 +157,6 @@ run_single_pcap()
         if [ $FORCE_PARALLEL_UTESTS -eq 0 ]; then
             printf "%-48s\tOK\n" "$f"
         fi
-        # /bin/rm -f ../../results/$f
-        # /bin/rm -f ../../csv/$f.csv
         return 0
     else
         if [ $FORCE_PARALLEL_UTESTS -eq 1 ]; then
@@ -179,7 +165,6 @@ run_single_pcap()
             printf "%-48s\tERROR unknown error\n" "$f"
             FAILURES+=("$f") #TODO: find a way to update this variable also in parallel mode
         fi
-        echo "Difference:\n"
         echo "$CMD [old vs new]"
         ${CMD_DIFF} "result/$f.out" ../../results/$f
         if [ ! -z "${CMD_COLORDIFF}" ] && [ ! -z "${CMD_WDIFF}" ]; then
@@ -189,9 +174,6 @@ run_single_pcap()
             cp ../../results/$f "result/$f.out"
         fi
     fi
-
-    # /bin/rm -f ../../results/$f
-    # /bin/rm -f ../../csv/$f.csv
 
     return 1
 }
@@ -223,10 +205,6 @@ check_results() {
     fi
 }
 
-if [ $FUZZY_TESTING_ENABLED -eq 1 ]; then
-    fuzzy_testing
-fi
-
 for d in $(find ./cfgs/* -type d -maxdepth 0 2>/dev/null) ; do
 
     SKIP_CFG=0
@@ -252,7 +230,7 @@ for d in $(find ./cfgs/* -type d -maxdepth 0 2>/dev/null) ; do
     fi
     FAILURES=()
     READER_EXTRA_PARAM=""
-    [ -f etc/config.txt ] && READER_EXTRA_PARAM=$(< etc/config.txt)
+    [ -f config.txt ] && READER_EXTRA_PARAM=$(< config.txt)
     export READER_EXTRA_PARAM
 
     echo "Run configuration \"$(basename "$d")\" [$READER_EXTRA_PARAM]"

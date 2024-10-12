@@ -1,4 +1,4 @@
-AC_INIT([libndpi],[4.10.0])
+AC_INIT([libndpi],[4.11.0])
 
 AC_CONFIG_AUX_DIR([.])
 AC_CONFIG_MACRO_DIR([m4])
@@ -450,7 +450,7 @@ dnl>   ADDITIONAL_LIBS="${ADDITIONAL_LIBS} -lcurl"
 dnl>   AC_DEFINE_UNQUOTED(HAVE_CURL, 1, [curl is present])
 dnl> fi
 
-AC_CONFIG_FILES([Makefile app/Makefile app/Makefile.dpdk tests/Makefile tests/unit/Makefile tests/performance/Makefile tests/dga/Makefile influxdb/Makefile libndpi.pc src/include/ndpi_define.h src/lib/Makefile])
+AC_CONFIG_FILES([Makefile app/Makefile app/Makefile.dpdk tests/Makefile tests/unit/Makefile tests/performance/Makefile tests/dga/Makefile libndpi.pc src/include/ndpi_define.h src/lib/Makefile])
 AC_CONFIG_FILES([tests/do.sh], [chmod +x tests/do.sh])
 AC_CONFIG_HEADERS(src/include/ndpi_config.h)
 AC_SUBST(GIT_RELEASE)

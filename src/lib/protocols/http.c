@@ -148,7 +148,19 @@ static int ndpi_search_http_tcp_again(struct ndpi_detection_module_struct *ndpi_
 #endif
 
   if(flow->extra_packets_func == NULL) {
-    return(0); /* We're good now */
+    /* HTTP stuff completed */
+
+    /* Loook for TLS over websocket */
+    if((ndpi_struct->cfg.tls_heuristics & NDPI_HEURISTICS_TLS_OBFUSCATED_HTTP) && /* Feature enabled */
+       (flow->host_server_name[0] != '\0' &&
+        flow->http.response_status_code != 0) && /* Bidirectional HTTP traffic */
+       flow->http.websocket) {
+
+      switch_extra_dissection_to_tls_obfuscated_heur(ndpi_struct, flow);
+      return(1);
+    }
+
+    return(0); /* We are good now */
   }
 
   /* Possibly more processing */
@@ -465,6 +477,11 @@ static void ndpi_http_parse_subprotocol(struct ndpi_detection_module_struct *ndp
 					int hostname_just_set) {
   u_int16_t master_protocol;
   struct ndpi_packet_struct *packet = &ndpi_struct->packet;
+
+  if(!ndpi_struct->cfg.http_subclassification_enabled) {
+    NDPI_LOG_DBG2(ndpi_struct, "Skip sub-protocol check because subclassification is disabled\n");
+    return;
+  }
 
   master_protocol = NDPI_PROTOCOL_HTTP;
   if(flow->detected_protocol_stack[1] != NDPI_PROTOCOL_UNKNOWN)
@@ -947,6 +964,13 @@ static void check_content_type_and_change_protocol(struct ndpi_detection_module_
         flow->http.nat_ip[len] = '\0';
       }
     }
+  }
+
+  if(packet->upgrade_line.ptr != NULL) {
+    if((flow->http.response_status_code == 101)
+       && (packet->upgrade_line.len >= 9)
+       && memcmp((char *)packet->upgrade_line.ptr, "websocket", 9) == 0)
+      flow->http.websocket = 1;
   }
 
   if(packet->server_line.ptr != NULL) {
@@ -1572,7 +1596,7 @@ static void ndpi_search_http_tcp(struct ndpi_detection_module_struct *ndpi_struc
   ndpi_check_http_tcp(ndpi_struct, flow);
 
   if((ndpi_struct->cfg.http_parse_response_enabled &&
-      flow->host_server_name[0] != '\0'&&
+      flow->host_server_name[0] != '\0' &&
       flow->http.response_status_code != 0) ||
      (!ndpi_struct->cfg.http_parse_response_enabled &&
       (flow->host_server_name[0] != '\0' ||

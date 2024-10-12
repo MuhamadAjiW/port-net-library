@@ -6,7 +6,6 @@ pkgconfig_DATA = libndpi.pc
 
 EXTRA_DIST = README.md README.fuzzer.md CHANGELOG.md CONTRIBUTING.md \
 	autogen.sh utils packages \
-	influxdb/Makefile.in influxdb/metric_anomaly.c influxdb/README.txt \
 	lists/100_malware.list \
 	lists/107_gambling.list \
 	lists/107_gambling_custom.list \

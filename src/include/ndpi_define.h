@@ -27,7 +27,7 @@
  * The #define below is used for apps that dynamically link with nDPI to make
  * sure that datastructures and in sync across versions
  */
-#define NDPI_API_VERSION 15
+#define NDPI_API_VERSION 11471
 
 /*
   gcc -E -dM - < /dev/null |grep ENDIAN
@@ -153,6 +153,7 @@
 #define ndpi_min(a,b)   ((a < b) ? a : b)
 #define ndpi_max(a,b)   ((a > b) ? a : b)
 
+#define NDPI_NUM_DEFAULT_ROOT_NODES        512
 
 #define NDPI_IPSEC_PROTOCOL_ESP    50
 #define NDPI_IPSEC_PROTOCOL_AH     51
@@ -221,7 +222,7 @@ static inline uint64_t get_u_int64_t(const uint8_t* X, int O)
 #define NDPI_MIN_NUM_STUN_DETECTION             8
 
 #define NDPI_MAJOR                              4
-#define NDPI_MINOR                              10
+#define NDPI_MINOR                              11
 #define NDPI_PATCH                              0
 
 /* IMPORTANT: order according to its severity */

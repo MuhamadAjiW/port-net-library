@@ -182,7 +182,7 @@ typedef struct ndpi_flow_info {
   struct ndpi_in6_addr dst_ip6; /* network order */
   u_int16_t src_port; /* network order */
   u_int16_t dst_port; /* network order */
-  u_int8_t detection_completed, protocol, bidirectional, check_extra_packets;
+  u_int8_t detection_completed, protocol, bidirectional, check_extra_packets, current_pkt_from_client_to_server;
   u_int16_t vlan_id;
   ndpi_packet_tunnel tunnel_type;
   struct ndpi_flow_struct *ndpi_flow;
@@ -259,6 +259,7 @@ typedef struct ndpi_flow_info {
   ndpi_serializer ndpi_flow_serializer;
 
   char host_server_name[80]; /* Hostname/SNI */
+  char *server_hostname;
   char *bittorent_hash;
   char *dhcp_fingerprint;
   char *dhcp_class_ident;
@@ -274,7 +275,7 @@ typedef struct ndpi_flow_info {
       client_hassh[33], server_hassh[33], *server_names,
       *advertised_alpns, *negotiated_alpn, *tls_supported_versions,
       *tls_issuerDN, *tls_subjectDN,
-      ja3_client[33], ja3_server[33], ja4_client[37],
+      ja3_client[33], ja3_server[33], ja4_client[37], *ja4_client_raw,
       sha1_cert_fingerprint[20];
     u_int8_t sha1_cert_fingerprint_set;
     struct tls_heuristics browser_heuristics;
