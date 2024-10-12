@@ -1,6 +1,0 @@
-{
-    "files.associations": {
-        "ndpi_config.h": "c",
-        "ndpi_api.h": "c"
-    }
-}

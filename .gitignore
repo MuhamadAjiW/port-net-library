@@ -1,4 +1,3 @@
-# Original ndpi source gitignore
 *.o
 *.db
 *.db-*
@@ -45,14 +44,14 @@
 /configure.tmp
 /depcomp
 /doc/Doxyfile.cfg
-/app/.deps/
-/app/Makefile
-/app/Makefile.dpdk
-/app/build
-/app/libndpiReader.a
-/app/ndpiReader
-/app/ndpiReader.exe
-/app/ndpiSimpleIntegration
+/example/.deps/
+/example/Makefile
+/example/Makefile.dpdk
+/example/build
+/example/libndpiReader.a
+/example/ndpiReader
+/example/ndpiReader.exe
+/example/ndpiSimpleIntegration
 /fuzz/.deps/
 /fuzz/Makefile
 /fuzz/fuzz_ndpi_reader
@@ -200,20 +199,3 @@ stamp-h1
 /windows/packages/pthreads.redist.2.9.1.4
 /windows/bin/x64_Debug-ndpiReader/ndpiReader.exe
 /windows/obj/nDPI_Debug-ndpiReader_x64/nDPI.vcxproj.FileListAbsolute.txt
-
-# Build programs
-app/libndpiReader.a
-app/ndpiReader
-tests/unit/unit
-tests/dga/dga_evaluate
-
-# Test artifacts
-*.trs
-*.log
-tests/csv/*
-!tests/csv/.gitkeep
-tests/results/*
-!tests/results/.gitkeep
-
-# Mark for ignore
-*.ignore

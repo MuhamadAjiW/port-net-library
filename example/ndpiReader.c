@@ -6313,7 +6313,7 @@ void encodeDomainsUnitTest() {
     str = (char*)"www.bbc.co.uk"; assert(ndpi_encode_domain(ndpi_str, str, out, sizeof(out)) == 8);
 
     assert(ndpi_load_categories_dir(ndpi_str, "../lists"));
-    assert(ndpi_load_categories_file(ndpi_str, "./etc/categories.txt", "etc/categories.txt"));
+    assert(ndpi_load_categories_file(ndpi_str, "./categories.txt", "categories.txt"));
 
     str = (char*)"2001:db8:1::1"; assert(ndpi_get_custom_category_match(ndpi_str, str, strlen(str), &id) == 0); assert(id == 100);
     str = (char*)"www.internetbadguys.com"; assert(ndpi_get_custom_category_match(ndpi_str, str, strlen(str), &id) == 0); assert(id == 100);
@@ -6614,70 +6614,6 @@ int main(int argc, char **argv) {
 #ifdef DEBUG_TRACE
   if(trace) fclose(trace);
 #endif
-
-  /* ZeroMQ code */
-  // void* context = zmq_ctx_new();
-
-  // void* socket = zmq_socket(context, ZMQ_PUB);
-  // int rc = zmq_bind(socket, "tcp://*:5556");
-  // if (rc != 0) {
-  //   fprintf(stderr, "Failed to bind to ZeroMQ socket: %s\n", zmq_strerror(errno));
-  //   return 0;
-  // }
-
-  // fprintf(stderr, "csv file name : %s\n", file_name);
-  // FILE* results_file = fopen(file_name, "r");
-  // if (results_file == NULL) {
-  //   fprintf(stderr, "Error: Unable to open CSV file.\n");
-  //   return -1;
-  // }
-
-  // if (results_file) {
-  //   fprintf(stderr, "Sending CSV file via ZeroMQ line by line\n");
-
-  //   char* line = NULL;
-  //   size_t len = 0;
-
-  //   while (1) {
-  //     ssize_t read = getline(&line, &len, results_file);
-
-  //     if (read == -1) {
-  //       if (feof(results_file)) {
-  //         fprintf(stderr, "End of CSV file reached.\n");
-  //       }
-  //       else {
-  //         fprintf(stderr, "Error reading the CSV file.\n");
-  //       }
-  //       break;
-  //     }
-
-  //     fprintf(stderr, "Read line: %s", line);
-
-  //     int send_rc = zmq_send(socket, line, strlen(line), 0);
-  //     if (send_rc == -1) {
-  //       fprintf(stderr, "Failed to send message via ZeroMQ: %s\n", zmq_strerror(errno));
-  //       break;
-  //     }
-
-  //     fprintf(stderr, "Sent line: %s\n", line);
-
-  //     //clear line buffer
-  //     memset(line, 0, len);
-  //   }
-
-  //   zmq_close(socket);
-  //   zmq_ctx_destroy(context);
-  //   fclose(results_file);
-  //   free(line);
-
-  //   fprintf(stderr, "CSV file sending complete\n");
-  // }
-  // else {
-  //   fprintf(stderr, "File pointer is NULL, cannot proceed.\n");
-  // }
-
-  // zmq_close(socket);
-  // zmq_ctx_destroy(context);
 
   return 0;
 }
