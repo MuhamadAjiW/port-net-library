@@ -65,6 +65,7 @@
 
 #include <zmq.h>
 #include <ncurses.h>
+#include "include/lib-headers.h"
 
 #define ntohl64(x) ( ( (uint64_t)(ntohl( (uint32_t)((x << 32) >> 32) )) << 32) | ntohl( ((uint32_t)(x >> 32)) ) )
 #define htonl64(x) ntohl64(x)
