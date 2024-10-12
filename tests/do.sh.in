@@ -51,7 +51,7 @@ NBPF_ENABLED=@NBPF_ENABLED@
 NBPF_PCAPS="h323-overflow.pcap"
 GLOBAL_CONTEXT_ENABLED=@GLOBAL_CONTEXT_ENABLED@
 GLOBAL_CONTEXT_CFGS="caches_global"
-READER="${CMD_PREFIX} ../../../example/ndpiReader${EXE_SUFFIX} --cfg=filename.config,../../../example/config.txt -A -p ../../../example/protos.txt -c ../../../example/categories.txt -r ../../../example/risky_domains.txt -j ../../../example/ja3_fingerprints.csv -S ../../../example/sha1_fingerprints.csv -G ../../../lists -q -K JSON -k /dev/null -t -v 2"
+READER="${CMD_PREFIX} ../../../app/ndpiReader${EXE_SUFFIX} --cfg=filename.config,../../../app/etc/config.txt -A -p ../../../app/etc/protos.txt -c ../../../app/etc/categories.txt -r ../../../app/etc/risky_domains.txt -j ../../../app/etc/ja3_fingerprints.csv -S ../../../app/etc/sha1_fingerprints.csv -G ../../../lists -q -K JSON -k /dev/null -t -v 2"
 
 
 #These exports are used in parallel mode
@@ -69,8 +69,8 @@ export FORCE_PARALLEL_UTESTS
 
 RC=0
 
-if [ ! -x "../example/ndpiReader${EXE_SUFFIX}" ]; then
-  echo "$0: Missing ../example/ndpiReader${EXE_SUFFIX}"
+if [ ! -x "../app/ndpiReader${EXE_SUFFIX}" ]; then
+  echo "$0: Missing ../app/ndpiReader${EXE_SUFFIX}"
   echo "$0: Run ./configure and make first"
   exit 1
 fi
@@ -198,10 +198,10 @@ check_results() {
 
     if [ ${GPROF_ENABLED} -eq 1 ]; then
       GPROF_ARGS='-nodecount 100 -nodefraction 0 -symbolize=fastlocal'
-      ${GPROF} -top ${GPROF_ARGS} ../../../example/ndpiReader${EXE_SUFFIX} ./result/*.cprof || exit 1
-      ${GPROF} -png -output ./result/cpu_profile.png ${GPROF_ARGS} ../../../example/ndpiReader${EXE_SUFFIX} ./result/*.cprof || exit 1
-      ${GPROF} -top ${GPROF_ARGS} -sample_index=alloc_space  ../../../example/ndpiReader${EXE_SUFFIX} ./result/*.heap || exit 1
-      ${GPROF} -png -output ./result/heap_profile.png ${GPROF_ARGS} -sample_index=alloc_space ../../../example/ndpiReader${EXE_SUFFIX} ./result/*.heap || exit 1
+      ${GPROF} -top ${GPROF_ARGS} ../../../app/ndpiReader${EXE_SUFFIX} ./result/*.cprof || exit 1
+      ${GPROF} -png -output ./result/cpu_profile.png ${GPROF_ARGS} ../../../app/ndpiReader${EXE_SUFFIX} ./result/*.cprof || exit 1
+      ${GPROF} -top ${GPROF_ARGS} -sample_index=alloc_space  ../../../app/ndpiReader${EXE_SUFFIX} ./result/*.heap || exit 1
+      ${GPROF} -png -output ./result/heap_profile.png ${GPROF_ARGS} -sample_index=alloc_space ../../../app/ndpiReader${EXE_SUFFIX} ./result/*.heap || exit 1
     fi
 }
 

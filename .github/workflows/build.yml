@@ -178,7 +178,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install autoconf automake libtool pkg-config gettext libjson-c-dev flex bison libpcap-dev
-          sudo apt-get install rrdtool librrd-dev parallel
+          sudo apt-get install libzmq3-dev libncurses-dev parallel
       - name: Install Ubuntu Prerequisites [Mingw-w64] (runs only on ubuntu jobs)
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.arch, 'x86_64') && !startsWith(matrix.msan, '--with-') #Only on a few "standard" builds, without any sanitizers
         run: |
@@ -220,12 +220,11 @@ jobs:
         if: startsWith(matrix.arch, 'x86_64') && !startsWith(matrix.os, 'windows') && !startsWith(matrix.os, 'macos-14') && !startsWith(matrix.os, 'macos-15')
         run: |
           make -j all
-          make -C example ndpiSimpleIntegration
-          make -C rrdtool
+          make -C app ndpiSimpleIntegration
       - name: Print nDPI long help
         if: startsWith(matrix.arch, 'x86_64') && !startsWith(matrix.os, 'windows')
         run: |
-          cd ./example && ./ndpiReader -H
+          cd ./app && ./ndpiReader -H
       - name: Install nDPI
         if: startsWith(matrix.arch, 'x86_64') && !startsWith(matrix.os, 'windows')
         run: |
@@ -279,12 +278,11 @@ jobs:
           args: >
             bash -c
             "apt-get -y update &&
-            apt-get -y install git wdiff colordiff autoconf automake libtool pkg-config gettext libjson-c-dev flex bison libpcap-dev libgcrypt20-dev libpcre3-dev libmaxminddb-dev rrdtool librrd-dev &&
+            apt-get -y install git wdiff colordiff autoconf automake libtool pkg-config gettext libjson-c-dev flex bison libpcap-dev libgcrypt20-dev libpcre3-dev libmaxminddb-dev libzmq3-dev libncurses-dev &&
             git config --global --add safe.directory $(realpath .) &&
             env CC=gcc CFLAGS='-Werror' ./autogen.sh --enable-option-checking=fatal --enable-debug-messages ${{ matrix.gcrypt }} ${{ matrix.msan }} ${{ matrix.pcre }} ${{ matrix.maxminddb }} --enable-tls-sigs &&
             make -j all &&
-            make -C example ndpiSimpleIntegration &&
-            make -C rrdtool &&
+            make -C app ndpiSimpleIntegration &&
             make check VERBOSE=1
             "
       - name: Display qemu specified architecture (armhf - little endian)
@@ -303,12 +301,11 @@ jobs:
           args: >
             bash -c
             "apt-get -y update &&
-            apt-get -y install git wdiff colordiff autoconf automake libtool pkg-config gettext libjson-c-dev flex bison libpcap-dev libgcrypt20-dev libpcre3-dev libmaxminddb-dev rrdtool librrd-dev &&
+            apt-get -y install git wdiff colordiff autoconf automake libtool pkg-config gettext libjson-c-dev flex bison libpcap-dev libgcrypt20-dev libpcre3-dev libmaxminddb-dev libzmq3-dev libncurses-dev &&
             git config --global --add safe.directory $(realpath .) &&
             env CC=gcc CFLAGS='-Werror' ./autogen.sh --enable-option-checking=fatal --enable-debug-messages ${{ matrix.gcrypt }} ${{ matrix.msan }} ${{ matrix.pcre }} ${{ matrix.maxminddb }} --enable-tls-sigs &&
             make -j all &&
-            make -C example ndpiSimpleIntegration &&
-            make -C rrdtool &&
+            make -C app ndpiSimpleIntegration &&
             make check VERBOSE=1
             "
       - name: Display qemu specified architecture (s390x - big endian)
@@ -327,11 +324,10 @@ jobs:
           args: >
             bash -c
             "apt-get -y update &&
-            apt-get -y install git wdiff colordiff autoconf automake libtool pkg-config gettext libjson-c-dev flex bison libpcap-dev libgcrypt20-dev libpcre3-dev libmaxminddb-dev rrdtool librrd-dev &&
+            apt-get -y install git wdiff colordiff autoconf automake libtool pkg-config gettext libjson-c-dev flex bison libpcap-dev libgcrypt20-dev libpcre3-dev libmaxminddb-dev libzmq3-dev libncurses-dev &&
             git config --global --add safe.directory $(realpath .) &&
             env CC=gcc CFLAGS='-Werror' ./autogen.sh --enable-option-checking=fatal --enable-debug-messages ${{ matrix.gcrypt }} ${{ matrix.msan }} ${{ matrix.pcre }} ${{ matrix.maxminddb }} --enable-tls-sigs &&
             make -j all &&
-            make -C example ndpiSimpleIntegration &&
-            make -C rrdtool &&
+            make -C app ndpiSimpleIntegration &&
             make check VERBOSE=1
             "

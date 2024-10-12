@@ -6313,7 +6313,7 @@ void encodeDomainsUnitTest() {
     str = (char*)"www.bbc.co.uk"; assert(ndpi_encode_domain(ndpi_str, str, out, sizeof(out)) == 8);
 
     assert(ndpi_load_categories_dir(ndpi_str, "../lists"));
-    assert(ndpi_load_categories_file(ndpi_str, "./categories.txt", "categories.txt"));
+    assert(ndpi_load_categories_file(ndpi_str, "./etc/categories.txt", "etc/categories.txt"));
 
     str = (char*)"2001:db8:1::1"; assert(ndpi_get_custom_category_match(ndpi_str, str, strlen(str), &id) == 0); assert(id == 100);
     str = (char*)"www.internetbadguys.com"; assert(ndpi_get_custom_category_match(ndpi_str, str, strlen(str), &id) == 0); assert(id == 100);
@@ -6576,13 +6576,6 @@ int main(int argc, char **argv) {
   }
 
   if(!quiet_mode) {
-    printf("\n-----------------------------------------------------------\n"
-	   "* NOTE: This is demo app to show *some* nDPI features.\n"
-	   "* In this demo we have implemented only some basic features\n"
-	   "* just to show you what you can do with the library. Feel \n"
-	   "* free to extend it and send us the patches for inclusion\n"
-	   "------------------------------------------------------------\n\n");
-
     printf("Using nDPI (%s) [%d thread(s)]\n", ndpi_revision(), num_threads);
 
     const char *gcrypt_ver = ndpi_get_gcrypt_version();
