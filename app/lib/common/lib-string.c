@@ -8,18 +8,12 @@
 string_t str_new(char* initial) {
     string_t retval;
 
-    int counter = 0;
-    while (initial[counter] != 0) {
-        counter++;
-    }
-    retval.content = malloc(counter + 1);
+    retval.len = strlen(initial);
+    retval.content = malloc(retval.len + 1);
     if (retval.content == NULL) return NULL_STRING;
 
-    for (int i = 0; i < counter; i++) {
-        retval.content[i] = initial[i];
-    }
-    retval.content[counter] = 0;
-    retval.len = counter;
+    memcpy(retval.content, initial, retval.len);
+    retval.content[retval.len] = NULL_CHAR;
 
     return retval;
 }
@@ -30,10 +24,8 @@ string_t str_newcopy(string_t source) {
     retval.content = malloc(source.len + 1);
     if (retval.content == NULL) return NULL_STRING;
 
-    for (uint32_t i = 0; i < source.len; i++) {
-        retval.content[i] = source.content[i];
-    }
-    retval.content[source.len] = 0;
+    memcpy(retval.content, source.content, source.len);
+    retval.content[source.len] = NULL_CHAR;
     retval.len = source.len;
 
     return retval;
@@ -56,10 +48,9 @@ string_t str_splice_rear(string_t mainstring, uint32_t loc) {
     retval.content = malloc(retval.len + 1);
     if (retval.content == NULL) return NULL_STRING;
 
-    for (uint32_t i = 0; i < retval.len; i++) {
-        retval.content[i] = mainstring.content[loc + i];
-    }
-    retval.content[retval.len] = 0;
+    memcpy(retval.content, mainstring.content + loc, retval.len);
+    retval.content[retval.len] = NULL_CHAR;
+
     return retval;
 }
 
@@ -70,10 +61,8 @@ string_t str_splice_front(string_t mainstring, uint32_t loc) {
     retval.content = malloc(retval.len + 1);
     if (retval.content == NULL) return NULL_STRING;
 
-    for (uint32_t i = 0; i < retval.len; i++) {
-        retval.content[i] = mainstring.content[i];
-    }
-    retval.content[retval.len] = 0;
+    memcpy(retval.content, mainstring.content, retval.len);
+    retval.content[retval.len] = NULL_CHAR;
     return retval;
 }
 
@@ -83,8 +72,7 @@ string_t int_to_string_t(int x) {
     retval.len = snprintf(NULL, 0, "%d", x) + 1;
     retval.content = malloc(sizeof(char) * retval.len);
     if (retval.content == NULL) return NULL_STRING;
-
-    int_to_string(x, retval.content);
+    snprintf(retval.content, retval.len, "%d", x);
 
     return retval;
 }
@@ -99,11 +87,9 @@ bool str_concat(string_t* mainstring, string_t substring) {
     if (new_content == NULL) return false;
     mainstring->content = new_content;
 
-    for (uint32_t i = 0; i < substring.len; i++) {
-        mainstring->content[mainstring->len + i] = substring.content[i];
-    }
+    memcpy(mainstring->content + mainstring->len, substring.content, substring.len);
     mainstring->len += substring.len;
-    mainstring->content[mainstring->len] = 0;
+    mainstring->content[mainstring->len] = NULL_CHAR;
 
     return true;
 }
@@ -112,37 +98,28 @@ bool str_consdot(string_t* mainstring, string_t substring) {
     char* new_content = realloc(mainstring->content, mainstring->len + substring.len + 1);
     if (new_content == NULL) return false;
 
-    string_t temp = str_newcopy(*mainstring);
-    if (str_is_null(temp)) return false;
-
     mainstring->content = new_content;
 
-    for (uint32_t i = 0; i < substring.len; i++) {
-        mainstring->content[i] = substring.content[i];
-    }
-    for (uint32_t i = 0; i < mainstring->len; i++) {
-        mainstring->content[substring.len + i] = temp.content[i];
-    }
-    str_delete(&temp);
+    memmove(mainstring->content + substring.len, mainstring->content, mainstring->len + 1);
+    memcpy(mainstring->content, substring.content, substring.len);
+
     mainstring->len += substring.len;
-    mainstring->content[mainstring->len] = 0;
+    mainstring->content[mainstring->len] = NULL_CHAR;
 
     return true;
 }
 
 bool str_insertc(string_t* mainstring, char c, uint32_t loc) {
-    if (loc > mainstring->len) return;
+    if (loc > mainstring->len) return false;
 
     char* new_content = realloc(mainstring->content, mainstring->len + 2);
     if (new_content == NULL) return false;
 
     mainstring->content = new_content;
 
-    for (uint32_t i = mainstring->len; i > loc; i--) {
-        mainstring->content[i] = mainstring->content[i - 1];
-    }
+    memmove(mainstring->content + loc + 1, mainstring->content + loc, mainstring->len - loc);
     mainstring->content[loc] = c;
-    mainstring->content[mainstring->len + 1] = 0;
+    mainstring->content[mainstring->len + 1] = NULL_CHAR;
     mainstring->len++;
 
     return true;
@@ -153,10 +130,8 @@ char str_remove(string_t* mainstring, uint32_t loc) {
 
     char retval = mainstring->content[loc];
 
-    for (uint32_t i = loc; i < mainstring->len; i++) {
-        mainstring->content[i] = mainstring->content[i + 1];
-    }
-    mainstring->content[mainstring->len - 1] = 0;
+    memmove(mainstring->content + loc, mainstring->content + loc + 1, mainstring->len - loc - 1);
+    mainstring->content[mainstring->len - 1] = NULL_CHAR;
     char* new_content = realloc(mainstring->content, mainstring->len);
     mainstring->len--;
 
@@ -182,7 +157,7 @@ bool str_addc(string_t* mainstring, char c) {
 
     mainstring->content = new_content;
     mainstring->content[mainstring->len] = c;
-    mainstring->content[mainstring->len + 1] = 0;
+    mainstring->content[mainstring->len + 1] = NULL_CHAR;
     mainstring->len++;
 
     return true;
