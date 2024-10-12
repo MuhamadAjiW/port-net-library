@@ -1219,7 +1219,7 @@ static void parseOptions(int argc, char** argv) {
 
         case 'C':
             errno = 0;
-            if ((csv_fp = fopen(optarg, "w")) == NULL)
+            if ((csv_fp = fopen(optarg, "w+")) == NULL)
             {
                 printf("Unable to write on CSV file %s: %s\n", optarg, strerror(errno));
                 exit(1);
@@ -6645,6 +6645,9 @@ int main(int argc, char** argv) {
     if (extcap_dumper) pcap_dump_close(extcap_dumper);
     if (extcap_fifo_h) pcap_close(extcap_fifo_h);
     if (enable_malloc_bins) ndpi_free_bin(&malloc_bins);
+
+    lzmq_send_to_server("*", 5556, csv_fp);
+
     if (csv_fp)         fclose(csv_fp);
     if (fingerprint_fp) fclose(fingerprint_fp);
 
@@ -6660,7 +6663,6 @@ int main(int argc, char** argv) {
     if (trace) fclose(trace);
 #endif
 
-    send_to_server("*", 100, csv_fp);
 
     return 0;
 }

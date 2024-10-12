@@ -155,4 +155,15 @@ bool str_add(string_t* mainstring, char* substring);
 */
 bool str_addc(string_t* mainstring, char c);
 
+/**
+ * Takes a formatted char array to be a string struct
+ *
+ * @param pattern       string pattern
+ * @param args          arguments to be added
+ * @return              string struct with formatted content
+ *
+ * @warning             returns NULL_STRING if allocation fails
+*/
+string_t str_format(char* __restrict__ pattern, ...);
+
 #endif

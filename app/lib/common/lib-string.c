@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include "../../include/lib-string.h"
 #include "../../include/lib-base.h"
 
@@ -161,4 +162,22 @@ bool str_addc(string_t* mainstring, char c) {
     mainstring->len++;
 
     return true;
+}
+
+string_t str_format(char* __restrict__ pattern, ...) {
+    string_t retval;
+
+    va_list args;
+    va_start(args, pattern);
+    retval.len = vsnprintf(NULL, 0, pattern, args) + 1;
+    va_end(args);
+
+    retval.content = malloc(retval.len);
+    if (retval.content == NULL) return NULL_STRING;
+
+    va_start(args, pattern);
+    vsnprintf(retval.content, retval.len, pattern, args);
+    va_end(args);
+
+    return retval;
 }

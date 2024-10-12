@@ -6,6 +6,6 @@
 #include "lib-string.h"
 
 // TODO: Document
-void send_to_server(char* ip, int port, FILE* file);
+uint8_t lzmq_send_to_server(char* ip, int port, FILE* file);
 
 #endif
