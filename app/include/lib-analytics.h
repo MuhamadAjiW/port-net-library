@@ -51,13 +51,5 @@ void node_print_known_proto_walker(const void* node,
     ndpi_VISIT which, int depth, void* user_data);
 void node_print_unknown_proto_walker(const void* node,
     ndpi_VISIT which, int depth, void* user_data);
-void printResults(u_int64_t processing_time_usec, u_int64_t setup_time_usec);
-void printRiskStats();
-void printFlowsStats();
-char* print_cipher(ndpi_cipher_weakness c);
-void printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id);
-void printFlowSerialized(struct ndpi_flow_info* flow);
-void print_bin(FILE* fout, const char* label, struct ndpi_bin* b);
-void print_ndpi_address_port_file(FILE* out, const char* label, ndpi_address_port* ap);
 
 #endif

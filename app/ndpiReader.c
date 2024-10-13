@@ -2355,7 +2355,7 @@ int main(int argc, char** argv) {
 
         for (i = 0; i < argc; i++)
             fprintf(trace, " #### [%d] [%s]\n", i, argv[i]);
-}
+    }
 #endif
 
     if (ndpi_get_api_version() != NDPI_API_VERSION) {

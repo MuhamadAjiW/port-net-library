@@ -5,6 +5,7 @@
 #include "lib-flow.h"
 #include "lib-format.h"
 #include "lib-ndpi.h"
+#include "lib-print.h"
 #include "lib-reader.h"
 #include "lib-receiver.h"
 #include "lib-scanner.h"

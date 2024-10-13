@@ -12,6 +12,8 @@ void* ldis_print(__attribute__((unused)) void* arg) {
 
 #else
     initscr();
+    cbreak();
+    noecho();
     curs_set(false);
 
     int counter = 0;

@@ -85,10 +85,10 @@ uint8_t lzmq_send_to_server(char* ip, int port, FILE* file) {
 
 void* lzmq_do_nothing(__attribute__((unused)) void* arg) {
     while (lzmq_do_loop) {
-        printf("[DEV] Doing nothing with counter %d...\n", lzmq_do_loop);
+        // printf("[DEV] Doing nothing with counter %d...\n", lzmq_do_loop);
         zmq_sleep(1);
     }
-    printf("\n[DEV] ZeroMQ done doing nothing\n");
+    // printf("\n[DEV] ZeroMQ done doing nothing\n");
 
     return 0;
 }
