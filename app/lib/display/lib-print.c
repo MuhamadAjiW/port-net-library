@@ -1190,21 +1190,6 @@ void printFlowsStats() {
     ndpi_free(all_flows);
 }
 
-char* print_cipher(ndpi_cipher_weakness c) {
-    switch (c) {
-    case ndpi_cipher_insecure:
-        return(" (INSECURE)");
-        break;
-
-    case ndpi_cipher_weak:
-        return(" (WEAK)");
-        break;
-
-    default:
-        return("");
-    }
-}
-
 void printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) {
     FILE* out = results_file ? results_file : stdout;
     u_int8_t known_tls;
@@ -1320,8 +1305,8 @@ void printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) {
             if (csv_fp)
                 fprintf(csv_fp, "\n");
                   //  return;
-        }
     }
+}
 
     if (csv_fp || (verbose > 1)) {
 #if 1

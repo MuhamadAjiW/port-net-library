@@ -14,6 +14,7 @@ typedef struct hash_stats {
 
 // Functions
 char* is_unsafe_cipher(ndpi_cipher_weakness c);
+char* print_cipher(ndpi_cipher_weakness c);
 int hash_stats_sort_to_order(void* _a, void* _b);
 int hash_stats_sort_to_print(void* _a, void* _b);
 

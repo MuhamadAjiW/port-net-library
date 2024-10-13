@@ -15,6 +15,21 @@ char* is_unsafe_cipher(ndpi_cipher_weakness c) {
     }
 }
 
+char* print_cipher(ndpi_cipher_weakness c) {
+    switch (c) {
+    case ndpi_cipher_insecure:
+        return(" (INSECURE)");
+        break;
+
+    case ndpi_cipher_weak:
+        return(" (WEAK)");
+        break;
+
+    default:
+        return("");
+    }
+}
+
 /* *********************************************** */
 
 /*function to use in HASH_SORT function in verbose == 4 to order in creasing order to delete host with the leatest occurency*/
