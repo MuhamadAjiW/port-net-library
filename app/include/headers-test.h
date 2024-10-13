@@ -1,3 +1,6 @@
+#ifndef _LIB_HEADERS_TEST_H
+#define _LIB_HEADERS_TEST_H
+
 #include <sys/stat.h>
 #include <assert.h>
 #include "headers.h"
@@ -49,3 +52,5 @@ void strnstrUnitTest();
 void strncasestrUnitTest();
 void memmemUnitTest();
 void mahalanobisUnitTest();
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef _LIB_HEADERS_H
+#define _LIB_HEADERS_H
+
 #include "_build_config.h"
 #include "lib-analytics.h"
 #include "lib-base.h"
@@ -16,3 +19,5 @@
 
 #include "reader_util.h"
 #include "uthash.h"
+
+#endif

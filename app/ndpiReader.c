@@ -62,6 +62,7 @@
 #include <zmq.h>
 #include <ncurses.h>
 #include "include/reader_util.h"
+#include "include/_build_config.h"
 
 #ifndef DEPLOY_BUILD
 #include "include/headers-test.h"
@@ -2454,7 +2455,7 @@ int main(int argc, char** argv) {
     run();
 
     return 0;
-    }
+}
 
 #ifdef _MSC_BUILD
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
