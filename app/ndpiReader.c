@@ -176,7 +176,7 @@ u_int32_t current_ndpi_memory = 0, max_ndpi_memory = 0;
 struct ndpi_bin doh_ndpi_bins[NUM_DOH_BINS];
 float doh_max_distance = 35.5;
 
-void test_lib(); /* Forward */
+void run_test(); /* Forward */
 
 /* ********************************** */
 
@@ -2011,11 +2011,11 @@ pcap_loop:
 }
 
 /* ***************************************************** */
-
+#ifndef DEPLOY_BUILD
 /**
- * @brief Begin, process, end detection process
+ * @brief Begin, process, end test detection process
  */
-void test_lib() {
+void run_test() {
     u_int64_t processing_time_usec, setup_time_usec;
 #ifdef WIN64
     long long int thread_id;
@@ -2059,11 +2059,114 @@ void test_lib() {
     int status;
     void* thd_res;
 
-    // printf("\n[DEV] Program execution starting with %d threads...\n", num_threads);
-    // pthread_t display_thread;
-    // pthread_t lzmq_thread;
-    // pthread_create(&display_thread, NULL, ldis_print, NULL);
-    // pthread_create(&lzmq_thread, NULL, lzmq_do_nothing, NULL);
+    /* Running processing threads */
+    for (thread_id = 0; thread_id < num_threads; thread_id++) {
+        status = pthread_create(&ndpi_thread_info[thread_id].pthread, NULL, processing_thread, (void*)thread_id);
+        /* check pthreade_create return value */
+        if (status != 0) {
+#ifdef WIN64
+            fprintf(stderr, "error on create %lld thread\n", thread_id);
+#else
+            fprintf(stderr, "error on create %ld thread\n", thread_id);
+#endif
+            exit(-1);
+        }
+    }
+    /* Waiting for completion */
+    for (thread_id = 0; thread_id < num_threads; thread_id++) {
+        status = pthread_join(ndpi_thread_info[thread_id].pthread, &thd_res);
+        /* check pthreade_join return value */
+        if (status != 0) {
+#ifdef WIN64
+            fprintf(stderr, "error on join %lld thread\n", thread_id);
+#else
+            fprintf(stderr, "error on join %ld thread\n", thread_id);
+#endif
+            exit(-1);
+        }
+        if (thd_res != NULL) {
+#ifdef WIN64
+            fprintf(stderr, "error on returned value of %lld joined thread\n", thread_id);
+#else
+            fprintf(stderr, "error on returned value of %ld joined thread\n", thread_id);
+#endif
+            exit(-1);
+        }
+    }
+
+#ifdef USE_DPDK
+    dpdk_port_deinit(dpdk_port_id);
+#endif
+
+    gettimeofday(&end, NULL);
+    processing_time_usec = (u_int64_t)end.tv_sec * 1000000 + end.tv_usec - ((u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec);
+    setup_time_usec = (u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec - ((u_int64_t)startup_time.tv_sec * 1000000 + startup_time.tv_usec);
+
+    /* Printing cumulative results */
+    printResults(processing_time_usec, setup_time_usec);
+
+    for (thread_id = 0; thread_id < num_threads; thread_id++) {
+        if (ndpi_thread_info[thread_id].workflow->pcap_handle != NULL)
+            pcap_close(ndpi_thread_info[thread_id].workflow->pcap_handle);
+
+        terminateDetection(thread_id);
+    }
+
+    ndpi_global_deinit(g_ctx);
+}
+#else
+/**
+ * @brief Begin, process, end detection process
+ */
+void run_detection() {
+    u_int64_t processing_time_usec, setup_time_usec;
+#ifdef WIN64
+    long long int thread_id;
+#else
+    long thread_id;
+#endif
+    struct ndpi_global_context* g_ctx;
+
+    set_ndpi_malloc(ndpi_malloc_wrapper), set_ndpi_free(free_wrapper);
+    set_ndpi_flow_malloc(NULL), set_ndpi_flow_free(NULL);
+
+#ifndef USE_GLOBAL_CONTEXT
+  /* ndpiReader works even if libnDPI has been compiled without global context support,
+     but you can't configure any cache with global scope */
+    g_ctx = NULL;
+#else
+    g_ctx = ndpi_global_init();
+    if (!g_ctx) {
+        fprintf(stderr, "Error ndpi_global_init\n");
+        exit(-1);
+    }
+#endif
+
+#ifdef DEBUG_TRACE
+    if (trace) fprintf(trace, "Num threads: %d\n", num_threads);
+#endif
+
+    for (thread_id = 0; thread_id < num_threads; thread_id++) {
+        pcap_t* cap;
+
+#ifdef DEBUG_TRACE
+        if (trace) fprintf(trace, "Opening %s\n", (const u_char*)_pcap_file[thread_id]);
+#endif
+
+        cap = openPcapFileOrDevice(thread_id, (const u_char*)_pcap_file[thread_id]);
+        setupDetection(thread_id, cap, g_ctx);
+    }
+
+    gettimeofday(&begin, NULL);
+
+    int status;
+    void* thd_res;
+
+    printf("\n[DEV] Program execution starting with %d threads...\n", num_threads);
+    pthread_t display_thread;
+    pthread_t lzmq_thread;
+    pthread_create(&display_thread, NULL, ldis_print, NULL);
+    pthread_create(&lzmq_thread, NULL, lzmq_do_nothing, NULL);
 
     /* Running processing threads */
     for (thread_id = 0; thread_id < num_threads; thread_id++) {
@@ -2099,12 +2202,12 @@ void test_lib() {
             exit(-1);
         }
     }
-    // lzmq_do_loop = 0;
-    // ldis_do_loop = 0;
+    lzmq_do_loop = 0;
+    ldis_do_loop = 0;
 
-    // pthread_join(display_thread, NULL);
-    // pthread_join(lzmq_thread, NULL);
-    // printf("\n[DEV] Execution completed...%d\n", num_threads);
+    pthread_join(display_thread, NULL);
+    pthread_join(lzmq_thread, NULL);
+    printf("\n[DEV] Execution completed...%d\n", num_threads);
 
 #ifdef USE_DPDK
     dpdk_port_deinit(dpdk_port_id);
@@ -2116,7 +2219,7 @@ void test_lib() {
 
     /* Printing cumulative results */
     printResults(processing_time_usec, setup_time_usec);
-    // printf("\n[DEV] Printing completed...\n\n");
+    printf("\n[DEV] Printing completed...\n\n");
 
     for (thread_id = 0; thread_id < num_threads; thread_id++) {
         if (ndpi_thread_info[thread_id].workflow->pcap_handle != NULL)
@@ -2127,6 +2230,7 @@ void test_lib() {
 
     ndpi_global_deinit(g_ctx);
 }
+#endif
 
 /* *********************************************** */
 
@@ -2195,12 +2299,51 @@ void bpf_filter_port_array_add(int filter_array[], int size, int port) {
 
 /* *********************************************** */
 
+void run() {
+    if (!quiet_mode) {
+        printf("Using nDPI (%s) [%d thread(s)]\n", ndpi_revision(), num_threads);
+
+        const char* gcrypt_ver = ndpi_get_gcrypt_version();
+        if (gcrypt_ver)
+            printf("Using libgcrypt version %s\n", gcrypt_ver);
+    }
+
+    signal(SIGINT, sigproc);
+
+    for (int i = 0; i < num_loops; i++) {
+#ifndef DEPLOY_BUILD
+        run_test();
+#else
+        run_detection();
+#endif
+    }
+
+    if (results_path)  ndpi_free(results_path);
+    if (results_file)  fclose(results_file);
+    if (extcap_dumper) pcap_dump_close(extcap_dumper);
+    if (extcap_fifo_h) pcap_close(extcap_fifo_h);
+    if (enable_malloc_bins) ndpi_free_bin(&malloc_bins);
+    if (csv_fp)         fclose(csv_fp);
+    if (fingerprint_fp) fclose(fingerprint_fp);
+
+
+    ndpi_free(_disabled_protocols);
+
+    for (int i = 0; i < num_cfgs; i++) {
+        ndpi_free(cfgs[i].proto);
+        ndpi_free(cfgs[i].param);
+        ndpi_free(cfgs[i].value);
+    }
+
+#ifdef DEBUG_TRACE
+    if (trace) fclose(trace);
+#endif
+}
+
 /**
    @brief MAIN FUNCTION
 **/
 int main(int argc, char** argv) {
-    int i;
-
 #ifdef DEBUG_TRACE
     trace = fopen("/tmp/ndpiReader.log", "a");
 
@@ -2212,7 +2355,7 @@ int main(int argc, char** argv) {
 
         for (i = 0; i < argc; i++)
             fprintf(trace, " #### [%d] [%s]\n", i, argv[i]);
-    }
+}
 #endif
 
     if (ndpi_get_api_version() != NDPI_API_VERSION) {
@@ -2308,43 +2451,7 @@ int main(int argc, char** argv) {
             num_bin_clusters = 1;
     }
 
-    if (!quiet_mode) {
-        printf("Using nDPI (%s) [%d thread(s)]\n", ndpi_revision(), num_threads);
-
-        const char* gcrypt_ver = ndpi_get_gcrypt_version();
-        if (gcrypt_ver)
-            printf("Using libgcrypt version %s\n", gcrypt_ver);
-    }
-
-    signal(SIGINT, sigproc);
-
-    for (i = 0; i < num_loops; i++) {
-        test_lib();
-    }
-
-    if (results_path)  ndpi_free(results_path);
-    if (results_file)  fclose(results_file);
-    if (extcap_dumper) pcap_dump_close(extcap_dumper);
-    if (extcap_fifo_h) pcap_close(extcap_fifo_h);
-    if (enable_malloc_bins) ndpi_free_bin(&malloc_bins);
-
-    // lzmq_send_to_server("*", 5556, csv_fp);
-
-    if (csv_fp)         fclose(csv_fp);
-    if (fingerprint_fp) fclose(fingerprint_fp);
-
-    ndpi_free(_disabled_protocols);
-
-    for (i = 0; i < num_cfgs; i++) {
-        ndpi_free(cfgs[i].proto);
-        ndpi_free(cfgs[i].param);
-        ndpi_free(cfgs[i].value);
-    }
-
-#ifdef DEBUG_TRACE
-    if (trace) fclose(trace);
-#endif
-
+    run();
 
     return 0;
 }
