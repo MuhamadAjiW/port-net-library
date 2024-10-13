@@ -50,7 +50,7 @@
 #define BURST_SIZE        32
 #define PREFETCH_OFFSET    3
 
-extern int dpdk_port_init(int port, struct rte_mempool *mbuf_pool);
+extern int dpdk_port_init(int port, struct rte_mempool* mbuf_pool);
 extern int dpdk_port_deinit(int port);
 #endif
 
@@ -98,71 +98,71 @@ extern "C" {
 #endif
 
 // inner hash table (ja3 -> security state)
-typedef struct ndpi_ja3_info {
-  char * ja3;
-  ndpi_cipher_weakness unsafe_cipher;
-  UT_hash_handle hh;
-} ndpi_ja3_info;
+  typedef struct ndpi_ja3_info {
+    char* ja3;
+    ndpi_cipher_weakness unsafe_cipher;
+    UT_hash_handle hh;
+  } ndpi_ja3_info;
 
-// external hash table (host ip -> <ip string, hash table ja3c, hash table ja3s>)
-// used to aggregate ja3 fingerprints by hosts
-typedef struct ndpi_host_ja3_fingerprints {
-  u_int32_t ip;
-  char *ip_string;
-  char *dns_name;
-  ndpi_ja3_info *host_client_info_hasht;
-  ndpi_ja3_info *host_server_info_hasht;
+  // external hash table (host ip -> <ip string, hash table ja3c, hash table ja3s>)
+  // used to aggregate ja3 fingerprints by hosts
+  typedef struct ndpi_host_ja3_fingerprints {
+    u_int32_t ip;
+    char* ip_string;
+    char* dns_name;
+    ndpi_ja3_info* host_client_info_hasht;
+    ndpi_ja3_info* host_server_info_hasht;
 
-  UT_hash_handle hh;
-} ndpi_host_ja3_fingerprints;
+    UT_hash_handle hh;
+  } ndpi_host_ja3_fingerprints;
 
 
-//inner hash table
-typedef struct ndpi_ip_dns{
-  u_int32_t ip;
-  char *ip_string;
-  char *dns_name; //server name if any;
-  UT_hash_handle hh;
-} ndpi_ip_dns;
+  //inner hash table
+  typedef struct ndpi_ip_dns {
+    u_int32_t ip;
+    char* ip_string;
+    char* dns_name; //server name if any;
+    UT_hash_handle hh;
+  } ndpi_ip_dns;
 
-//hash table ja3 -> <host, ip, security>, used to aggregate host by ja3 fingerprints
-typedef struct ndpi_ja3_fingerprints_host{
-  char *ja3; //key
-  ndpi_cipher_weakness unsafe_cipher;
-  ndpi_ip_dns *ipToDNS_ht;
-  UT_hash_handle hh;
-} ndpi_ja3_fingerprints_host;
+  //hash table ja3 -> <host, ip, security>, used to aggregate host by ja3 fingerprints
+  typedef struct ndpi_ja3_fingerprints_host {
+    char* ja3; //key
+    ndpi_cipher_weakness unsafe_cipher;
+    ndpi_ip_dns* ipToDNS_ht;
+    UT_hash_handle hh;
+  } ndpi_ja3_fingerprints_host;
 
-struct flow_metrics {
-  float entropy, average, stddev;
-};
+  struct flow_metrics {
+    float entropy, average, stddev;
+  };
 
-struct ndpi_entropy {
-  // Entropy fields
-  u_int16_t src2dst_pkt_len[MAX_NUM_PKTS];                     /*!< array of packet appdata lengths */
-  pkt_timeval src2dst_pkt_time[MAX_NUM_PKTS];               /*!< array of arrival times          */
-  u_int16_t dst2src_pkt_len[MAX_NUM_PKTS];                     /*!< array of packet appdata lengths */
-  pkt_timeval dst2src_pkt_time[MAX_NUM_PKTS];               /*!< array of arrival times          */
-  pkt_timeval src2dst_start;                                /*!< first packet arrival time       */
-  pkt_timeval dst2src_start;                                /*!< first packet arrival time       */
-  u_int32_t src2dst_opackets;                                  /*!< non-zero packet counts          */
-  u_int32_t dst2src_opackets;                                  /*!< non-zero packet counts          */
-  u_int16_t src2dst_pkt_count;                                 /*!< packet counts                   */
-  u_int16_t dst2src_pkt_count;                                 /*!< packet counts                   */
-  u_int32_t src2dst_l4_bytes;                                  /*!< packet counts                   */
-  u_int32_t dst2src_l4_bytes;                                  /*!< packet counts                   */
-  u_int32_t src2dst_byte_count[MAX_BYTE_COUNT_ARRAY_LENGTH];   /*!< number of occurences of each byte   */
-  u_int32_t dst2src_byte_count[MAX_BYTE_COUNT_ARRAY_LENGTH];   /*!< number of occurences of each byte   */
-  u_int32_t src2dst_num_bytes;
-  u_int32_t dst2src_num_bytes;
-  double src2dst_bd_mean;
-  double src2dst_bd_variance;
-  double dst2src_bd_mean;
-  double dst2src_bd_variance;
-  float score;
-};
+  struct ndpi_entropy {
+    // Entropy fields
+    u_int16_t src2dst_pkt_len[MAX_NUM_PKTS];                     /*!< array of packet appdata lengths */
+    pkt_timeval src2dst_pkt_time[MAX_NUM_PKTS];               /*!< array of arrival times          */
+    u_int16_t dst2src_pkt_len[MAX_NUM_PKTS];                     /*!< array of packet appdata lengths */
+    pkt_timeval dst2src_pkt_time[MAX_NUM_PKTS];               /*!< array of arrival times          */
+    pkt_timeval src2dst_start;                                /*!< first packet arrival time       */
+    pkt_timeval dst2src_start;                                /*!< first packet arrival time       */
+    u_int32_t src2dst_opackets;                                  /*!< non-zero packet counts          */
+    u_int32_t dst2src_opackets;                                  /*!< non-zero packet counts          */
+    u_int16_t src2dst_pkt_count;                                 /*!< packet counts                   */
+    u_int16_t dst2src_pkt_count;                                 /*!< packet counts                   */
+    u_int32_t src2dst_l4_bytes;                                  /*!< packet counts                   */
+    u_int32_t dst2src_l4_bytes;                                  /*!< packet counts                   */
+    u_int32_t src2dst_byte_count[MAX_BYTE_COUNT_ARRAY_LENGTH];   /*!< number of occurences of each byte   */
+    u_int32_t dst2src_byte_count[MAX_BYTE_COUNT_ARRAY_LENGTH];   /*!< number of occurences of each byte   */
+    u_int32_t src2dst_num_bytes;
+    u_int32_t dst2src_num_bytes;
+    double src2dst_bd_mean;
+    double src2dst_bd_variance;
+    double dst2src_bd_mean;
+    double dst2src_bd_variance;
+    float score;
+  };
 
-enum info_type {
+  enum info_type {
     INFO_INVALID = 0,
     INFO_GENERIC,
     INFO_KERBEROS,
@@ -170,275 +170,275 @@ enum info_type {
     INFO_TIVOCONNECT,
     INFO_FTP_IMAP_POP_SMTP,
     INFO_NATPMP,
-};
-
-// flow tracking
-typedef struct ndpi_flow_info {
-  u_int32_t flow_id;
-  u_int32_t hashval;
-  u_int32_t src_ip; /* network order */
-  u_int32_t dst_ip; /* network order */
-  struct ndpi_in6_addr src_ip6; /* network order */
-  struct ndpi_in6_addr dst_ip6; /* network order */
-  u_int16_t src_port; /* network order */
-  u_int16_t dst_port; /* network order */
-  u_int8_t detection_completed, protocol, bidirectional, check_extra_packets, current_pkt_from_client_to_server;
-  u_int16_t vlan_id;
-  ndpi_packet_tunnel tunnel_type;
-  struct ndpi_flow_struct *ndpi_flow;
-  char src_name[INET6_ADDRSTRLEN], dst_name[INET6_ADDRSTRLEN];
-  u_int8_t ip_version;
-  u_int32_t cwr_count, src2dst_cwr_count, dst2src_cwr_count;
-  u_int32_t ece_count, src2dst_ece_count, dst2src_ece_count;
-  u_int32_t urg_count, src2dst_urg_count, dst2src_urg_count;
-  u_int32_t ack_count, src2dst_ack_count, dst2src_ack_count;
-  u_int32_t psh_count, src2dst_psh_count, dst2src_psh_count;
-  u_int32_t syn_count, src2dst_syn_count, dst2src_syn_count;
-  u_int32_t fin_count, src2dst_fin_count, dst2src_fin_count;
-  u_int32_t rst_count, src2dst_rst_count, dst2src_rst_count;
-  u_int32_t c_to_s_init_win, s_to_c_init_win;
-  u_int64_t first_seen_ms, last_seen_ms;
-  u_int64_t src2dst_bytes, dst2src_bytes;
-  u_int64_t src2dst_goodput_bytes, dst2src_goodput_bytes;
-  u_int32_t src2dst_packets, dst2src_packets;
-  u_int32_t has_human_readeable_strings;
-  char human_readeable_string_buffer[32];
-  char *risk_str;
-
-  // result only, not used for flow identification
-  ndpi_protocol detected_protocol;
-  ndpi_confidence_t confidence;
-  struct ndpi_fpc_info fpc;
-  u_int16_t num_dissector_calls;
-  u_int16_t dpi_packets;
-
-  // Flow data analysis
-  pkt_timeval src2dst_last_pkt_time, dst2src_last_pkt_time, flow_last_pkt_time;
-  struct ndpi_analyze_struct *iat_c_to_s, *iat_s_to_c, *iat_flow,
-    *pktlen_c_to_s, *pktlen_s_to_c;
-
-  enum info_type info_type;
-
-  union {
-    char info[256];
-    
-    struct {
-      unsigned char auth_failed;
-      char username[127];
-      char password[128];
-    } ftp_imap_pop_smtp;
-    
-    struct {
-      char domain[85];
-      char hostname[85];
-      char username[86];
-    } kerberos;
-    
-    struct {
-      char ip[16];
-      char port[6];
-      char hostname[48];
-      char fqdn[48];
-    } softether;
-    
-    struct {
-      char identity_uuid[36];
-      char machine[48];
-      char platform[32];
-      char services[48];
-    } tivoconnect;
-    
-    struct  {
-      uint16_t result_code;
-      uint16_t internal_port;
-      uint16_t external_port;
-      char ip[16];
-    } natpmp;
   };
 
-  ndpi_serializer ndpi_flow_serializer;
+  // flow tracking
+  typedef struct ndpi_flow_info {
+    u_int32_t flow_id;
+    u_int32_t hashval;
+    u_int32_t src_ip; /* network order */
+    u_int32_t dst_ip; /* network order */
+    struct ndpi_in6_addr src_ip6; /* network order */
+    struct ndpi_in6_addr dst_ip6; /* network order */
+    u_int16_t src_port; /* network order */
+    u_int16_t dst_port; /* network order */
+    u_int8_t detection_completed, protocol, bidirectional, check_extra_packets, current_pkt_from_client_to_server;
+    u_int16_t vlan_id;
+    ndpi_packet_tunnel tunnel_type;
+    struct ndpi_flow_struct* ndpi_flow;
+    char src_name[INET6_ADDRSTRLEN], dst_name[INET6_ADDRSTRLEN];
+    u_int8_t ip_version;
+    u_int32_t cwr_count, src2dst_cwr_count, dst2src_cwr_count;
+    u_int32_t ece_count, src2dst_ece_count, dst2src_ece_count;
+    u_int32_t urg_count, src2dst_urg_count, dst2src_urg_count;
+    u_int32_t ack_count, src2dst_ack_count, dst2src_ack_count;
+    u_int32_t psh_count, src2dst_psh_count, dst2src_psh_count;
+    u_int32_t syn_count, src2dst_syn_count, dst2src_syn_count;
+    u_int32_t fin_count, src2dst_fin_count, dst2src_fin_count;
+    u_int32_t rst_count, src2dst_rst_count, dst2src_rst_count;
+    u_int32_t c_to_s_init_win, s_to_c_init_win;
+    u_int64_t first_seen_ms, last_seen_ms;
+    u_int64_t src2dst_bytes, dst2src_bytes;
+    u_int64_t src2dst_goodput_bytes, dst2src_goodput_bytes;
+    u_int32_t src2dst_packets, dst2src_packets;
+    u_int32_t has_human_readeable_strings;
+    char human_readeable_string_buffer[32];
+    char* risk_str;
 
-  char host_server_name[80]; /* Hostname/SNI */
-  char *server_hostname;
-  char *bittorent_hash;
-  char *dhcp_fingerprint;
-  char *dhcp_class_ident;
-  ndpi_risk risk;
+    // result only, not used for flow identification
+    ndpi_protocol detected_protocol;
+    ndpi_confidence_t confidence;
+    struct ndpi_fpc_info fpc;
+    u_int16_t num_dissector_calls;
+    u_int16_t dpi_packets;
 
-  struct {
-    char currency[16];
-  } mining;
-  
-  struct {
-    u_int16_t ssl_version;
-    char server_info[64],
-      client_hassh[33], server_hassh[33], *server_names,
-      *advertised_alpns, *negotiated_alpn, *tls_supported_versions,
-      *tls_issuerDN, *tls_subjectDN,
-      ja3_client[33], ja3_server[33], ja4_client[37], *ja4_client_raw,
-      sha1_cert_fingerprint[20];
-    u_int8_t sha1_cert_fingerprint_set;
-    struct tls_heuristics browser_heuristics;
-    
+    // Flow data analysis
+    pkt_timeval src2dst_last_pkt_time, dst2src_last_pkt_time, flow_last_pkt_time;
+    struct ndpi_analyze_struct* iat_c_to_s, * iat_s_to_c, * iat_flow,
+      * pktlen_c_to_s, * pktlen_s_to_c;
+
+    enum info_type info_type;
+
+    union {
+      char info[256];
+
+      struct {
+        unsigned char auth_failed;
+        char username[127];
+        char password[128];
+      } ftp_imap_pop_smtp;
+
+      struct {
+        char domain[85];
+        char hostname[85];
+        char username[86];
+      } kerberos;
+
+      struct {
+        char ip[16];
+        char port[6];
+        char hostname[48];
+        char fqdn[48];
+      } softether;
+
+      struct {
+        char identity_uuid[36];
+        char machine[48];
+        char platform[32];
+        char services[48];
+      } tivoconnect;
+
+      struct {
+        uint16_t result_code;
+        uint16_t internal_port;
+        uint16_t external_port;
+        char ip[16];
+      } natpmp;
+    };
+
+    ndpi_serializer ndpi_flow_serializer;
+
+    char host_server_name[80]; /* Hostname/SNI */
+    char* server_hostname;
+    char* bittorent_hash;
+    char* dhcp_fingerprint;
+    char* dhcp_class_ident;
+    ndpi_risk risk;
+
     struct {
-      u_int16_t cipher_suite;
-      char *esni;
-    } encrypted_sni;    
+      char currency[16];
+    } mining;
 
     struct {
-      u_int16_t version;
-    } encrypted_ch;
+      u_int16_t ssl_version;
+      char server_info[64],
+        client_hassh[33], server_hassh[33], * server_names,
+        * advertised_alpns, * negotiated_alpn, * tls_supported_versions,
+        * tls_issuerDN, * tls_subjectDN,
+        ja3_client[33], ja3_server[33], ja4_client[37], * ja4_client_raw,
+        sha1_cert_fingerprint[20];
+      u_int8_t sha1_cert_fingerprint_set;
+      struct tls_heuristics browser_heuristics;
 
-    time_t notBefore, notAfter;
-    u_int16_t server_cipher;
-    ndpi_cipher_weakness client_unsafe_cipher, server_unsafe_cipher;
+      struct {
+        u_int16_t cipher_suite;
+        char* esni;
+      } encrypted_sni;
 
-    u_int32_t quic_version;
-  } ssh_tls;
+      struct {
+        u_int16_t version;
+      } encrypted_ch;
 
-  struct {
-    char url[256], request_content_type[64], content_type[64],
-      user_agent[256], server[128], nat_ip[32], filename[256];
-    u_int response_status_code;
-  } http;
+      time_t notBefore, notAfter;
+      u_int16_t server_cipher;
+      ndpi_cipher_weakness client_unsafe_cipher, server_unsafe_cipher;
 
-  struct {
-    ndpi_address_port mapped_address, peer_address,
-      relayed_address, response_origin, other_address;
-  } stun;
-  
-  struct {
-    char *username, *password;
-  } telnet;
+      u_int32_t quic_version;
+    } ssh_tls;
 
-  struct {
-    char geolocation_iata_code[4];
-  } dns;
+    struct {
+      char url[256], request_content_type[64], content_type[64],
+        user_agent[256], server[128], nat_ip[32], filename[256];
+      u_int response_status_code;
+    } http;
 
-  ndpi_multimedia_flow_type multimedia_flow_type;
-  
-  void *src_id, *dst_id;
+    struct {
+      ndpi_address_port mapped_address, peer_address,
+        relayed_address, response_origin, other_address;
+    } stun;
 
-  struct ndpi_entropy *entropy;
-  struct ndpi_entropy *last_entropy;
+    struct {
+      char* username, * password;
+    } telnet;
 
-  /* Payload lenght bins */
+    struct {
+      char geolocation_iata_code[4];
+    } dns;
+
+    ndpi_multimedia_flow_type multimedia_flow_type;
+
+    void* src_id, * dst_id;
+
+    struct ndpi_entropy* entropy;
+    struct ndpi_entropy* last_entropy;
+
+    /* Payload lenght bins */
 #ifdef DIRECTION_BINS
-  struct ndpi_bin payload_len_bin_src2dst, payload_len_bin_dst2src;
+    struct ndpi_bin payload_len_bin_src2dst, payload_len_bin_dst2src;
 #else
-  struct ndpi_bin payload_len_bin;
+    struct ndpi_bin payload_len_bin;
 #endif
 
   /* Flow payload */
-  u_int16_t flow_payload_len;
-  char *flow_payload;  
-} ndpi_flow_info_t;
+    u_int16_t flow_payload_len;
+    char* flow_payload;
+  } ndpi_flow_info_t;
 
 
-// flow statistics info
-typedef struct ndpi_stats {
-  u_int32_t guessed_flow_protocols;
-  u_int64_t raw_packet_count;
-  u_int64_t ip_packet_count;
-  u_int64_t total_wire_bytes, total_ip_bytes, total_discarded_bytes;
-  u_int64_t protocol_counter[NDPI_MAX_SUPPORTED_PROTOCOLS + NDPI_MAX_NUM_CUSTOM_PROTOCOLS + 1];
-  u_int64_t protocol_counter_bytes[NDPI_MAX_SUPPORTED_PROTOCOLS + NDPI_MAX_NUM_CUSTOM_PROTOCOLS + 1];
-  u_int32_t protocol_flows[NDPI_MAX_SUPPORTED_PROTOCOLS + NDPI_MAX_NUM_CUSTOM_PROTOCOLS + 1];
-  u_int32_t ndpi_flow_count;
-  u_int32_t flow_count[3];
-  u_int64_t tcp_count, udp_count;
-  u_int64_t mpls_count, pppoe_count, vlan_count, fragmented_count;
-  u_int64_t packet_len[6];
-  u_int16_t max_packet_len;
-  u_int64_t dpi_packet_count[3];
-  u_int64_t flow_confidence[NDPI_CONFIDENCE_MAX];
-  u_int64_t num_dissector_calls;
+  // flow statistics info
+  typedef struct ndpi_stats {
+    u_int32_t guessed_flow_protocols;
+    u_int64_t raw_packet_count;
+    u_int64_t ip_packet_count;
+    u_int64_t total_wire_bytes, total_ip_bytes, total_discarded_bytes;
+    u_int64_t protocol_counter[NDPI_MAX_SUPPORTED_PROTOCOLS + NDPI_MAX_NUM_CUSTOM_PROTOCOLS + 1];
+    u_int64_t protocol_counter_bytes[NDPI_MAX_SUPPORTED_PROTOCOLS + NDPI_MAX_NUM_CUSTOM_PROTOCOLS + 1];
+    u_int32_t protocol_flows[NDPI_MAX_SUPPORTED_PROTOCOLS + NDPI_MAX_NUM_CUSTOM_PROTOCOLS + 1];
+    u_int32_t ndpi_flow_count;
+    u_int32_t flow_count[3];
+    u_int64_t tcp_count, udp_count;
+    u_int64_t mpls_count, pppoe_count, vlan_count, fragmented_count;
+    u_int64_t packet_len[6];
+    u_int16_t max_packet_len;
+    u_int64_t dpi_packet_count[3];
+    u_int64_t flow_confidence[NDPI_CONFIDENCE_MAX];
+    u_int64_t num_dissector_calls;
 
-  struct ndpi_lru_cache_stats lru_stats[NDPI_LRUCACHE_MAX];
-  struct ndpi_automa_stats automa_stats[NDPI_AUTOMA_MAX];
-  struct ndpi_patricia_tree_stats patricia_stats[NDPI_PTREE_MAX];
-} ndpi_stats_t;
-
-
-// flow preferences
-typedef struct ndpi_workflow_prefs {
-  u_int8_t decode_tunnels;
-  u_int8_t quiet_mode;
-  u_int8_t ignore_vlanid;
-  u_int32_t num_roots;
-  u_int32_t max_ndpi_flows;
-} ndpi_workflow_prefs_t;
-
-struct ndpi_workflow;
-
-/** workflow, flow, user data */
-typedef void (*ndpi_workflow_callback_ptr) (struct ndpi_workflow *, struct ndpi_flow_info *, void *);
+    struct ndpi_lru_cache_stats lru_stats[NDPI_LRUCACHE_MAX];
+    struct ndpi_automa_stats automa_stats[NDPI_AUTOMA_MAX];
+    struct ndpi_patricia_tree_stats patricia_stats[NDPI_PTREE_MAX];
+  } ndpi_stats_t;
 
 
-// workflow main structure
-typedef struct ndpi_workflow {
-  u_int64_t last_time;
+  // flow preferences
+  typedef struct ndpi_workflow_prefs {
+    u_int8_t decode_tunnels;
+    u_int8_t quiet_mode;
+    u_int8_t ignore_vlanid;
+    u_int32_t num_roots;
+    u_int32_t max_ndpi_flows;
+  } ndpi_workflow_prefs_t;
 
-  struct ndpi_workflow_prefs prefs;
-  struct ndpi_stats stats;
+  struct ndpi_workflow;
 
-  ndpi_workflow_callback_ptr flow_callback;
-  void * flow_callback_userdata;
-
-  /* outside referencies */
-  pcap_t *pcap_handle;
-
-  /* allocated by prefs */
-  void **ndpi_flows_root;
-  struct ndpi_detection_module_struct *ndpi_struct;
-  struct ndpi_global_context *g_ctx;
-  u_int32_t num_allocated_flows;
-
-  /* CSV,TLV,JSON serialization interface */
-  ndpi_serialization_format ndpi_serialization_format;
-} ndpi_workflow_t;
+  /** workflow, flow, user data */
+  typedef void (*ndpi_workflow_callback_ptr) (struct ndpi_workflow*, struct ndpi_flow_info*, void*);
 
 
-/* TODO: remove wrappers parameters and use ndpi global, when their initialization will be fixed... */
-struct ndpi_workflow * ndpi_workflow_init(const struct ndpi_workflow_prefs * prefs, pcap_t * pcap_handle, int do_init_flows_root, ndpi_serialization_format serialization_format, struct ndpi_global_context *g_ctx);
+  // workflow main structure
+  typedef struct ndpi_workflow {
+    u_int64_t last_time;
+
+    struct ndpi_workflow_prefs prefs;
+    struct ndpi_stats stats;
+
+    ndpi_workflow_callback_ptr flow_callback;
+    void* flow_callback_userdata;
+
+    /* outside referencies */
+    pcap_t* pcap_handle;
+
+    /* allocated by prefs */
+    void** ndpi_flows_root;
+    struct ndpi_detection_module_struct* ndpi_struct;
+    struct ndpi_global_context* g_ctx;
+    u_int32_t num_allocated_flows;
+
+    /* CSV,TLV,JSON serialization interface */
+    ndpi_serialization_format ndpi_serialization_format;
+  } ndpi_workflow_t;
 
 
-/* workflow main free function */
-void ndpi_workflow_free(struct ndpi_workflow * workflow);
+  /* TODO: remove wrappers parameters and use ndpi global, when their initialization will be fixed... */
+  struct ndpi_workflow* ndpi_workflow_init(const struct ndpi_workflow_prefs* prefs, pcap_t* pcap_handle, int do_init_flows_root, ndpi_serialization_format serialization_format, struct ndpi_global_context* g_ctx);
 
 
-/** Free flow_info ndpi support structures but not the flow_info itself
- *
- *  TODO remove! Half freeing things is bad!
- */
-void ndpi_free_flow_info_half(struct ndpi_flow_info *flow);
+  /* workflow main free function */
+  void ndpi_workflow_free(struct ndpi_workflow* workflow);
 
 
-/* Process a packet and update the workflow  */
-struct ndpi_proto ndpi_workflow_process_packet(struct ndpi_workflow * workflow,
-					       const struct pcap_pkthdr *header,
-					       const u_char *packet,
-					       ndpi_risk *flow_risk,
-					       struct ndpi_flow_info **flow);
+  /** Free flow_info ndpi support structures but not the flow_info itself
+   *
+   *  TODO remove! Half freeing things is bad!
+   */
+  void ndpi_free_flow_info_half(struct ndpi_flow_info* flow);
+
+
+  /* Process a packet and update the workflow  */
+  struct ndpi_proto ndpi_workflow_process_packet(struct ndpi_workflow* workflow,
+    const struct pcap_pkthdr* header,
+    const u_char* packet,
+    ndpi_risk* flow_risk,
+    struct ndpi_flow_info** flow);
 
 
 /* Flow callback for completed flows, before the flow memory will be freed. */
-static inline void ndpi_workflow_set_flow_callback(struct ndpi_workflow * workflow, ndpi_workflow_callback_ptr callback, void * userdata) {
-  workflow->flow_callback = callback;
-  workflow->flow_callback_userdata = userdata;
-}
+  static inline void ndpi_workflow_set_flow_callback(struct ndpi_workflow* workflow, ndpi_workflow_callback_ptr callback, void* userdata) {
+    workflow->flow_callback = callback;
+    workflow->flow_callback_userdata = userdata;
+  }
 
-int ndpi_is_datalink_supported(int datalink_type);
+  int ndpi_is_datalink_supported(int datalink_type);
 
-/* compare two nodes in workflow */
-int ndpi_workflow_node_cmp(const void *a, const void *b);
-void process_ndpi_collected_info(struct ndpi_workflow * workflow, struct ndpi_flow_info *flow);
-void ndpi_flow_info_free_data(struct ndpi_flow_info *flow);
-void ndpi_flow_info_freer(void *node);
-const char* print_cipher_id(u_int32_t cipher);
-int parse_proto_name_list(char *str, NDPI_PROTOCOL_BITMASK *bitmask, int inverted_logic);
+  /* compare two nodes in workflow */
+  int ndpi_workflow_node_cmp(const void* a, const void* b);
+  void process_ndpi_collected_info(struct ndpi_workflow* workflow, struct ndpi_flow_info* flow);
+  void ndpi_flow_info_free_data(struct ndpi_flow_info* flow);
+  void ndpi_flow_info_freer(void* node);
+  const char* print_cipher_id(u_int32_t cipher);
+  int parse_proto_name_list(char* str, NDPI_PROTOCOL_BITMASK* bitmask, int inverted_logic);
 
-extern int reader_log_level;
+  extern int reader_log_level;
 
 #if defined(NDPI_ENABLE_DEBUG_MESSAGES) && !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
 #define LOG(log_level, args...)			\
