@@ -54,13 +54,6 @@ struct port_stats {
     UT_hash_handle hh;   /* makes this structure hashable */
 };
 
-// struct to add more statitcs in function printFlowStats
-typedef struct hash_stats {
-    char* domain_name;
-    int occurency;       /* how many time domain name occury in the flow */
-    UT_hash_handle hh;   /* hashtable to collect the stats */
-}hash_stats;
-
 // Externs
 extern struct reader_thread ndpi_thread_info[MAX_NUM_READER_THREADS];
 extern struct single_flow_info* scannerHosts;

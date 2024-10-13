@@ -64,7 +64,7 @@
 #include <zmq.h>
 #include <ncurses.h>
 #include "include/reader_util.h"
-#include "include/lib-ndpi.h"
+#include "include/headers.h"
 
 // Externs
 extern u_int8_t enable_doh_dot_detection;

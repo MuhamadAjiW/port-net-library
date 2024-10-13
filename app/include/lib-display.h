@@ -4,7 +4,7 @@
 #include <zmq.h>
 #include <ncurses.h>
 #include "lib-base.h"
-#include "lib-ndpi.h"
+#include "lib-analytics.h"
 
 extern int ldis_do_loop;
 
