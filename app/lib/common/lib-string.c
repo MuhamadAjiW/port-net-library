@@ -1,10 +1,4 @@
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdarg.h>
 #include "../../include/lib-string.h"
-#include "../../include/lib-base.h"
 
 string_t str_new(char* initial) {
     string_t retval;

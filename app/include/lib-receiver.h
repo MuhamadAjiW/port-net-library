@@ -1,5 +1,5 @@
-#ifndef _LIB_READER_H
-#define _LIB_READER_H
+#ifndef _LIB_RECEIVER_H
+#define _LIB_RECEIVER_H
 
 #include <ndpi_typedefs.h>
 #include <ndpi_api.h>
@@ -13,6 +13,9 @@ struct receiver {
     u_int32_t num_pkts;
     UT_hash_handle hh;
 };
+
+// Externs
+extern struct receiver* receivers, * topReceivers;
 
 // Functions
 void receivers_delete(struct receiver* rcvrs);

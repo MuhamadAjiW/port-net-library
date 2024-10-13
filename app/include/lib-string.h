@@ -2,6 +2,10 @@
 #define _LIB_STRING_H
 
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdarg.h>
 #include "lib-base.h"
 
 #define NULL_STRING (string_t){ NULL, 0 }

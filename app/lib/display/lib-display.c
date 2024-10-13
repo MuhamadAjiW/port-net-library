@@ -1,8 +1,4 @@
-#include <zmq.h>
-#include <ncurses.h>
-#include "../../include/lib-base.h"
 #include "../../include/lib-display.h"
-#include "../../include/lib-reader.h"
 
 int ldis_do_loop = 1;
 
