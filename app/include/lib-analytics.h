@@ -9,10 +9,10 @@
 #include "lib-flow.h"
 #include "lib-cipher.h"
 #include "lib-format.h"
+#include "lib-ndpi.h"
 
 // Macros
 #define NUM_DOH_BINS 2
-
 
 // Externs
 extern struct ndpi_stats cumulative_stats;
