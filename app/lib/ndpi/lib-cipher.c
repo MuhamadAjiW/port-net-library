@@ -25,8 +25,6 @@ int hash_stats_sort_to_order(void* _a, void* _b) {
     return (a->occurency - b->occurency);
 }
 
-/* *********************************************** */
-
 /*function to use in HASH_SORT function in verbose == 4 to print in decreasing order*/
 int hash_stats_sort_to_print(void* _a, void* _b) {
     struct hash_stats* a = (struct hash_stats*)_a;

@@ -138,8 +138,6 @@ u_int8_t enable_realtime_output = 0, enable_protocol_guess = NDPI_GIVEUP_GUESS_B
 u_int8_t verbose = 0, enable_flow_stats = 0;
 bool do_load_lists = false;
 
-
-
 int reader_log_level = 0;
 char* _disabled_protocols = NULL;
 u_int8_t stats_flag = 0;
@@ -1281,13 +1279,13 @@ static void parseOptions(int argc, char** argv) {
 #endif
 #endif
 #endif
-}
+    }
 
-/* *********************************************** */
+    /* *********************************************** */
 
-/**
- * @brief Idle Scan Walker
- */
+    /**
+     * @brief Idle Scan Walker
+     */
 static void node_idle_scan_walker(const void* node, ndpi_VISIT which, int depth, void* user_data) {
     struct ndpi_flow_info* flow = *(struct ndpi_flow_info**)node;
     u_int16_t thread_id = *((u_int16_t*)user_data);
@@ -1550,7 +1548,7 @@ static void breakPcapLoop(u_int16_t thread_id) {
 #else
     if (ndpi_thread_info[thread_id].workflow->pcap_handle != NULL) {
         pcap_breakloop(ndpi_thread_info[thread_id].workflow->pcap_handle);
-    }
+}
 #endif
 }
 
@@ -2007,13 +2005,13 @@ pcap_loop:
     }
 
     return NULL;
-}
+    }
 
-/* ***************************************************** */
+    /* ***************************************************** */
 
-/**
- * @brief Begin, process, end detection process
- */
+    /**
+     * @brief Begin, process, end detection process
+     */
 void test_lib() {
     u_int64_t processing_time_usec, setup_time_usec;
 #ifdef WIN64

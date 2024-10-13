@@ -3,6 +3,7 @@
 #include "lib-cipher.h"
 #include "lib-display.h"
 #include "lib-flow.h"
+#include "lib-format.h"
 #include "lib-ndpi.h"
 #include "lib-reader.h"
 #include "lib-receiver.h"

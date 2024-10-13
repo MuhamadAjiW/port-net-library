@@ -1,8 +1,43 @@
 #include "../../include/lib-analytics.h"
 
-/**
- * @brief Get flow byte distribution mean and variance
- */
+/* *********************************************** */
+// Analytical functions
+
+double ndpi_flow_get_byte_count_entropy(const uint32_t byte_count[256], unsigned int num_bytes) {
+    int i;
+    double sum = 0.0;
+
+    for (i = 0; i < 256; i++) {
+        double tmp = (double)byte_count[i] / (double)num_bytes;
+
+        if (tmp > FLT_EPSILON) {
+            sum -= tmp * logf(tmp);
+        }
+    }
+    return(sum / log(2.0));
+}
+
+u_int check_bin_doh_similarity(struct ndpi_bin* bin, float* similarity) {
+    u_int i;
+    float lowest_similarity = 9999999999.0f;
+
+    for (i = 0; i < NUM_DOH_BINS; i++) {
+        *similarity = ndpi_bin_similarity(&doh_ndpi_bins[i], bin, 0, 0);
+
+        if (*similarity < 0) /* Error */
+            return(0);
+
+        if (*similarity <= doh_max_distance)
+            return(1);
+
+        if (*similarity < lowest_similarity) lowest_similarity = *similarity;
+    }
+
+    *similarity = lowest_similarity;
+
+    return(0);
+}
+
 void flowGetBDMeanandVariance(struct ndpi_flow_info* flow) {
     FILE* out = results_file ? results_file : stdout;
     const uint32_t* array = NULL;
@@ -84,10 +119,8 @@ void flowGetBDMeanandVariance(struct ndpi_flow_info* flow) {
 }
 
 /* *********************************************** */
+// Walkers
 
-/**
- * @brief Walkers
- */
 void node_proto_guess_walker(const void* node, ndpi_VISIT which, int depth, void* user_data) {
     struct ndpi_flow_info* flow = *(struct ndpi_flow_info**)node;
     u_int16_t thread_id = *((u_int16_t*)user_data), proto;
@@ -181,10 +214,8 @@ void node_print_unknown_proto_walker(const void* node,
 }
 
 /* *********************************************** */
+// Print result
 
-/**
- * @brief Print result
- */
 void printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
     u_int32_t i;
     u_int32_t avg_pkt_size = 0;
@@ -365,7 +396,7 @@ void printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
             printf("\tAnalysis end:          %s\n", when);
             printf("\tTraffic throughput:    %s pps / %s/sec\n", formatPackets(t, buf), formatTraffic(b, 1, buf1));
             printf("\tTraffic duration:      %.3f sec\n", traffic_duration / 1000000);
-            }
+        }
 
         if (cumulative_stats.guessed_flow_protocols)
             printf("\tGuessed flow protos:   %-13u\n", cumulative_stats.guessed_flow_protocols);
@@ -464,7 +495,7 @@ void printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
             if (enable_malloc_bins)
                 printf("\tData-path malloc histogram: %s\n", ndpi_print_bin(&malloc_bins, 0, buf, sizeof(buf)));
         }
-        }
+    }
 
     if (results_file) {
         if (cumulative_stats.guessed_flow_protocols)
@@ -663,7 +694,7 @@ free_stats:
         port_stats_delete(dstStats);
         dstStats = NULL;
     }
-    }
+}
 
 void printRiskStats() {
     if (!quiet_mode) {
@@ -1389,9 +1420,6 @@ char* print_cipher(ndpi_cipher_weakness c) {
     }
 }
 
-/**
- * @brief Print the flow
- */
 void printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) {
     FILE* out = results_file ? results_file : stdout;
     u_int8_t known_tls;

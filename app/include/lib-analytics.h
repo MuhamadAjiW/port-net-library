@@ -8,7 +8,11 @@
 #include "lib-reader.h"
 #include "lib-flow.h"
 #include "lib-cipher.h"
-#include "lib-ndpi.h"
+#include "lib-format.h"
+
+// Macros
+#define NUM_DOH_BINS 2
+
 
 // Externs
 extern struct ndpi_stats cumulative_stats;
@@ -33,8 +37,13 @@ extern u_int8_t undetected_flows_deleted;
 extern FILE* csv_fp; /**< for CSV export */
 extern FILE* serialization_fp; /**< for TLV,CSV,JSON export */
 extern ndpi_serialization_format serialization_format;
+extern void ndpi_report_payload_stats(FILE* out);
+extern struct ndpi_bin doh_ndpi_bins[NUM_DOH_BINS];
+extern float doh_max_distance;
 
 // Functions
+double ndpi_flow_get_byte_count_entropy(const uint32_t byte_count[256], unsigned int num_bytes);
+u_int check_bin_doh_similarity(struct ndpi_bin* bin, float* similarity);
 void flowGetBDMeanandVariance(struct ndpi_flow_info* flow);
 void node_proto_guess_walker(const void* node, ndpi_VISIT which, int depth, void* user_data);
 void node_flow_risk_walker(const void* node, ndpi_VISIT which, int depth, void* user_data);
