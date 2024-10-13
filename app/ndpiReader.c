@@ -2454,7 +2454,7 @@ int main(int argc, char** argv) {
     run();
 
     return 0;
-}
+    }
 
 #ifdef _MSC_BUILD
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)

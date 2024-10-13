@@ -1,7 +1,8 @@
-#include "../../include/lib-print.h"
 
-// Print result
-void printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
+#include "../../include/lib-print-ncurses.h"
+
+// Print result to an ncurses window
+void ncurses_printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
     u_int32_t i;
     u_int32_t avg_pkt_size = 0;
     int thread_id;
@@ -102,20 +103,20 @@ void printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
         goto free_stats;
 
     if (!quiet_mode) {
-        printf("\nnDPI Memory statistics:\n");
-        printf("\tnDPI Memory (once):      %-13s\n", formatBytes(ndpi_get_ndpi_detection_module_size(), buf, sizeof(buf)));
-        printf("\tFlow Memory (per flow):  %-13s\n", formatBytes(ndpi_detection_get_sizeof_ndpi_flow_struct(), buf, sizeof(buf)));
-        printf("\tActual Memory:           %-13s\n", formatBytes(current_ndpi_memory, buf, sizeof(buf)));
-        printf("\tPeak Memory:             %-13s\n", formatBytes(max_ndpi_memory, buf, sizeof(buf)));
-        printf("\tSetup Time:              %lu msec\n", (unsigned long)(setup_time_usec / 1000));
-        printf("\tPacket Processing Time:  %lu msec\n", (unsigned long)(processing_time_usec / 1000));
+        printw("\nnDPI Memory statistics:\n");
+        printw("\tnDPI Memory (once):      %-13s\n", formatBytes(ndpi_get_ndpi_detection_module_size(), buf, sizeof(buf)));
+        printw("\tFlow Memory (per flow):  %-13s\n", formatBytes(ndpi_detection_get_sizeof_ndpi_flow_struct(), buf, sizeof(buf)));
+        printw("\tActual Memory:           %-13s\n", formatBytes(current_ndpi_memory, buf, sizeof(buf)));
+        printw("\tPeak Memory:             %-13s\n", formatBytes(max_ndpi_memory, buf, sizeof(buf)));
+        printw("\tSetup Time:              %lu msec\n", (unsigned long)(setup_time_usec / 1000));
+        printw("\tPacket Processing Time:  %lu msec\n", (unsigned long)(processing_time_usec / 1000));
 
-        printf("\nTraffic statistics:\n");
-        printf("\tEthernet bytes:        %-13llu (includes ethernet CRC/IFC/trailer)\n",
+        printw("\nTraffic statistics:\n");
+        printw("\tEthernet bytes:        %-13llu (includes ethernet CRC/IFC/trailer)\n",
             (long long unsigned int)cumulative_stats.total_wire_bytes);
-        printf("\tDiscarded bytes:       %-13llu\n",
+        printw("\tDiscarded bytes:       %-13llu\n",
             (long long unsigned int)cumulative_stats.total_discarded_bytes);
-        printf("\tIP packets:            %-13llu of %llu packets total\n",
+        printw("\tIP packets:            %-13llu of %llu packets total\n",
             (long long unsigned int)cumulative_stats.ip_packet_count,
             (long long unsigned int)cumulative_stats.raw_packet_count);
      /* In order to prevent Floating point exception in case of no traffic*/
@@ -123,22 +124,22 @@ void printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
         {
             avg_pkt_size = (unsigned int)(cumulative_stats.total_ip_bytes / cumulative_stats.raw_packet_count);
         }
-        printf("\tIP bytes:              %-13llu (avg pkt size %u bytes)\n",
+        printw("\tIP bytes:              %-13llu (avg pkt size %u bytes)\n",
             (long long unsigned int)cumulative_stats.total_ip_bytes, avg_pkt_size);
-        printf("\tUnique flows:          %-13u\n", cumulative_stats.ndpi_flow_count);
-        printf("\tTCP Packets:           %-13lu\n", (unsigned long)cumulative_stats.tcp_count);
-        printf("\tUDP Packets:           %-13lu\n", (unsigned long)cumulative_stats.udp_count);
-        printf("\tVLAN Packets:          %-13lu\n", (unsigned long)cumulative_stats.vlan_count);
-        printf("\tMPLS Packets:          %-13lu\n", (unsigned long)cumulative_stats.mpls_count);
-        printf("\tPPPoE Packets:         %-13lu\n", (unsigned long)cumulative_stats.pppoe_count);
-        printf("\tFragmented Packets:    %-13lu\n", (unsigned long)cumulative_stats.fragmented_count);
-        printf("\tMax Packet size:       %-13u\n", cumulative_stats.max_packet_len);
-        printf("\tPacket Len < 64:       %-13lu\n", (unsigned long)cumulative_stats.packet_len[0]);
-        printf("\tPacket Len 64-128:     %-13lu\n", (unsigned long)cumulative_stats.packet_len[1]);
-        printf("\tPacket Len 128-256:    %-13lu\n", (unsigned long)cumulative_stats.packet_len[2]);
-        printf("\tPacket Len 256-1024:   %-13lu\n", (unsigned long)cumulative_stats.packet_len[3]);
-        printf("\tPacket Len 1024-1500:  %-13lu\n", (unsigned long)cumulative_stats.packet_len[4]);
-        printf("\tPacket Len > 1500:     %-13lu\n", (unsigned long)cumulative_stats.packet_len[5]);
+        printw("\tUnique flows:          %-13u\n", cumulative_stats.ndpi_flow_count);
+        printw("\tTCP Packets:           %-13lu\n", (unsigned long)cumulative_stats.tcp_count);
+        printw("\tUDP Packets:           %-13lu\n", (unsigned long)cumulative_stats.udp_count);
+        printw("\tVLAN Packets:          %-13lu\n", (unsigned long)cumulative_stats.vlan_count);
+        printw("\tMPLS Packets:          %-13lu\n", (unsigned long)cumulative_stats.mpls_count);
+        printw("\tPPPoE Packets:         %-13lu\n", (unsigned long)cumulative_stats.pppoe_count);
+        printw("\tFragmented Packets:    %-13lu\n", (unsigned long)cumulative_stats.fragmented_count);
+        printw("\tMax Packet size:       %-13u\n", cumulative_stats.max_packet_len);
+        printw("\tPacket Len < 64:       %-13lu\n", (unsigned long)cumulative_stats.packet_len[0]);
+        printw("\tPacket Len 64-128:     %-13lu\n", (unsigned long)cumulative_stats.packet_len[1]);
+        printw("\tPacket Len 128-256:    %-13lu\n", (unsigned long)cumulative_stats.packet_len[2]);
+        printw("\tPacket Len 256-1024:   %-13lu\n", (unsigned long)cumulative_stats.packet_len[3]);
+        printw("\tPacket Len 1024-1500:  %-13lu\n", (unsigned long)cumulative_stats.packet_len[4]);
+        printw("\tPacket Len > 1500:     %-13lu\n", (unsigned long)cumulative_stats.packet_len[5]);
 
         if (processing_time_usec > 0) {
             char buf[32], buf1[32], when[64];
@@ -150,7 +151,7 @@ void printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
             if (live_capture) traffic_duration = processing_time_usec;
             else traffic_duration = ((u_int64_t)pcap_end.tv_sec * 1000000 + pcap_end.tv_usec) - ((u_int64_t)pcap_start.tv_sec * 1000000 + pcap_start.tv_usec);
 
-            printf("\tnDPI throughput:       %s pps / %s/sec\n", formatPackets(t, buf), formatTraffic(b, 1, buf1));
+            printw("\tnDPI throughput:       %s pps / %s/sec\n", formatPackets(t, buf), formatTraffic(b, 1, buf1));
             if (traffic_duration != 0) {
                 t = (float)(cumulative_stats.ip_packet_count * 1000000) / (float)traffic_duration;
                 b = (float)(cumulative_stats.total_wire_bytes * 8 * 1000000) / (float)traffic_duration;
@@ -168,7 +169,7 @@ void printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
             localtime_r(&pcap_start.tv_sec, &result);
 #endif
             strftime(when, sizeof(when), "%d/%b/%Y %H:%M:%S", &result);
-            printf("\tAnalysis begin:        %s\n", when);
+            printw("\tAnalysis begin:        %s\n", when);
 #ifdef WIN32
       /* localtime() on Windows is thread-safe */
             tv_sec = pcap_end.tv_sec;
@@ -178,30 +179,30 @@ void printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
             localtime_r(&pcap_end.tv_sec, &result);
 #endif
             strftime(when, sizeof(when), "%d/%b/%Y %H:%M:%S", &result);
-            printf("\tAnalysis end:          %s\n", when);
-            printf("\tTraffic throughput:    %s pps / %s/sec\n", formatPackets(t, buf), formatTraffic(b, 1, buf1));
-            printf("\tTraffic duration:      %.3f sec\n", traffic_duration / 1000000);
+            printw("\tAnalysis end:          %s\n", when);
+            printw("\tTraffic throughput:    %s pps / %s/sec\n", formatPackets(t, buf), formatTraffic(b, 1, buf1));
+            printw("\tTraffic duration:      %.3f sec\n", traffic_duration / 1000000);
         }
 
         if (cumulative_stats.guessed_flow_protocols)
-            printf("\tGuessed flow protos:   %-13u\n", cumulative_stats.guessed_flow_protocols);
+            printw("\tGuessed flow protos:   %-13u\n", cumulative_stats.guessed_flow_protocols);
 
         if (cumulative_stats.flow_count[0])
-            printf("\tDPI Packets (TCP):     %-13llu (%.2f pkts/flow)\n",
+            printw("\tDPI Packets (TCP):     %-13llu (%.2f pkts/flow)\n",
                 (long long unsigned int)cumulative_stats.dpi_packet_count[0],
                 cumulative_stats.dpi_packet_count[0] / (float)cumulative_stats.flow_count[0]);
         if (cumulative_stats.flow_count[1])
-            printf("\tDPI Packets (UDP):     %-13llu (%.2f pkts/flow)\n",
+            printw("\tDPI Packets (UDP):     %-13llu (%.2f pkts/flow)\n",
                 (long long unsigned int)cumulative_stats.dpi_packet_count[1],
                 cumulative_stats.dpi_packet_count[1] / (float)cumulative_stats.flow_count[1]);
         if (cumulative_stats.flow_count[2])
-            printf("\tDPI Packets (other):   %-13llu (%.2f pkts/flow)\n",
+            printw("\tDPI Packets (other):   %-13llu (%.2f pkts/flow)\n",
                 (long long unsigned int)cumulative_stats.dpi_packet_count[2],
                 cumulative_stats.dpi_packet_count[2] / (float)cumulative_stats.flow_count[2]);
 
         for (i = 0; i < sizeof(cumulative_stats.flow_confidence) / sizeof(cumulative_stats.flow_confidence[0]); i++) {
             if (cumulative_stats.flow_confidence[i] != 0)
-                printf("\tConfidence: %-10s %-13llu (flows)\n", ndpi_confidence_get_name(i),
+                printw("\tConfidence: %-10s %-13llu (flows)\n", ndpi_confidence_get_name(i),
                     (long long unsigned int)cumulative_stats.flow_confidence[i]);
         }
 
@@ -209,76 +210,76 @@ void printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
             char buf[1024];
 
             if (cumulative_stats.ndpi_flow_count)
-                printf("\tNum dissector calls:   %-13llu (%.2f diss/flow)\n",
+                printw("\tNum dissector calls:   %-13llu (%.2f diss/flow)\n",
                     (long long unsigned int)cumulative_stats.num_dissector_calls,
                     cumulative_stats.num_dissector_calls / (float)cumulative_stats.ndpi_flow_count);
 
-            printf("\tLRU cache ookla:      %llu/%llu/%llu (insert/search/found)\n",
+            printw("\tLRU cache ookla:      %llu/%llu/%llu (insert/search/found)\n",
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_OOKLA].n_insert,
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_OOKLA].n_search,
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_OOKLA].n_found);
-            printf("\tLRU cache bittorrent: %llu/%llu/%llu (insert/search/found)\n",
+            printw("\tLRU cache bittorrent: %llu/%llu/%llu (insert/search/found)\n",
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_BITTORRENT].n_insert,
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_BITTORRENT].n_search,
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_BITTORRENT].n_found);
-            printf("\tLRU cache stun:       %llu/%llu/%llu (insert/search/found)\n",
+            printw("\tLRU cache stun:       %llu/%llu/%llu (insert/search/found)\n",
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_STUN].n_insert,
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_STUN].n_search,
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_STUN].n_found);
-            printf("\tLRU cache tls_cert:   %llu/%llu/%llu (insert/search/found)\n",
+            printw("\tLRU cache tls_cert:   %llu/%llu/%llu (insert/search/found)\n",
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_TLS_CERT].n_insert,
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_TLS_CERT].n_search,
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_TLS_CERT].n_found);
-            printf("\tLRU cache mining:     %llu/%llu/%llu (insert/search/found)\n",
+            printw("\tLRU cache mining:     %llu/%llu/%llu (insert/search/found)\n",
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_MINING].n_insert,
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_MINING].n_search,
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_MINING].n_found);
-            printf("\tLRU cache msteams:    %llu/%llu/%llu (insert/search/found)\n",
+            printw("\tLRU cache msteams:    %llu/%llu/%llu (insert/search/found)\n",
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_MSTEAMS].n_insert,
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_MSTEAMS].n_search,
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_MSTEAMS].n_found);
-            printf("\tLRU cache fpc_dns:    %llu/%llu/%llu (insert/search/found)\n",
+            printw("\tLRU cache fpc_dns:    %llu/%llu/%llu (insert/search/found)\n",
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_FPC_DNS].n_insert,
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_FPC_DNS].n_search,
                 (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_FPC_DNS].n_found);
 
-            printf("\tAutoma host:          %llu/%llu (search/found)\n",
+            printw("\tAutoma host:          %llu/%llu (search/found)\n",
                 (long long unsigned int)cumulative_stats.automa_stats[NDPI_AUTOMA_HOST].n_search,
                 (long long unsigned int)cumulative_stats.automa_stats[NDPI_AUTOMA_HOST].n_found);
-            printf("\tAutoma domain:        %llu/%llu (search/found)\n",
+            printw("\tAutoma domain:        %llu/%llu (search/found)\n",
                 (long long unsigned int)cumulative_stats.automa_stats[NDPI_AUTOMA_DOMAIN].n_search,
                 (long long unsigned int)cumulative_stats.automa_stats[NDPI_AUTOMA_DOMAIN].n_found);
-            printf("\tAutoma tls cert:      %llu/%llu (search/found)\n",
+            printw("\tAutoma tls cert:      %llu/%llu (search/found)\n",
                 (long long unsigned int)cumulative_stats.automa_stats[NDPI_AUTOMA_TLS_CERT].n_search,
                 (long long unsigned int)cumulative_stats.automa_stats[NDPI_AUTOMA_TLS_CERT].n_found);
-            printf("\tAutoma risk mask:     %llu/%llu (search/found)\n",
+            printw("\tAutoma risk mask:     %llu/%llu (search/found)\n",
                 (long long unsigned int)cumulative_stats.automa_stats[NDPI_AUTOMA_RISK_MASK].n_search,
                 (long long unsigned int)cumulative_stats.automa_stats[NDPI_AUTOMA_RISK_MASK].n_found);
-            printf("\tAutoma common alpns:  %llu/%llu (search/found)\n",
+            printw("\tAutoma common alpns:  %llu/%llu (search/found)\n",
                 (long long unsigned int)cumulative_stats.automa_stats[NDPI_AUTOMA_COMMON_ALPNS].n_search,
                 (long long unsigned int)cumulative_stats.automa_stats[NDPI_AUTOMA_COMMON_ALPNS].n_found);
 
-            printf("\tPatricia risk mask:   %llu/%llu (search/found)\n",
+            printw("\tPatricia risk mask:   %llu/%llu (search/found)\n",
                 (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_RISK_MASK].n_search,
                 (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_RISK_MASK].n_found);
-            printf("\tPatricia risk mask IPv6: %llu/%llu (search/found)\n",
+            printw("\tPatricia risk mask IPv6: %llu/%llu (search/found)\n",
                 (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_RISK_MASK6].n_search,
                 (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_RISK_MASK6].n_found);
-            printf("\tPatricia risk:        %llu/%llu (search/found)\n",
+            printw("\tPatricia risk:        %llu/%llu (search/found)\n",
                 (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_RISK].n_search,
                 (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_RISK].n_found);
-            printf("\tPatricia risk IPv6:   %llu/%llu (search/found)\n",
+            printw("\tPatricia risk IPv6:   %llu/%llu (search/found)\n",
                 (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_RISK6].n_search,
                 (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_RISK6].n_found);
-            printf("\tPatricia protocols:   %llu/%llu (search/found)\n",
+            printw("\tPatricia protocols:   %llu/%llu (search/found)\n",
                 (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_PROTOCOLS].n_search,
                 (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_PROTOCOLS].n_found);
-            printf("\tPatricia protocols IPv6: %llu/%llu (search/found)\n",
+            printw("\tPatricia protocols IPv6: %llu/%llu (search/found)\n",
                 (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_PROTOCOLS6].n_search,
                 (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_PROTOCOLS6].n_found);
 
             if (enable_malloc_bins)
-                printf("\tData-path malloc histogram: %s\n", ndpi_print_bin(&malloc_bins, 0, buf, sizeof(buf)));
+                printw("\tData-path malloc histogram: %s\n", ndpi_print_bin(&malloc_bins, 0, buf, sizeof(buf)));
         }
     }
 
@@ -385,7 +386,7 @@ void printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
         fprintf(results_file, "\n");
     }
 
-    if (!quiet_mode) printf("\n\nDetected protocols:\n");
+    if (!quiet_mode) printw("\n\nDetected protocols:\n");
     for (i = 0; i <= ndpi_get_num_supported_protocols(ndpi_thread_info[0].workflow->ndpi_struct); i++) {
         ndpi_protocol_breed_t breed = ndpi_get_proto_breed(ndpi_thread_info[0].workflow->ndpi_struct,
             ndpi_map_ndpi_id_to_user_proto_id(ndpi_thread_info[0].workflow->ndpi_struct, i));
@@ -404,7 +405,7 @@ void printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
                     cumulative_stats.protocol_flows[i]);
 
             if (!quiet_mode) {
-                printf("\t%-20s packets: %-13llu bytes: %-13llu "
+                printw("\t%-20s packets: %-13llu bytes: %-13llu "
                     "flows: %-13u\n",
                     ndpi_get_proto_name(ndpi_thread_info[0].workflow->ndpi_struct,
                         ndpi_map_ndpi_id_to_user_proto_id(ndpi_thread_info[0].workflow->ndpi_struct, i)),
@@ -416,11 +417,11 @@ void printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
     }
 
     if (!quiet_mode) {
-        printf("\n\nProtocol statistics:\n");
+        printw("\n\nProtocol statistics:\n");
 
         for (i = 0; i < NUM_BREEDS; i++) {
             if (breed_stats_pkts[i] > 0) {
-                printf("\t%-20s packets: %-13llu bytes: %-13llu "
+                printw("\t%-20s packets: %-13llu bytes: %-13llu "
                     "flows: %-13llu\n",
                     ndpi_get_proto_breed_name(i),
                     breed_stats_pkts[i], breed_stats_bytes[i], breed_stats_flows[i]);
@@ -438,8 +439,8 @@ void printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
         }
     }
 
-    printRiskStats();
-    printFlowsStats();
+    ncurses_printRiskStats();
+    ncurses_printFlowsStats();
 
     if (stats_flag || verbose == 3) {
         HASH_SORT(srcStats, port_stats_sort);
@@ -447,10 +448,10 @@ void printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
     }
 
     if (verbose == 3) {
-        printf("\n\nSource Ports Stats:\n");
+        printw("\n\nSource Ports Stats:\n");
         port_stats_print(srcStats);
 
-        printf("\nDestination Ports Stats:\n");
+        printw("\nDestination Ports Stats:\n");
         port_stats_print(dstStats);
     }
 
@@ -481,7 +482,7 @@ free_stats:
     }
 }
 
-void printRiskStats() {
+void ncurses_printRiskStats() {
     if (!quiet_mode) {
         u_int thread_id, i;
 
@@ -492,7 +493,7 @@ void printRiskStats() {
         }
 
         if (risks_found) {
-            printf("\nRisk stats [found %u (%.1f %%) flows with risks]:\n",
+            printw("\nRisk stats [found %u (%.1f %%) flows with risks]:\n",
                 flows_with_risks,
                 (100. * flows_with_risks) / (float)cumulative_stats.ndpi_flow_count);
 
@@ -500,18 +501,18 @@ void printRiskStats() {
                 ndpi_risk_enum r = (ndpi_risk_enum)i;
 
                 if (risk_stats[r] != 0)
-                    printf("\t%-40s %5u [%4.01f %%]\n", ndpi_risk2str(r), risk_stats[r],
+                    printw("\t%-40s %5u [%4.01f %%]\n", ndpi_risk2str(r), risk_stats[r],
                         (float)(risk_stats[r] * 100) / (float)risks_found);
             }
 
-            printf("\n\tNOTE: as one flow can have multiple risks set, the sum of the\n"
+            printw("\n\tNOTE: as one flow can have multiple risks set, the sum of the\n"
                 "\t      last column can exceed the number of flows with risks.\n");
-            printf("\n\n");
+            printw("\n\n");
         }
     }
 }
 
-void printFlowsStats() {
+void ncurses_printFlowsStats() {
     int thread_id;
     u_int32_t total_flows = 0;
     FILE* out = results_file ? results_file : stdout;
@@ -748,7 +749,7 @@ void printFlowsStats() {
                                     i,
                                     ja3ByHost_element->ip_string,
                                     info_of_element->ja3,
-                                    print_cipher(info_of_element->unsafe_cipher)
+                                    ncurses_print_cipher(info_of_element->unsafe_cipher)
                                 );
                                 againstRepeat = 1;
                                 i++;
@@ -762,7 +763,7 @@ void printFlowsStats() {
                                     ja3ByHost_element->ip_string,
                                     "",
                                     info_of_element->ja3,
-                                    print_cipher(info_of_element->unsafe_cipher),
+                                    ncurses_print_cipher(info_of_element->unsafe_cipher),
                                     ja3ByHost_element->dns_name[0] ? "[" : "",
                                     ja3ByHost_element->dns_name,
                                     ja3ByHost_element->dns_name[0] ? "]" : ""
@@ -786,7 +787,7 @@ void printFlowsStats() {
                                 );
                                 fprintf(out, "   %-15s %s\n",
                                     innerHashEl->ip_string,
-                                    print_cipher(hostByJA3Element->unsafe_cipher)
+                                    ncurses_print_cipher(hostByJA3Element->unsafe_cipher)
                                 );
                                 againstRepeat = 1;
                                 i++;
@@ -795,7 +796,7 @@ void printFlowsStats() {
                                 fprintf(out, "\t%45s", "");
                                 fprintf(out, "   %-15s %s\n",
                                     innerHashEl->ip_string,
-                                    print_cipher(hostByJA3Element->unsafe_cipher)
+                                    ncurses_print_cipher(hostByJA3Element->unsafe_cipher)
                                 );
                             }
                         }
@@ -810,7 +811,7 @@ void printFlowsStats() {
                                 );
                                 fprintf(out, "   %-15s %-10s %s%s%s\n",
                                     innerHashEl->ip_string,
-                                    print_cipher(hostByJA3Element->unsafe_cipher),
+                                    ncurses_print_cipher(hostByJA3Element->unsafe_cipher),
                                     innerHashEl->dns_name[0] ? "[" : "",
                                     innerHashEl->dns_name,
                                     innerHashEl->dns_name[0] ? "]" : ""
@@ -822,7 +823,7 @@ void printFlowsStats() {
                                 fprintf(out, "\t%45s", "");
                                 fprintf(out, "   %-15s %-10s %s%s%s\n",
                                     innerHashEl->ip_string,
-                                    print_cipher(hostByJA3Element->unsafe_cipher),
+                                    ncurses_print_cipher(hostByJA3Element->unsafe_cipher),
                                     innerHashEl->dns_name[0] ? "[" : "",
                                     innerHashEl->dns_name,
                                     innerHashEl->dns_name[0] ? "]" : ""
@@ -961,14 +962,14 @@ void printFlowsStats() {
             int j;
             HASH_ITER(hh, hostsHashT, host_iter, tmp) {
 
-                printf("\t%s", host_iter->domain_name);
+                printw("\t%s", host_iter->domain_name);
                 //to print the occurency in aligned column
                 int diff = len_max - strlen(host_iter->domain_name);
                 for (j = 0; j <= diff + 5;j++)
-                    printf(" ");
-                printf("%d\n", host_iter->occurency);
+                    printw(" ");
+                printw("%d\n", host_iter->occurency);
             }
-            printf("%s", "\n\n");
+            printw("%s", "\n\n");
 
             //freeing the hash table
             HASH_ITER(hh, hostsHashT, host_iter, tmp) {
@@ -1037,7 +1038,7 @@ void printFlowsStats() {
 #endif
 
             print_flow:
-                printFlow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
+                ncurses_printFlow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
             }
 
 #ifndef DIRECTION_BINS
@@ -1068,7 +1069,7 @@ void printFlowsStats() {
 
                             if (num_printed == 0) {
                                 fprintf(out, "\tCluster %u [", j);
-                                print_bin(out, NULL, &centroids[j]);
+                                ncurses_print_bin(out, NULL, &centroids[j]);
                                 fprintf(out, "]\n");
                             }
 
@@ -1081,7 +1082,7 @@ void printFlowsStats() {
                                 all_flows[i].flow->dst_name,
                                 ntohs(all_flows[i].flow->dst_port));
 
-                            print_bin(out, NULL, &bins[i]);
+                            ncurses_print_bin(out, NULL, &bins[i]);
                             fprintf(out, "][similarity: %f]",
                                 (similarity = ndpi_bin_similarity(&centroids[j], &bins[i], 0, 0)));
 
@@ -1150,7 +1151,7 @@ void printFlowsStats() {
         qsort(all_flows, num_flows, sizeof(struct flow_info), cmpFlows);
 
         for (i = 0; i < num_flows; i++)
-            printFlow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
+            ncurses_printFlow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
     }
     else if (csv_fp != NULL) {
         unsigned int i;
@@ -1163,7 +1164,7 @@ void printFlowsStats() {
         }
 
         for (i = 0; i < num_flows; i++)
-            printFlow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
+            ncurses_printFlow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
     }
 
     if (serialization_fp != NULL &&
@@ -1183,14 +1184,14 @@ void printFlowsStats() {
 
         for (i = 0; i < num_flows; i++)
         {
-            printFlowSerialized(all_flows[i].flow);
+            ncurses_printFlowSerialized(all_flows[i].flow);
         }
     }
 
     ndpi_free(all_flows);
 }
 
-char* print_cipher(ndpi_cipher_weakness c) {
+char* ncurses_print_cipher(ndpi_cipher_weakness c) {
     switch (c) {
     case ndpi_cipher_insecure:
         return(" (INSECURE)");
@@ -1205,7 +1206,7 @@ char* print_cipher(ndpi_cipher_weakness c) {
     }
 }
 
-void printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) {
+void ncurses_printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) {
     FILE* out = results_file ? results_file : stdout;
     u_int8_t known_tls;
     char buf[32], buf1[64];
@@ -1307,7 +1308,7 @@ void printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) {
         fprintf(csv_fp, "|%s|", flow->info);
 
 #ifndef DIRECTION_BINS
-        print_bin(csv_fp, NULL, &flow->payload_len_bin);
+        ncurses_print_bin(csv_fp, NULL, &flow->payload_len_bin);
 #endif
 
         fprintf(csv_fp, "|%s", flow->http.user_agent);
@@ -1571,11 +1572,11 @@ void printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) {
             }
         }
 
-        print_ndpi_address_port_file(out, "Mapped IP/Port", &flow->stun.mapped_address);
-        print_ndpi_address_port_file(out, "Peer IP/Port", &flow->stun.peer_address);
-        print_ndpi_address_port_file(out, "Relayed IP/Port", &flow->stun.relayed_address);
-        print_ndpi_address_port_file(out, "Rsp Origin IP/Port", &flow->stun.response_origin);
-        print_ndpi_address_port_file(out, "Other IP/Port", &flow->stun.other_address);
+        ncurses_print_ndpi_address_port_file(out, "Mapped IP/Port", &flow->stun.mapped_address);
+        ncurses_print_ndpi_address_port_file(out, "Peer IP/Port", &flow->stun.peer_address);
+        ncurses_print_ndpi_address_port_file(out, "Relayed IP/Port", &flow->stun.relayed_address);
+        ncurses_print_ndpi_address_port_file(out, "Rsp Origin IP/Port", &flow->stun.response_origin);
+        ncurses_print_ndpi_address_port_file(out, "Other IP/Port", &flow->stun.other_address);
 
         if (flow->http.url[0] != '\0') {
             ndpi_risk_enum risk = ndpi_validate_url(flow->http.url);
@@ -1633,10 +1634,10 @@ void printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) {
         if (flow->ssh_tls.client_hassh[0] != '\0') fprintf(out, "[HASSH-C: %s]", flow->ssh_tls.client_hassh);
 
         if (flow->ssh_tls.ja3_client[0] != '\0') fprintf(out, "[JA3C: %s%s]", flow->ssh_tls.ja3_client,
-            print_cipher(flow->ssh_tls.client_unsafe_cipher));
+            ncurses_print_cipher(flow->ssh_tls.client_unsafe_cipher));
 
         if (flow->ssh_tls.ja4_client[0] != '\0') fprintf(out, "[JA4: %s%s]", flow->ssh_tls.ja4_client,
-            print_cipher(flow->ssh_tls.client_unsafe_cipher));
+            ncurses_print_cipher(flow->ssh_tls.client_unsafe_cipher));
 
         if (flow->ssh_tls.ja4_client_raw != NULL) fprintf(out, "[JA4_r: %s]", flow->ssh_tls.ja4_client_raw);
 
@@ -1646,7 +1647,7 @@ void printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) {
         if (flow->ssh_tls.server_hassh[0] != '\0') fprintf(out, "[HASSH-S: %s]", flow->ssh_tls.server_hassh);
 
         if (flow->ssh_tls.ja3_server[0] != '\0') fprintf(out, "[JA3S: %s%s]", flow->ssh_tls.ja3_server,
-            print_cipher(flow->ssh_tls.server_unsafe_cipher));
+            ncurses_print_cipher(flow->ssh_tls.server_unsafe_cipher));
 
         if (flow->ssh_tls.tls_issuerDN)  fprintf(out, "[Issuer: %s]", flow->ssh_tls.tls_issuerDN);
         if (flow->ssh_tls.tls_subjectDN) fprintf(out, "[Subject: %s]", flow->ssh_tls.tls_subjectDN);
@@ -1702,10 +1703,10 @@ void printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) {
             flow->human_readeable_string_buffer);
 
 #ifdef DIRECTION_BINS
-        print_bin(out, "Plen c2s", &flow->payload_len_bin_src2dst);
-        print_bin(out, "Plen s2c", &flow->payload_len_bin_dst2src);
+        ncurses_print_bin(out, "Plen c2s", &flow->payload_len_bin_src2dst);
+        ncurses_print_bin(out, "Plen s2c", &flow->payload_len_bin_dst2src);
 #else
-        print_bin(out, "Plen Bins", &flow->payload_len_bin);
+        ncurses_print_bin(out, "Plen Bins", &flow->payload_len_bin);
 #endif
 
         if (flow->flow_payload && (flow->flow_payload_len > 0)) {
@@ -1723,7 +1724,7 @@ void printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) {
     }
 }
 
-void printFlowSerialized(struct ndpi_flow_info* flow)
+void ncurses_printFlowSerialized(struct ndpi_flow_info* flow)
 {
     char* json_str = NULL;
     u_int32_t json_str_len = 0;
@@ -1841,14 +1842,14 @@ void printFlowSerialized(struct ndpi_flow_info* flow)
     json_str = ndpi_serializer_get_buffer(serializer, &json_str_len);
     if (json_str == NULL || json_str_len == 0)
     {
-        printf("ERROR: nDPI serialization failed\n");
+        printw("ERROR: nDPI serialization failed\n");
         exit(-1);
     }
 
     fprintf(serialization_fp, "%.*s\n", (int)json_str_len, json_str);
 }
 
-void print_bin(FILE* fout, const char* label, struct ndpi_bin* b) {
+void ncurses_print_bin(FILE* fout, const char* label, struct ndpi_bin* b) {
     u_int16_t i;
     const char* sep = label ? "," : ";";
 
@@ -1876,7 +1877,7 @@ void print_bin(FILE* fout, const char* label, struct ndpi_bin* b) {
     if (label) fprintf(fout, "]");
 }
 
-void print_ndpi_address_port_file(FILE* out, const char* label, ndpi_address_port* ap) {
+void ncurses_print_ndpi_address_port_file(FILE* out, const char* label, ndpi_address_port* ap) {
     if (ap->port != 0) {
         char buf[INET6_ADDRSTRLEN];
 

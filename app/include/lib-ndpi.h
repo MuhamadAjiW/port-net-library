@@ -4,9 +4,6 @@
 #include <ndpi_typedefs.h>
 
 // Macros
-// #define DEBUG_TRACE
-// #define DEPLOY_BUILD 1
-
 #define MAX_NUM_CFGS 32
 
 #define WIRESHARK_NTOP_MAGIC 0x19680924

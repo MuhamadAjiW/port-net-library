@@ -1,3 +1,4 @@
+#include "_build_config.h"
 #include "lib-analytics.h"
 #include "lib-base.h"
 #include "lib-cipher.h"
@@ -6,6 +7,7 @@
 #include "lib-format.h"
 #include "lib-ndpi.h"
 #include "lib-print.h"
+#include "lib-print-ncurses.h"
 #include "lib-reader.h"
 #include "lib-receiver.h"
 #include "lib-scanner.h"
