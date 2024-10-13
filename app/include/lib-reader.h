@@ -5,9 +5,12 @@
 #include <ndpi_api.h>
 #include <float.h>
 #include <math.h>
+#include <pthread.h>
 #include "uthash.h"
 #include "reader_util.h"
 #include "lib-receiver.h"
+#include "lib-scanner.h"
+#include "lib-port.h"
 
 // _TODO: Break down further into smaller libs
 
@@ -34,13 +37,6 @@
 #endif
 
 // Structs
-struct info_pair {
-    u_int32_t addr;
-    u_int8_t version; /* IP version */
-    char proto[16]; /*app level protocol*/
-    int count;
-};
-
 // struct associated to a workflow for a thread
 struct reader_thread {
     struct ndpi_workflow* workflow;
@@ -57,50 +53,6 @@ typedef struct hash_stats {
     int occurency;       /* how many time domain name occury in the flow */
     UT_hash_handle hh;   /* hashtable to collect the stats */
 }hash_stats;
-
-typedef struct node_a {
-    u_int32_t addr;
-    u_int8_t version; /* IP version */
-    char proto[16]; /*app level protocol*/
-    int count;
-    struct node_a* left, * right;
-}addr_node;
-
-struct port_stats {
-    u_int32_t port; /* we'll use this field as the key */
-    u_int32_t num_pkts, num_bytes;
-    u_int32_t num_flows;
-    u_int32_t num_addr; /*number of distinct IP addresses */
-    u_int32_t cumulative_addr; /*cumulative some of IP addresses */
-    addr_node* addr_tree; /* tree of distinct IP addresses */
-    struct info_pair top_ip_addrs[MAX_NUM_IP_ADDRESS];
-    u_int8_t hasTopHost; /* as boolean flag */
-    u_int32_t top_host;  /* host that is contributed to > 95% of traffic */
-    u_int8_t version;    /* top host's ip version */
-    char proto[16];      /* application level protocol of top host */
-    UT_hash_handle hh;   /* makes this structure hashable */
-};
-
-// struct to hold count of flows received by destination ports
-struct port_flow_info {
-    u_int32_t port; /* key */
-    u_int32_t num_flows;
-    UT_hash_handle hh;
-};
-
-// struct to hold single packet tcp flows sent by source ip address
-struct single_flow_info {
-    u_int32_t saddr; /* key */
-    u_int8_t version; /* IP version */
-    struct port_flow_info* ports;
-    u_int32_t tot_flows;
-    UT_hash_handle hh;
-};
-
-struct flow_info {
-    struct ndpi_flow_info* flow;
-    u_int16_t thread_id;
-};
 
 struct cfg {
     char* proto;
@@ -174,7 +126,6 @@ void port_stats_walker(const void* node, ndpi_VISIT which, int depth, void* user
 void printRiskStats();
 void node_flow_risk_walker(const void* node, ndpi_VISIT which, int depth, void* user_data);
 void deletePortsStats(struct port_stats* stats);
-void deleteScanners(struct single_flow_info* scanners);
 void freeIpTree(addr_node* root);
 int port_stats_sort(void* _a, void* _b);
 void printPortStats(struct port_stats* stats);
@@ -198,8 +149,6 @@ void updatePortStats(struct port_stats** stats, u_int32_t port,
     u_int32_t addr, u_int8_t version,
     u_int32_t num_pkts, u_int32_t num_bytes,
     const char* proto);
-void updateScanners(struct single_flow_info** scanners, u_int32_t saddr,
-    u_int8_t version, u_int32_t dport);
 char* formatPackets(float numPkts, char* buf);
 char* formatBytes(u_int32_t howMuch, char* buf, u_int buf_len);
 void updateTopIpAddress(u_int32_t addr, u_int8_t version, const char* proto,
