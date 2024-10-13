@@ -25,13 +25,16 @@ void* ldis_print(__attribute__((unused)) void* arg) {
 
     while (ldis_do_loop) {
         clear();
+        // printw("\n[DEV] Non printing test stats: %ld\n", ndpi_thread_info[0].workflow->stats.total_wire_bytes);
+
         gettimeofday(&end, NULL);
         processing_time_usec = (u_int64_t)end.tv_sec * 1000000 + end.tv_usec - ((u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec);
         setup_time_usec = (u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec - ((u_int64_t)startup_time.tv_sec * 1000000 + startup_time.tv_usec);
 
         ncurses_printResults(processing_time_usec, setup_time_usec);
+
         refresh();
-        napms(100);
+        napms(1000);
     }
 
     addstr("\nPress any key to exit...");
