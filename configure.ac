@@ -347,7 +347,7 @@ case "$host" in
       AC_CHECK_LIB([ncurses], [initscr], [
         AC_DEFINE([HAVE_NCURSES], [1], [Define if ncurses is available])
         NCURSES_LIB="-lncurses"
-        LIBS="${LIBS} ${ZMQ_NCURSES}"
+        LIBS="${LIBS} ${NCURSES_LIB}"
       ], [
         AC_MSG_ERROR([Missing libncurses(-dev) library required to compile the application.])
       ])
