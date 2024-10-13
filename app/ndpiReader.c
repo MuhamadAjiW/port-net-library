@@ -1281,13 +1281,13 @@ static void parseOptions(int argc, char** argv) {
 #endif
 #endif
 #endif
-    }
+}
 
-    /* *********************************************** */
+/* *********************************************** */
 
-    /**
-     * @brief Idle Scan Walker
-     */
+/**
+ * @brief Idle Scan Walker
+ */
 static void node_idle_scan_walker(const void* node, ndpi_VISIT which, int depth, void* user_data) {
     struct ndpi_flow_info* flow = *(struct ndpi_flow_info**)node;
     u_int16_t thread_id = *((u_int16_t*)user_data);
@@ -2007,13 +2007,13 @@ pcap_loop:
     }
 
     return NULL;
-    }
+}
 
-    /* ***************************************************** */
+/* ***************************************************** */
 
-    /**
-     * @brief Begin, process, end detection process
-     */
+/**
+ * @brief Begin, process, end detection process
+ */
 void test_lib() {
     u_int64_t processing_time_usec, setup_time_usec;
 #ifdef WIN64
@@ -2058,10 +2058,10 @@ void test_lib() {
     int status;
     void* thd_res;
 
-    printf("\n[DEV] Program execution starting with %d threads...\n", num_threads);
-    pthread_t display_thread;
+    // printf("\n[DEV] Program execution starting with %d threads...\n", num_threads);
+    // pthread_t display_thread;
     // pthread_t lzmq_thread;
-    pthread_create(&display_thread, NULL, ldis_print, NULL);
+    // pthread_create(&display_thread, NULL, ldis_print, NULL);
     // pthread_create(&lzmq_thread, NULL, lzmq_do_nothing, NULL);
 
     /* Running processing threads */
@@ -2099,11 +2099,11 @@ void test_lib() {
         }
     }
     // lzmq_do_loop = 0;
-    ldis_do_loop = 0;
+    // ldis_do_loop = 0;
 
-    pthread_join(display_thread, NULL);
+    // pthread_join(display_thread, NULL);
     // pthread_join(lzmq_thread, NULL);
-    printf("\n[DEV] Execution completed...%d\n", num_threads);
+    // printf("\n[DEV] Execution completed...%d\n", num_threads);
 
 #ifdef USE_DPDK
     dpdk_port_deinit(dpdk_port_id);
@@ -2115,7 +2115,7 @@ void test_lib() {
 
     /* Printing cumulative results */
     printResults(processing_time_usec, setup_time_usec);
-    printf("\n[DEV] Printing completed...\n\n");
+    // printf("\n[DEV] Printing completed...\n\n");
 
     for (thread_id = 0; thread_id < num_threads; thread_id++) {
         if (ndpi_thread_info[thread_id].workflow->pcap_handle != NULL)
@@ -3791,7 +3791,7 @@ int main(int argc, char** argv) {
     if (extcap_fifo_h) pcap_close(extcap_fifo_h);
     if (enable_malloc_bins) ndpi_free_bin(&malloc_bins);
 
-    lzmq_send_to_server("*", 5556, csv_fp);
+    // lzmq_send_to_server("*", 5556, csv_fp);
 
     if (csv_fp)         fclose(csv_fp);
     if (fingerprint_fp) fclose(fingerprint_fp);

@@ -467,12 +467,12 @@ free_stats:
     }
 
     if (receivers) {
-        deleteReceivers(receivers);
+        receivers_delete(receivers);
         receivers = NULL;
     }
 
     if (topReceivers) {
-        deleteReceivers(topReceivers);
+        receivers_delete(topReceivers);
         topReceivers = NULL;
     }
 
@@ -558,7 +558,7 @@ void port_stats_walker(const void* node, ndpi_VISIT which, int depth, void* user
             updateScanners(&scannerHosts, flow->src_ip, flow->ip_version, dport);
         }
 
-        updateReceivers(&receivers, flow->dst_ip, flow->ip_version,
+        receivers_update(&receivers, flow->dst_ip, flow->ip_version,
             flow->src2dst_packets, &topReceivers);
 
         updatePortStats(&srcStats, sport, flow->src_ip, flow->ip_version,
@@ -634,17 +634,6 @@ void deletePortsStats(struct port_stats* stats) {
         HASH_DEL(stats, current_port);
         freeIpTree(current_port->addr_tree);
         ndpi_free(current_port);
-    }
-}
-
-/* *********************************************** */
-
-void deleteReceivers(struct receiver* rcvrs) {
-    struct receiver* current, * tmp;
-
-    HASH_ITER(hh, rcvrs, current, tmp) {
-        HASH_DEL(rcvrs, current);
-        ndpi_free(current);
     }
 }
 
@@ -748,60 +737,6 @@ int info_pair_cmp(const void* _a, const void* _b)
     struct info_pair* b = (struct info_pair*)_b;
 
     return b->count - a->count;
-}
-
-/* *********************************************** */
-/* implementation of: https://jeroen.massar.ch/presentations/files/FloCon2010-TopK.pdf
- *
- * if(table1.size < max1 || acceptable) {
- *    create new element and add to the table1
- *    if(table1.size > max2) {
- *      cut table1 back to max1
- *      merge table 1 to table2
- *      if(table2.size > max1)
- *        cut table2 back to max1
- *    }
- * }
- * else
- *   update table1
- */
-void updateReceivers(struct receiver** rcvrs, u_int32_t dst_addr,
-    u_int8_t version, u_int32_t num_pkts,
-    struct receiver** topRcvrs) {
-    struct receiver* r;
-    u_int32_t size;
-    int a;
-
-    HASH_FIND_INT(*rcvrs, (int*)&dst_addr, r);
-    if (r == NULL) {
-        if (((size = HASH_COUNT(*rcvrs)) < MAX_TABLE_SIZE_1)
-            || ((a = acceptable(num_pkts)) != 0)) {
-            r = (struct receiver*)ndpi_malloc(sizeof(struct receiver));
-            if (!r) return;
-
-            r->addr = dst_addr;
-            r->version = version;
-            r->num_pkts = num_pkts;
-
-            HASH_ADD_INT(*rcvrs, addr, r);
-
-            if ((size = HASH_COUNT(*rcvrs)) > MAX_TABLE_SIZE_2) {
-
-                HASH_SORT(*rcvrs, receivers_sort_asc);
-                *rcvrs = cutBackTo(rcvrs, size, MAX_TABLE_SIZE_1);
-                mergeTables(rcvrs, topRcvrs);
-
-                if ((size = HASH_COUNT(*topRcvrs)) > MAX_TABLE_SIZE_1) {
-                    HASH_SORT(*topRcvrs, receivers_sort_asc);
-                    *topRcvrs = cutBackTo(topRcvrs, size, MAX_TABLE_SIZE_1);
-                }
-
-                *rcvrs = NULL;
-            }
-        }
-    }
-    else
-        r->num_pkts += num_pkts;
 }
 
 /* *********************************************** */
@@ -2229,76 +2164,6 @@ void print_bin(FILE* fout, const char* label, struct ndpi_bin* b) {
     }
 
     if (label) fprintf(fout, "]");
-}
-
-/* *********************************************** */
-/*@brief merge first table to the second table.
- * if element already in the second table
- *  then updates its value
- * else adds it to the second table
- */
-void mergeTables(struct receiver** primary, struct receiver** secondary) {
-    struct receiver* r, * s, * tmp;
-
-    HASH_ITER(hh, *primary, r, tmp) {
-        HASH_FIND_INT(*secondary, (int*)&(r->addr), s);
-        if (s == NULL) {
-            s = (struct receiver*)ndpi_malloc(sizeof(struct receiver));
-            if (!s) return;
-
-            s->addr = r->addr;
-            s->version = r->version;
-            s->num_pkts = r->num_pkts;
-
-            HASH_ADD_INT(*secondary, addr, s);
-        }
-        else
-            s->num_pkts += r->num_pkts;
-
-        HASH_DEL(*primary, r);
-        ndpi_free(r);
-    }
-}
-
-/* ***************************************************** */
-/*@brief removes first (size - max) elements from hash table.
- * hash table is ordered in ascending order.
- */
-struct receiver* cutBackTo(struct receiver** rcvrs, u_int32_t size, u_int32_t max) {
-    struct receiver* r, * tmp;
-    int i = 0;
-    int count;
-
-    if (size < max) //return the original table
-        return *rcvrs;
-
-    count = size - max;
-
-    HASH_ITER(hh, *rcvrs, r, tmp) {
-        if (i++ == count)
-            return r;
-        HASH_DEL(*rcvrs, r);
-        ndpi_free(r);
-    }
-
-    return(NULL);
-
-}
-
-/* *********************************************** */
-
-int receivers_sort_asc(void* _a, void* _b) {
-    struct receiver* a = (struct receiver*)_a;
-    struct receiver* b = (struct receiver*)_b;
-
-    return(a->num_pkts - b->num_pkts);
-}
-
-/* *********************************************** */
-
-/* @brief heuristic choice for receiver stats */
-int acceptable(u_int32_t num_pkts) {
-    return num_pkts > 5;
 }
 
 /* ********************************** */

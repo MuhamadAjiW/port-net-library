@@ -7,6 +7,7 @@
 #include <math.h>
 #include "uthash.h"
 #include "reader_util.h"
+#include "lib-receiver.h"
 
 // _TODO: Break down further into smaller libs
 
@@ -78,14 +79,6 @@ struct port_stats {
     u_int8_t version;    /* top host's ip version */
     char proto[16];      /* application level protocol of top host */
     UT_hash_handle hh;   /* makes this structure hashable */
-};
-
-// struct to hold top receiver hosts
-struct receiver {
-    u_int32_t addr; /* key */
-    u_int8_t version; /* IP version */
-    u_int32_t num_pkts;
-    UT_hash_handle hh;
 };
 
 // struct to hold count of flows received by destination ports
@@ -181,7 +174,6 @@ void port_stats_walker(const void* node, ndpi_VISIT which, int depth, void* user
 void printRiskStats();
 void node_flow_risk_walker(const void* node, ndpi_VISIT which, int depth, void* user_data);
 void deletePortsStats(struct port_stats* stats);
-void deleteReceivers(struct receiver* rcvrs);
 void deleteScanners(struct single_flow_info* scanners);
 void freeIpTree(addr_node* root);
 int port_stats_sort(void* _a, void* _b);
@@ -189,9 +181,6 @@ void printPortStats(struct port_stats* stats);
 int hash_stats_sort_to_order(void* _a, void* _b);
 int hash_stats_sort_to_print(void* _a, void* _b);
 int info_pair_cmp(const void* _a, const void* _b);
-void updateReceivers(struct receiver** rcvrs, u_int32_t dst_addr,
-    u_int8_t version, u_int32_t num_pkts,
-    struct receiver** topRcvrs);
 void printFlowsStats();
 void node_print_known_proto_walker(const void* node,
     ndpi_VISIT which, int depth, void* user_data);
@@ -201,10 +190,6 @@ void node_print_unknown_proto_walker(const void* node,
 void printFlowSerialized(struct ndpi_flow_info* flow);
 void printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id);
 void print_bin(FILE* fout, const char* label, struct ndpi_bin* b);
-void mergeTables(struct receiver** primary, struct receiver** secondary);
-struct receiver* cutBackTo(struct receiver** rcvrs, u_int32_t size, u_int32_t max);
-int receivers_sort_asc(void* _a, void* _b);
-int acceptable(u_int32_t num_pkts);
 char* print_cipher(ndpi_cipher_weakness c);
 void print_ndpi_address_port_file(FILE* out, const char* label, ndpi_address_port* ap);
 char* is_unsafe_cipher(ndpi_cipher_weakness c);
