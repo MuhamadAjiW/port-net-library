@@ -2,3 +2,5 @@
 #include "lib-string.h"
 #include "lib-zmq.h"
 #include "lib-display.h"
+#include "lib-reader.h"
+#include "reader_util.h"

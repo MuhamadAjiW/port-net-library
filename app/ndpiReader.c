@@ -61,10 +61,9 @@
 #endif
 #include <errno.h>
 
-#include "reader_util.h"
-
 #include <zmq.h>
 #include <ncurses.h>
+#include "include/reader_util.h"
 #include "include/lib-headers.h"
 
 #define ntohl64(x) ( ( (uint64_t)(ntohl( (uint32_t)((x << 32) >> 32) )) << 32) | ntohl( ((uint32_t)(x >> 32)) ) )
@@ -3930,7 +3929,7 @@ static void printFlowsStats() {
 /**
  * @brief Print result
  */
-static void printResults(u_int64_t processing_time_usec, u_int64_t setup_time_usec) {
+void printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
     u_int32_t i;
     u_int32_t avg_pkt_size = 0;
     int thread_id;
@@ -4927,6 +4926,12 @@ void test_lib() {
     int status;
     void* thd_res;
 
+    printf("\n[DEV] Program execution starting with %d threads...\n", num_threads);
+    pthread_t display_thread;
+    // pthread_t lzmq_thread;
+    pthread_create(&display_thread, NULL, ldis_print, NULL);
+    // pthread_create(&lzmq_thread, NULL, lzmq_do_nothing, NULL);
+
     /* Running processing threads */
     for (thread_id = 0; thread_id < num_threads; thread_id++) {
         status = pthread_create(&ndpi_thread_info[thread_id].pthread, NULL, processing_thread, (void*)thread_id);
@@ -4961,6 +4966,12 @@ void test_lib() {
             exit(-1);
         }
     }
+    // lzmq_do_loop = 0;
+    ldis_do_loop = 0;
+
+    pthread_join(display_thread, NULL);
+    // pthread_join(lzmq_thread, NULL);
+    printf("\n[DEV] Execution completed...%d\n", num_threads);
 
 #ifdef USE_DPDK
     dpdk_port_deinit(dpdk_port_id);
@@ -4972,6 +4983,7 @@ void test_lib() {
 
     /* Printing cumulative results */
     printResults(processing_time_usec, setup_time_usec);
+    printf("\n[DEV] Printing completed...\n\n");
 
     for (thread_id = 0; thread_id < num_threads; thread_id++) {
         if (ndpi_thread_info[thread_id].workflow->pcap_handle != NULL)
@@ -6637,8 +6649,9 @@ int main(int argc, char** argv) {
 
     signal(SIGINT, sigproc);
 
-    for (i = 0; i < num_loops; i++)
+    for (i = 0; i < num_loops; i++) {
         test_lib();
+    }
 
     if (results_path)  ndpi_free(results_path);
     if (results_file)  fclose(results_file);

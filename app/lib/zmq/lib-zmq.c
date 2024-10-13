@@ -4,6 +4,8 @@
 #include "../../include/lib-zmq.h"
 #include "../../include/lib-string.h"
 
+int lzmq_do_loop = 1;
+
 /* ZeroMQ code */
 uint8_t lzmq_send_to_server(char* ip, int port, FILE* file) {
     string_t address = str_format("tcp://%s:%d", ip, port);
@@ -77,6 +79,16 @@ uint8_t lzmq_send_to_server(char* ip, int port, FILE* file) {
     zmq_ctx_destroy(context);
 
     str_delete(&address);
+
+    return 0;
+}
+
+void* lzmq_do_nothing(__attribute__((unused)) void* arg) {
+    while (lzmq_do_loop) {
+        printf("[DEV] Doing nothing with counter %d...\n", lzmq_do_loop);
+        zmq_sleep(1);
+    }
+    printf("\n[DEV] ZeroMQ done doing nothing\n");
 
     return 0;
 }
