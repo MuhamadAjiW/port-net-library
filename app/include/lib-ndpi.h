@@ -5,7 +5,7 @@
 
 // Macros
 // #define DEBUG_TRACE
-#define DEPLOY_BUILD 1
+// #define DEPLOY_BUILD 1
 
 #define MAX_NUM_CFGS 32
 
