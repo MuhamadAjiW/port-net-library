@@ -43,7 +43,20 @@ void* ldis_print(__attribute__((unused)) void* arg) {
     refresh();
     getch();
     endwin();
+
 #endif
+    for (int thread_id = 0; thread_id < num_threads; thread_id++) {
+        memset(ndpi_thread_info[thread_id].workflow->stats.protocol_counter, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.protocol_counter));
+        memset(ndpi_thread_info[thread_id].workflow->stats.protocol_counter_bytes, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.protocol_counter_bytes));
+        memset(ndpi_thread_info[thread_id].workflow->stats.protocol_flows, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.protocol_flows));
+        memset(ndpi_thread_info[thread_id].workflow->stats.flow_confidence, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.flow_confidence));
+        ndpi_thread_info[thread_id].workflow->stats.guessed_flow_protocols = 0;
+        ndpi_thread_info[thread_id].workflow->stats.num_dissector_calls = 0;
+    }
+
+    memset(risk_stats, 0, sizeof(risk_stats));
+    flows_with_risks = 0;
+    risks_found = 0;
 
     return EXIT_SUCCESS;
 }

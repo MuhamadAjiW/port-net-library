@@ -18,12 +18,16 @@ void ncurses_printResults(uint64_t processing_time_usec, uint64_t setup_time_use
             && (ndpi_thread_info[thread_id].workflow->stats.raw_packet_count == 0))
             continue;
 
+        memset(ndpi_thread_info[thread_id].workflow->stats.protocol_counter, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.protocol_counter));
+        memset(ndpi_thread_info[thread_id].workflow->stats.protocol_counter_bytes, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.protocol_counter_bytes));
+        memset(ndpi_thread_info[thread_id].workflow->stats.protocol_flows, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.protocol_flows));
+        memset(ndpi_thread_info[thread_id].workflow->stats.flow_confidence, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.flow_confidence));
+        ndpi_thread_info[thread_id].workflow->stats.guessed_flow_protocols = 0;
+        ndpi_thread_info[thread_id].workflow->stats.num_dissector_calls = 0;
 
         for (i = 0; i < NUM_ROOTS; i++) {
-
-            // _TODO: fix, this function causes packets to add up but removing them makes it impossible to detect protocols
-            // ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
-            //     node_proto_guess_walker, &thread_id);
+            ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
+                node_proto_guess_walker, &thread_id);
 
             if (verbose == 3 || stats_flag) ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
                 port_stats_walker, &thread_id);
@@ -343,7 +347,9 @@ void ncurses_printResults(uint64_t processing_time_usec, uint64_t setup_time_use
     }
 
     ncurses_printRiskStats();
-    ncurses_printFlowsStats();
+
+    // _TODO: Fix twalk on this function
+    // ncurses_printFlowsStats();
 
     if (stats_flag || verbose == 3) {
         HASH_SORT(srcStats, port_stats_sort);
@@ -388,6 +394,10 @@ free_stats:
 void ncurses_printRiskStats() {
     if (!quiet_mode) {
         u_int thread_id, i;
+
+        memset(risk_stats, 0, sizeof(risk_stats));
+        flows_with_risks = 0;
+        risks_found = 0;
 
         for (thread_id = 0; thread_id < num_threads; thread_id++) {
             for (i = 0; i < NUM_ROOTS; i++)
