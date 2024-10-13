@@ -22,6 +22,7 @@ struct reader_thread {
     u_int32_t idle_scan_idx;
     u_int32_t num_idle_flows;
     struct ndpi_flow_info* idle_flows[IDLE_SCAN_BUDGET];
+    bool aggregated;
 };
 
 struct info_pair {

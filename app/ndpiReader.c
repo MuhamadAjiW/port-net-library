@@ -95,7 +95,6 @@ static int num_cfgs = 0;
 static u_int32_t pcap_analysis_duration = (u_int32_t)-1;
 static u_int16_t decode_tunnels = 0;
 static u_int16_t num_loops = 1;
-static struct timeval startup_time, begin, end;
 static time_t capture_for = 0;
 static time_t capture_until = 0;
 
@@ -125,6 +124,7 @@ static u_int8_t doh_centroids[NUM_DOH_BINS][PLEN_NUM_BINS] = {
 };
 
 // Variables
+struct timeval startup_time, begin, end;
 FILE* results_file = NULL;
 
 u_int8_t live_capture = 0;
@@ -182,7 +182,7 @@ void run_test(); /* Forward */
 /* ********************************** */
 
 #ifdef DEBUG_TRACE
-FILE* trace = NULL;
+FILE* trace_fp = NULL;
 #endif
 
 /* ***************************************************** */
@@ -670,14 +670,14 @@ void extcap_config() {
 
 void extcap_capture(int datalink_type) {
 #ifdef DEBUG_TRACE
-    if (trace) fprintf(trace, " #### %s #### \n", __FUNCTION__);
+    if (trace_fp) fprintf(trace_fp, " #### %s #### \n", __FUNCTION__);
 #endif
 
     if ((extcap_fifo_h = pcap_open_dead(datalink_type, 16384 /* MTU */)) == NULL) {
         fprintf(stderr, "Error pcap_open_dead");
 
 #ifdef DEBUG_TRACE
-        if (trace) fprintf(trace, "Error pcap_open_dead\n");
+        if (trace_fp) fprintf(trace_fp, "Error pcap_open_dead\n");
 #endif
         return;
     }
@@ -687,14 +687,14 @@ void extcap_capture(int datalink_type) {
         fprintf(stderr, "Unable to open the pcap dumper on %s", extcap_capture_fifo);
 
 #ifdef DEBUG_TRACE
-        if (trace) fprintf(trace, "Unable to open the pcap dumper on %s\n",
+        if (trace_fp) fprintf(trace_fp, "Unable to open the pcap dumper on %s\n",
             extcap_capture_fifo);
 #endif
         return;
     }
 
 #ifdef DEBUG_TRACE
-    if (trace) fprintf(trace, "Starting packet capture [%p]\n", extcap_dumper);
+    if (trace_fp) fprintf(trace_fp, "Starting packet capture [%p]\n", extcap_dumper);
 #endif
 }
 
@@ -841,7 +841,7 @@ static void parseOptions(int argc, char** argv) {
         "a:Ab:B:e:E:c:C:dDFf:g:G:i:Ij:k:K:S:hHp:pP:l:r:Rs:tu:v:V:n:rp:x:X:w:q0123:456:7:89:m:MN:T:U:",
         longopts, &option_idx)) != EOF) {
 #ifdef DEBUG_TRACE
-        if (trace) fprintf(trace, " #### Handling option -%c [%s] #### \n", opt, optarg ? optarg : "");
+        if (trace_fp) fprintf(trace_fp, " #### Handling option -%c [%s] #### \n", opt, optarg ? optarg : "");
 #endif
 
         switch (opt) {
@@ -1213,7 +1213,7 @@ static void parseOptions(int argc, char** argv) {
 
         default:
 #ifdef DEBUG_TRACE
-            if (trace) fprintf(trace, " #### Unknown option -%c: skipping it #### \n", opt);
+            if (trace_fp) fprintf(trace_fp, " #### Unknown option -%c: skipping it #### \n", opt);
 #endif
 
             help(0);
@@ -1713,6 +1713,8 @@ static pcap_t* openPcapFileOrDevice(u_int16_t thread_id, const u_char* pcap_file
  * @brief Check pcap packet
  */
 static void ndpi_process_packet(u_char* args,
+    // _TODO: Print on this function instead
+
     const struct pcap_pkthdr* header,
     const u_char* packet) {
     struct ndpi_proto p;
@@ -1760,7 +1762,7 @@ static void ndpi_process_packet(u_char* args,
     }
 
 #ifdef DEBUG_TRACE
-    if (trace) fprintf(trace, "Found %u bytes packet %u.%u\n", header->caplen, p.proto.app_protocol, p.proto.master_protocol);
+    if (trace_fp) fprintf(trace_fp, "Found %u bytes packet %u.%u\n", header->caplen, p.proto.app_protocol, p.proto.master_protocol);
 #endif
 
     if (extcap_dumper
@@ -1847,7 +1849,7 @@ static void ndpi_process_packet(u_char* args,
         h.caplen += delta, h.len += delta;
 
 #ifdef DEBUG_TRACE
-        if (trace) fprintf(trace, "Dumping %u bytes packet\n", h.caplen);
+        if (trace_fp) fprintf(trace_fp, "Dumping %u bytes packet\n", h.caplen);
 #endif
 
         pcap_dump((u_char*)extcap_dumper, &h, (const u_char*)extcap_buf);
@@ -1899,6 +1901,7 @@ static void ndpi_process_packet(u_char* args,
  */
 static void runPcapLoop(u_int16_t thread_id) {
     if ((!shutdown_app) && (ndpi_thread_info[thread_id].workflow->pcap_handle != NULL)) {
+
         int datalink_type = pcap_datalink(ndpi_thread_info[thread_id].workflow->pcap_handle);
 
         /* When using as extcap interface, the output/dumper pcap must have the same datalink
@@ -1915,7 +1918,9 @@ static void runPcapLoop(u_int16_t thread_id) {
             printf("Unsupported datalink %d. Skip pcap\n", datalink_type);
             return;
         }
+        printf("[DEV] Looping detection\n");
         int ret = pcap_loop(ndpi_thread_info[thread_id].workflow->pcap_handle, -1, &ndpi_process_packet, (u_char*)&thread_id);
+        printf("[DEV] Looping Done\n");
         if (ret == -1)
             printf("Error while reading pcap file: '%s'\n", pcap_geterr(ndpi_thread_info[thread_id].workflow->pcap_handle));
     }
@@ -2041,14 +2046,14 @@ void run_test() {
 #endif
 
 #ifdef DEBUG_TRACE
-    if (trace) fprintf(trace, "Num threads: %d\n", num_threads);
+    if (trace_fp) fprintf(trace_fp, "Num threads: %d\n", num_threads);
 #endif
 
     for (thread_id = 0; thread_id < num_threads; thread_id++) {
         pcap_t* cap;
 
 #ifdef DEBUG_TRACE
-        if (trace) fprintf(trace, "Opening %s\n", (const u_char*)_pcap_file[thread_id]);
+        if (trace_fp) fprintf(trace_fp, "Opening %s\n", (const u_char*)_pcap_file[thread_id]);
 #endif
 
         cap = openPcapFileOrDevice(thread_id, (const u_char*)_pcap_file[thread_id]);
@@ -2144,14 +2149,14 @@ void run_detection() {
 #endif
 
 #ifdef DEBUG_TRACE
-    if (trace) fprintf(trace, "Num threads: %d\n", num_threads);
+    if (trace_fp) fprintf(trace_fp, "Num threads: %d\n", num_threads);
 #endif
 
     for (thread_id = 0; thread_id < num_threads; thread_id++) {
         pcap_t* cap;
 
 #ifdef DEBUG_TRACE
-        if (trace) fprintf(trace, "Opening %s\n", (const u_char*)_pcap_file[thread_id]);
+        if (trace_fp) fprintf(trace_fp, "Opening %s\n", (const u_char*)_pcap_file[thread_id]);
 #endif
 
         cap = openPcapFileOrDevice(thread_id, (const u_char*)_pcap_file[thread_id]);
@@ -2337,7 +2342,7 @@ void run() {
     }
 
 #ifdef DEBUG_TRACE
-    if (trace) fclose(trace);
+    if (trace_fp) fclose(trace_fp);
 #endif
 }
 
@@ -2346,16 +2351,16 @@ void run() {
 **/
 int main(int argc, char** argv) {
 #ifdef DEBUG_TRACE
-    trace = fopen("/tmp/ndpiReader.log", "a");
+    trace_fp = fopen("./out.ignore/debug.log", "a");
 
-    if (trace) {
+    if (trace_fp) {
         int i;
 
-        fprintf(trace, " #### %s #### \n", __FUNCTION__);
-        fprintf(trace, " #### [argc: %u] #### \n", argc);
+        fprintf(trace_fp, " #### %s #### \n", __FUNCTION__);
+        fprintf(trace_fp, " #### [argc: %u] #### \n", argc);
 
         for (i = 0; i < argc; i++)
-            fprintf(trace, " #### [%d] [%s]\n", i, argv[i]);
+            fprintf(trace_fp, " #### [%d] [%s]\n", i, argv[i]);
     }
 #endif
 

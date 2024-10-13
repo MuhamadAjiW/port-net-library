@@ -26,6 +26,11 @@ void ncurses_printResults(uint64_t processing_time_usec, uint64_t setup_time_use
         }
 
         /* Stats aggregation */
+        // _TODO: Fix aggregation
+        if (ndpi_thread_info[thread_id].aggregated) {
+            continue;
+        }
+        
         cumulative_stats.guessed_flow_protocols += ndpi_thread_info[thread_id].workflow->stats.guessed_flow_protocols;
         cumulative_stats.raw_packet_count += ndpi_thread_info[thread_id].workflow->stats.raw_packet_count;
         cumulative_stats.ip_packet_count += ndpi_thread_info[thread_id].workflow->stats.ip_packet_count;
@@ -97,6 +102,8 @@ void ncurses_printResults(uint64_t processing_time_usec, uint64_t setup_time_use
             cumulative_stats.patricia_stats[i].n_search += s.n_search;
             cumulative_stats.patricia_stats[i].n_found += s.n_found;
         }
+
+        // _TODO: Fix aggregation
     }
 
     if (cumulative_stats.total_wire_bytes == 0)
@@ -182,7 +189,7 @@ void ncurses_printResults(uint64_t processing_time_usec, uint64_t setup_time_use
             printw("\tAnalysis end:          %s\n", when);
             printw("\tTraffic throughput:    %s pps / %s/sec\n", formatPackets(t, buf), formatTraffic(b, 1, buf1));
             printw("\tTraffic duration:      %.3f sec\n", traffic_duration / 1000000);
-        }
+            }
 
         if (cumulative_stats.guessed_flow_protocols)
             printw("\tGuessed flow protos:   %-13u\n", cumulative_stats.guessed_flow_protocols);
@@ -281,7 +288,7 @@ void ncurses_printResults(uint64_t processing_time_usec, uint64_t setup_time_use
             if (enable_malloc_bins)
                 printw("\tData-path malloc histogram: %s\n", ndpi_print_bin(&malloc_bins, 0, buf, sizeof(buf)));
         }
-    }
+        }
 
     if (results_file) {
         if (cumulative_stats.guessed_flow_protocols)
@@ -480,7 +487,7 @@ free_stats:
         port_stats_delete(dstStats);
         dstStats = NULL;
     }
-}
+    }
 
 void ncurses_printRiskStats() {
     if (!quiet_mode) {
