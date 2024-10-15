@@ -320,7 +320,8 @@ static int search_valid_dns(struct ndpi_detection_module_struct *ndpi_struct,
 	  x++;
       }
     } else {
-      ndpi_set_risk(flow, NDPI_MALFORMED_PACKET, "Invalid DNS Header");
+      if(flow->detected_protocol_stack[0] != NDPI_PROTOCOL_UNKNOWN)
+        ndpi_set_risk(flow, NDPI_MALFORMED_PACKET, "Invalid DNS Header");
       return(1 /* invalid */);
     }
   } else {
@@ -444,6 +445,8 @@ static int search_valid_dns(struct ndpi_detection_module_struct *ndpi_struct,
 	  
 	  /* x points to the response "class" field */
 	  if((x+12) <= packet->payload_packet_len) {
+	    u_int32_t ttl = ntohl(*((u_int32_t*)&packet->payload[x+2]));
+	    
 	    x += 6;
 	    data_len = get16(&x, packet->payload);
 
@@ -472,16 +475,29 @@ static int search_valid_dns(struct ndpi_detection_module_struct *ndpi_struct,
 			 || ((rsp_type == 0x1c) && (data_len == 16)) /* AAAA */
 			 )) {
 		if(found == 0) {
-		  memcpy(&flow->protos.dns.rsp_addr, packet->payload + x, data_len);
-		  flow->protos.dns.is_rsp_addr_ipv6 = (data_len == 16) ? 1 : 0;
-		  found = 1;
+		  /* Necessary for IP address comparison */
+		  memset(&flow->protos.dns.rsp_addr[flow->protos.dns.num_rsp_addr], 0, sizeof(ndpi_ip_addr_t));
+		  
+		  memcpy(&flow->protos.dns.rsp_addr[flow->protos.dns.num_rsp_addr], packet->payload + x, data_len);
+		  flow->protos.dns.is_rsp_addr_ipv6[flow->protos.dns.num_rsp_addr] = (data_len == 16) ? 1 : 0;
+		  flow->protos.dns.rsp_addr_ttl[flow->protos.dns.num_rsp_addr] = ttl;
+
+		  if(ndpi_struct->cfg.address_cache_size)
+		    ndpi_cache_address(ndpi_struct,
+				       flow->protos.dns.rsp_addr[flow->protos.dns.num_rsp_addr],
+				       flow->host_server_name,
+				       packet->current_time_ms/1000,
+				       flow->protos.dns.rsp_addr_ttl[flow->protos.dns.num_rsp_addr]);		
+		  
+		  if(++flow->protos.dns.num_rsp_addr == MAX_NUM_DNS_RSP_ADDRESSES)
+		    found = 1;
 		}
 	      }
-
+	      
 	      x += data_len;
 	    }
 	  }
-
+	  
 	  if(found && (dns_header->additional_rrs == 0)) {
 	    /*
 	      In case we have RR we need to iterate
@@ -699,8 +715,8 @@ static void ndpi_search_dns(struct ndpi_detection_module_struct *ndpi_struct, st
     u_int num_queries, idx;
     char _hostname[256];
 
-    ret.master_protocol = NDPI_PROTOCOL_UNKNOWN;
-    ret.app_protocol    = (d_port == LLMNR_PORT) ? NDPI_PROTOCOL_LLMNR : (((d_port == MDNS_PORT) && isLLMNRMulticastAddress(packet) ) ? NDPI_PROTOCOL_MDNS : NDPI_PROTOCOL_DNS);
+    ret.proto.master_protocol = NDPI_PROTOCOL_UNKNOWN;
+    ret.proto.app_protocol    = (d_port == LLMNR_PORT) ? NDPI_PROTOCOL_LLMNR : (((d_port == MDNS_PORT) && isLLMNRMulticastAddress(packet) ) ? NDPI_PROTOCOL_MDNS : NDPI_PROTOCOL_DNS);
 
     if(invalid) {
       NDPI_EXCLUDE_PROTO(ndpi_struct, flow);
@@ -800,29 +816,29 @@ static void ndpi_search_dns(struct ndpi_detection_module_struct *ndpi_struct, st
       if(ndpi_struct->cfg.dns_subclassification_enabled) {
         ndpi_protocol_match_result ret_match;
 
-        ret.app_protocol = ndpi_match_host_subprotocol(ndpi_struct, flow,
+        ret.proto.app_protocol = ndpi_match_host_subprotocol(ndpi_struct, flow,
 						       flow->host_server_name,
 						       strlen(flow->host_server_name),
 						       &ret_match,
 						       NDPI_PROTOCOL_DNS);
         /* Add to FPC DNS cache */
-        if(ret.app_protocol != NDPI_PROTOCOL_UNKNOWN &&
+        if(ret.proto.app_protocol != NDPI_PROTOCOL_UNKNOWN &&
            (flow->protos.dns.rsp_type == 0x1 || flow->protos.dns.rsp_type == 0x1c) && /* A, AAAA */
            ndpi_struct->fpc_dns_cache) {
             ndpi_lru_add_to_cache(ndpi_struct->fpc_dns_cache,
-                                  fpc_dns_cache_key_from_dns_info(flow), ret.app_protocol,
+                                  fpc_dns_cache_key_from_dns_info(flow), ret.proto.app_protocol,
                                   ndpi_get_current_time(flow));
         }
 
-        if(ret.app_protocol == NDPI_PROTOCOL_UNKNOWN)
-	  ret.master_protocol = checkDNSSubprotocol(s_port, d_port);
+        if(ret.proto.app_protocol == NDPI_PROTOCOL_UNKNOWN)
+	  ret.proto.master_protocol = checkDNSSubprotocol(s_port, d_port);
         else
-	  ret.master_protocol = NDPI_PROTOCOL_DNS;
+	  ret.proto.master_protocol = NDPI_PROTOCOL_DNS;
 
         ndpi_check_dga_name(ndpi_struct, flow, flow->host_server_name, 1, 0);
       } else {
-        ret.master_protocol = checkDNSSubprotocol(s_port, d_port);
-        ret.app_protocol = NDPI_PROTOCOL_UNKNOWN;
+        ret.proto.master_protocol = checkDNSSubprotocol(s_port, d_port);
+        ret.proto.app_protocol = NDPI_PROTOCOL_UNKNOWN;
       }
 
       /* Category is always NDPI_PROTOCOL_CATEGORY_NETWORK, regardless of the subprotocol */
@@ -835,11 +851,11 @@ static void ndpi_search_dns(struct ndpi_detection_module_struct *ndpi_struct, st
 
     if(is_query) {
       /* In this case we say that the protocol has been detected just to let apps carry on with their activities */
-      ndpi_set_detected_protocol(ndpi_struct, flow, ret.app_protocol, ret.master_protocol, NDPI_CONFIDENCE_DPI);
+      ndpi_set_detected_protocol(ndpi_struct, flow, ret.proto.app_protocol, ret.proto.master_protocol, NDPI_CONFIDENCE_DPI);
 
       if(ndpi_struct->cfg.dns_parse_response_enabled) {
         /* We have never triggered extra-dissection for LLMNR. Keep the old behaviour */
-        if(ret.master_protocol != NDPI_PROTOCOL_LLMNR) {
+        if(ret.proto.master_protocol != NDPI_PROTOCOL_LLMNR) {
           /* Don't use just 1 as in TCP DNS more packets could be returned (e.g. ACK). */
           flow->max_extra_packets_to_check = 5;
           flow->extra_packets_func = search_dns_again;
@@ -864,7 +880,7 @@ static void ndpi_search_dns(struct ndpi_detection_module_struct *ndpi_struct, st
 	 matched a subprotocol
       **/
       NDPI_LOG_INFO(ndpi_struct, "found DNS\n");
-      ndpi_set_detected_protocol(ndpi_struct, flow, ret.app_protocol, ret.master_protocol, NDPI_CONFIDENCE_DPI);
+      ndpi_set_detected_protocol(ndpi_struct, flow, ret.proto.app_protocol, ret.proto.master_protocol, NDPI_CONFIDENCE_DPI);
     } else {
       if((flow->detected_protocol_stack[0] == NDPI_PROTOCOL_DNS)
 	 || (flow->detected_protocol_stack[1] == NDPI_PROTOCOL_DNS))

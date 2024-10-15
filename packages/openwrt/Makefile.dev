@@ -80,7 +80,7 @@ define Package/libndpi/install
 	$(CP) $(PKG_BUILD_DIR)/src/lib/libndpi.so* \
 		$(1)/usr/lib/
 	$(INSTALL_DIR) $(1)/usr/bin/
-	$(CP) $(PKG_BUILD_DIR)/example/ndpiReader \
+	$(CP) $(PKG_BUILD_DIR)/app/ndpiReader \
 		$(1)/usr/bin/
 endef
 

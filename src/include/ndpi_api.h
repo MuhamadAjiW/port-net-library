@@ -334,7 +334,7 @@ extern "C" {
 				 const unsigned char *packet,
 				 const unsigned short packetlen,
 				 const u_int64_t packet_time_ms,
-				 const struct ndpi_flow_input_info *input_info);
+				 struct ndpi_flow_input_info *input_info);
 
   /**
    * Processes one packet and returns the ID of the detected protocol.
@@ -354,7 +354,7 @@ extern "C" {
 					      const unsigned char *packet,
 					      const unsigned short packetlen,
 					      const u_int64_t packet_time_ms,
-					      const struct ndpi_flow_input_info *input_info);
+					      struct ndpi_flow_input_info *input_info);
   /**
    * Get the main protocol of the passed flows for the detected module
    *
@@ -690,14 +690,34 @@ extern "C" {
   char* ndpi_get_proto_breed_name(ndpi_protocol_breed_t breed_id);
 
   /**
-   * Return the ID of the protocol
+   * Return the name of the protocol given its ID.
    *
    * @par     ndpi_mod   = the detection module
-   * @par     proto      = the protocol name
+   * @par     name       = the protocol name. You can specify TLS or YouYube but not TLS.YouTube (se ndpi_get_protocol_by_name in this case)
    * @return  the ID of the protocol
    *
    */
-  int ndpi_get_protocol_id(struct ndpi_detection_module_struct *ndpi_mod, char *proto);
+  extern u_int16_t ndpi_get_proto_by_name(struct ndpi_detection_module_struct *ndpi_mod, const char *name);
+
+  /**
+   * Return the name of the protocol given its ID
+   *
+   * @par     ndpi_mod   = the detection module
+   * @par     id         = the protocol id
+   * @return  the name of the protocol
+   *
+   */
+  extern char* ndpi_get_proto_by_id(struct ndpi_detection_module_struct *ndpi_mod, u_int id);
+
+  /**
+   * Return the name of the protocol given its ID. You can specify TLS.YouTube or just TLS
+   *
+   * @par     ndpi_mod   = the detection module
+   * @par     id         = the protocol id
+   * @return  the name of the protocol
+   *
+   */
+  extern ndpi_master_app_protocol ndpi_get_protocol_by_name(struct ndpi_detection_module_struct *ndpi_str, const char *name);
 
   /**
    * Return the ID of the category
@@ -1036,6 +1056,9 @@ extern "C" {
 
   u_int16_t ndpi_get_lower_proto(ndpi_protocol proto);
   u_int16_t ndpi_get_upper_proto(ndpi_protocol proto);
+  bool ndpi_is_proto(ndpi_master_app_protocol proto, u_int16_t p);
+  bool ndpi_is_proto_unknown(ndpi_master_app_protocol proto);
+  bool ndpi_is_proto_equals(ndpi_master_app_protocol to_check, ndpi_master_app_protocol to_match, bool exact_match_only);
 
   ndpi_proto_defaults_t* ndpi_get_proto_defaults(struct ndpi_detection_module_struct *ndpi_mod);
   u_int ndpi_get_ndpi_num_supported_protocols(struct ndpi_detection_module_struct *ndpi_mod);
@@ -1730,12 +1753,12 @@ extern "C" {
 
   void ndpi_md5(const u_char *data, size_t data_len, u_char hash[16]);
   void ndpi_sha256(const u_char *data, size_t data_len, u_int8_t sha_hash[32]);
-  
+
   u_int16_t ndpi_crc16_ccit(const void* data, size_t n_bytes);
   u_int16_t ndpi_crc16_ccit_false(const void *data, size_t n_bytes);
   u_int16_t ndpi_crc16_xmodem(const void *data, size_t n_bytes);
   u_int16_t ndpi_crc16_x25(const void* data, size_t n_bytes);
-  u_int32_t ndpi_crc32(const void* data, size_t n_bytes);
+  u_int32_t ndpi_crc32(const void *data, size_t length, u_int32_t crc);
   u_int32_t ndpi_nearest_power_of_two(u_int32_t x);
 
   /* ******************************* */
@@ -1751,7 +1774,7 @@ extern "C" {
 
   u_int ndpi_hex2bin(u_char *out, u_int out_len, u_char* in, u_int in_len);
   u_int ndpi_bin2hex(u_char *out, u_int out_len, u_char* in, u_int in_len);
-
+  
   /* ******************************* */
 
   int ndpi_des_init(struct ndpi_des_struct *des, double alpha, double beta, float significance);
@@ -1783,11 +1806,13 @@ extern "C" {
                             ndpi_confidence_t confidence,
                             ndpi_protocol l7_protocol);
   const char* ndpi_risk2str(ndpi_risk_enum risk);
+  const char* ndpi_risk2code(ndpi_risk_enum risk);
+  ndpi_risk_enum ndpi_code2risk(const char* risk);
   const char* ndpi_severity2str(ndpi_risk_severity s);
   ndpi_risk_info* ndpi_risk2severity(ndpi_risk_enum risk);
   u_int16_t ndpi_risk2score(ndpi_risk risk,
 			    u_int16_t *client_score, u_int16_t *server_score);
-
+  char* print_ndpi_address_port(ndpi_address_port *ap, char *buf, u_int buf_len);
   u_int8_t ndpi_check_issuerdn_risk_exception(struct ndpi_detection_module_struct *ndpi_str,
 					      char *issuerDN);
   u_int8_t ndpi_check_flow_risk_exceptions(struct ndpi_detection_module_struct *ndpi_str,
@@ -1828,6 +1853,11 @@ extern "C" {
 
   /* ******************************* */
 
+  /* Mahalanobis distance (https://en.wikipedia.org/wiki/Mahalanobis_distance) between a point x and a distribution with mean u and inverted covariant matrix i_s */
+  float ndpi_mahalanobis_distance(const u_int32_t *x, u_int32_t size, const float *u, const float *i_s);
+
+  /* ******************************* */
+
   int  ndpi_init_bin(struct ndpi_bin *b, enum ndpi_bin_family f, u_int16_t num_bins);
   void ndpi_free_bin(struct ndpi_bin *b);
   struct ndpi_bin* ndpi_clone_bin(struct ndpi_bin *b);
@@ -1842,6 +1872,59 @@ extern "C" {
   int ndpi_cluster_bins(struct ndpi_bin *bins, u_int16_t num_bins,
 			u_int8_t num_clusters, u_int16_t *cluster_ids,
 			struct ndpi_bin *centroids);
+
+  /* ******************************* */
+
+  /* create a kd-tree for num_dimensions vector items */
+  ndpi_kd_tree* ndpi_kd_create(u_int num_dimensions);
+
+  /* free the ndpi_kd_tree */
+  void ndpi_kd_free(ndpi_kd_tree *tree);
+
+  /* remove all the elements from the tree */
+  void ndpi_kd_clear(ndpi_kd_tree *tree);
+
+  /* insert a node, specifying its position, and optional data.
+     Return true = OK, false otherwise
+  */
+  bool ndpi_kd_insert(ndpi_kd_tree *tree, const double *data_vector, void *user_data);
+
+  /* Find the nearest node from a given point.
+   * This function returns a pointer to a result set with at most one element.
+   */
+  ndpi_kd_tree_result *ndpi_kd_nearest(ndpi_kd_tree *tree, const double *data_vector);
+
+  /* returns the size of the result set (in elements) */
+  u_int32_t ndpi_kd_num_results(ndpi_kd_tree_result *res);
+
+  /* returns the current element and updates user_data with the data put during insert */
+  double* ndpi_kd_result_get_item(ndpi_kd_tree_result *res, double **user_data);
+
+  /* frees a result set returned by kd_nearest_range() */
+  void ndpi_kd_result_free(ndpi_kd_tree_result *res);
+
+  /* Returns the distance (square root of the individual elements difference) */
+  double ndpi_kd_distance(double *a1, double *b2, u_int num_dimensions);
+
+  /* ******************************* */
+
+  /*
+    Ball Tree: similar to KD-tree but more efficient with high cardinalities
+
+    - https://en.wikipedia.org/wiki/Ball_tree
+    - https://www.geeksforgeeks.org/ball-tree-and-kd-tree-algorithms/
+    - https://varshasaini.in/kd-tree-and-ball-tree-knn-algorithm/
+    - https://varshasaini.in/k-nearest-neighbor-knn-algorithm-in-machine-learning/
+
+    NOTE:
+    with ball tree, data is a vector of vector pointers (no array)
+  */
+  ndpi_btree* ndpi_btree_init(double **data, u_int32_t n_rows, u_int32_t n_columns);
+  ndpi_knn ndpi_btree_query(ndpi_btree *b, double **query_data,
+			    u_int32_t query_data_num_rows, u_int32_t query_data_num_columns,
+			    u_int32_t max_num_results);
+  void ndpi_free_knn(ndpi_knn knn);
+  void ndpi_free_btree(ndpi_btree *tree);
 
   /* ******************************* */
 
@@ -1892,9 +1975,9 @@ extern "C" {
    *
    */
   double ndpi_pearson_correlation(u_int32_t *values_a, u_int32_t *values_b, u_int16_t num_values);
-  
+
   /* ******************************* */
-  
+
   /*
    * Checks if a specified value is an outlier with respect to past values
    * using the Z-score.
@@ -1906,12 +1989,12 @@ extern "C" {
    *                        t = 1 - The value to check should not exceed the past values
    *                        t > 1 - The value to check has to be within (t * stddev) boundaries
    * @par lower           - [out] Lower threshold
-   * @par upper           - [out] Upper threshold   
+   * @par upper           - [out] Upper threshold
    *
    * @return true if the specified value is an outlier, false otherwise
    *
    */
-  
+
   bool ndpi_is_outlier(u_int32_t *past_values, u_int32_t num_past_values,
 		       u_int32_t value_to_check, float threshold,
 		       float *lower, float *upper);
@@ -2093,7 +2176,7 @@ extern "C" {
 				     ndpi_domain_classify *s,
 				     u_int16_t *class_id /* out */,
 				     char *hostname);
-  
+
   /* ******************************* */
 
   /*
@@ -2215,8 +2298,8 @@ extern "C" {
   int64_t ndpi_strtonum(const char *numstr, int64_t minval, int64_t maxval, const char **errstrp, int base);
   int ndpi_vsnprintf(char * str, size_t size, char const * format, va_list va_args);
   int ndpi_snprintf(char * str, size_t size, char const * format, ...);
-  struct tm *ndpi_gmtime_r(const time_t *timep,
-                           struct tm *result);
+  struct tm *ndpi_gmtime_r(const time_t *timep, struct tm *result);
+  char* ndpi_strrstr(const char *haystack, const char *needle);
 
   /* ******************************* */
 
@@ -2249,6 +2332,27 @@ extern "C" {
   bool ndpi_serialize_flow_fingerprint(struct ndpi_detection_module_struct *ndpi_str,
 				       struct ndpi_flow_struct *flow, ndpi_serializer *serializer);
 
+  /* ******************************* */
+
+  /* Address cache API */
+  struct ndpi_address_cache* ndpi_init_address_cache(u_int32_t max_num_entries);
+  void ndpi_term_address_cache(struct ndpi_address_cache *cache);
+  u_int32_t ndpi_address_cache_flush_expired(struct ndpi_address_cache *cache, u_int32_t epoch_now);
+  struct ndpi_address_cache_item* ndpi_address_cache_find(struct ndpi_address_cache *cache, ndpi_ip_addr_t ip_addr, u_int32_t epoch_now);
+  bool ndpi_address_cache_insert(struct ndpi_address_cache *cache, ndpi_ip_addr_t ip_addr, char *hostname,
+				 u_int32_t epoch_now, u_int32_t ttl);
+  bool ndpi_address_cache_dump(struct ndpi_address_cache *cache, char *path, u_int32_t epoch_now);
+  u_int32_t ndpi_address_cache_restore(struct ndpi_address_cache *cache, char *path, u_int32_t epoch_now);
+  
+
+  bool ndpi_cache_address(struct ndpi_detection_module_struct *ndpi_struct,
+			ndpi_ip_addr_t ip_addr, char *hostname,
+			  u_int32_t epoch_now, u_int32_t ttl);
+  struct ndpi_address_cache_item* ndpi_cache_address_find(struct ndpi_detection_module_struct *ndpi_struct, ndpi_ip_addr_t ip_addr);
+  bool ndpi_cache_address_dump(struct ndpi_detection_module_struct *ndpi_struct, char *path, u_int32_t epoch_now);
+  u_int32_t ndpi_cache_address_restore(struct ndpi_detection_module_struct *ndpi_struct, char *path, u_int32_t epoch_now);
+  u_int32_t ndpi_cache_address_flush_expired(struct ndpi_detection_module_struct *ndpi_struct, u_int32_t epoch_now);
+  
   /* ******************************* */
 
   const char *ndpi_lru_cache_idx_to_name(lru_cache_type idx);

@@ -1,4 +1,4 @@
-AC_INIT([libndpi],[4.10.0])
+AC_INIT([libndpi],[4.11.0])
 
 AC_CONFIG_AUX_DIR([.])
 AC_CONFIG_MACRO_DIR([m4])
@@ -7,8 +7,8 @@ AM_INIT_AUTOMAKE([foreign subdir-objects])
 
 AC_PREFIX_DEFAULT(/usr)
 
-EXTRA_TARGETS="example tests tests/dga"
-AC_ARG_WITH(only-libndpi, AS_HELP_STRING([--with-only-libndpi], [Build only libndpi (no examples, tests etc)]))
+EXTRA_TARGETS="app tests tests/dga"
+AC_ARG_WITH(only-libndpi, AS_HELP_STRING([--with-only-libndpi], [Build only libndpi (no app, tests etc)]))
 AS_IF([test "${with_only_libndpi+set}" = set],[
   EXTRA_TARGETS=""
 ])
@@ -332,16 +332,24 @@ case "$host" in
       elif test "${with_only_libndpi+set}" != set; then :
          AC_CHECK_LIB([pcap], [pcap_open_live], [PCAP_LIB="-lpcap"])
          if test $ac_cv_lib_pcap_pcap_open_live = "no"; then :
-            AC_MSG_ERROR([Missing libpcap(-dev) library required to compile the example application.])
+            AC_MSG_ERROR([Missing libpcap(-dev) library required to compile the application.])
          fi
       fi
-
+      
       AC_CHECK_LIB([zmq], [zmq_ctx_new], [
         AC_DEFINE([HAVE_ZMQ], [1], [Define if libzmq is available])
         ZMQ_LIB="-lzmq"
         LIBS="${LIBS} ${ZMQ_LIB}"
       ], [
-        AC_MSG_ERROR([Missing libzmq(-dev) library required to compile the example application.])
+        AC_MSG_ERROR([Missing libzmq(-dev) library required to compile the application.])
+      ])
+      
+      AC_CHECK_LIB([ncurses], [initscr], [
+        AC_DEFINE([HAVE_NCURSES], [1], [Define if ncurses is available])
+        NCURSES_LIB="-lncurses"
+        LIBS="${LIBS} ${NCURSES_LIB}"
+      ], [
+        AC_MSG_ERROR([Missing libncurses(-dev) library required to compile the application.])
       ])
 
       EXE_SUFFIX=""
@@ -442,7 +450,7 @@ dnl>   ADDITIONAL_LIBS="${ADDITIONAL_LIBS} -lcurl"
 dnl>   AC_DEFINE_UNQUOTED(HAVE_CURL, 1, [curl is present])
 dnl> fi
 
-AC_CONFIG_FILES([Makefile example/Makefile example/Makefile.dpdk tests/Makefile tests/unit/Makefile tests/performance/Makefile tests/dga/Makefile influxdb/Makefile libndpi.pc src/include/ndpi_define.h src/lib/Makefile])
+AC_CONFIG_FILES([Makefile app/Makefile app/Makefile.dpdk tests/Makefile tests/unit/Makefile tests/performance/Makefile tests/dga/Makefile libndpi.pc src/include/ndpi_define.h src/lib/Makefile])
 AC_CONFIG_FILES([tests/do.sh], [chmod +x tests/do.sh])
 AC_CONFIG_HEADERS(src/include/ndpi_config.h)
 AC_SUBST(GIT_RELEASE)
@@ -453,6 +461,7 @@ AC_SUBST(NDPI_VERSION_SHORT)
 AC_SUBST(PCAP_INC)
 AC_SUBST(PCAP_LIB)
 AC_SUBST(ZMQ_LIB)
+AC_SUBST(NCURSES_LIB)
 AC_SUBST(LIBRRD)
 AC_SUBST(ADDITIONAL_INCS)
 AC_SUBST(ADDITIONAL_LIBS)

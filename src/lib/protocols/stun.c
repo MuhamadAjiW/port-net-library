@@ -110,7 +110,7 @@ static int is_new_subclassification_better(struct ndpi_detection_module_struct *
   if(new_app_proto != NDPI_PROTOCOL_UNKNOWN &&
      is_subclassification_real(flow) &&
      new_app_proto != flow->detected_protocol_stack[0]) {
-    NDPI_LOG_ERR(ndpi_struct, "Incoherent sub-classification change %d/%d->%d \n",
+    NDPI_LOG_DBG(ndpi_struct, "Incoherent sub-classification change %d/%d->%d \n",
                  flow->detected_protocol_stack[1],
                  flow->detected_protocol_stack[0], new_app_proto);
   }
@@ -850,7 +850,7 @@ static int stun_search_again(struct ndpi_detection_module_struct *ndpi_struct,
         packet->payload_packet_len = orig_payload_length;
 
       } else {
-        NDPI_LOG_ERR(ndpi_struct, "Invalid MS channel length %d %d\n",
+        NDPI_LOG_DBG(ndpi_struct, "Invalid MS channel length %d %d\n",
                      ch_len, packet->payload_packet_len - 4);
       }
     } else {
@@ -964,7 +964,7 @@ static void ndpi_int_stun_add_connection(struct ndpi_detection_module_struct *nd
     /* In "normal" data-path the generic code in `ndpi_internal_detection_process_packet()`
        takes care of setting the category */
     if(flow->extra_packets_func) {
-      ndpi_protocol ret = { master_proto, app_proto, NDPI_PROTOCOL_UNKNOWN /* unused */, NDPI_PROTOCOL_CATEGORY_UNSPECIFIED, NULL};
+      ndpi_protocol ret = { { master_proto, app_proto }, NDPI_PROTOCOL_UNKNOWN /* unused */, NDPI_PROTOCOL_CATEGORY_UNSPECIFIED, NULL};
       flow->category = ndpi_get_proto_category(ndpi_struct, ret);
     }
   }

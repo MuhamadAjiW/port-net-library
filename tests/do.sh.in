@@ -51,7 +51,7 @@ NBPF_ENABLED=@NBPF_ENABLED@
 NBPF_PCAPS="h323-overflow.pcap"
 GLOBAL_CONTEXT_ENABLED=@GLOBAL_CONTEXT_ENABLED@
 GLOBAL_CONTEXT_CFGS="caches_global"
-READER="${CMD_PREFIX} ../../../example/ndpiReader${EXE_SUFFIX} --cfg=filename.config,../../../example/config.txt -A -p ../../../example/protos.txt -c ../../../example/categories.txt -r ../../../example/risky_domains.txt -j ../../../example/ja3_fingerprints.csv -S ../../../example/sha1_fingerprints.csv -G ../../../lists -q -K JSON -k /dev/null -t -v 2"
+READER="${CMD_PREFIX} ../../../app/ndpiReader${EXE_SUFFIX} --cfg=filename.config,../../../app/etc/config.txt -A -p ../../../app/etc/protos.txt -c ../../../app/etc/categories.txt -r ../../../app/etc/risky_domains.txt -j ../../../app/etc/ja3_fingerprints.csv -S ../../../app/etc/sha1_fingerprints.csv -G ../../../lists -q -K JSON -k /dev/null -t -v 2"
 
 
 #These exports are used in parallel mode
@@ -69,8 +69,8 @@ export FORCE_PARALLEL_UTESTS
 
 RC=0
 
-if [ ! -x "../example/ndpiReader${EXE_SUFFIX}" ]; then
-  echo "$0: Missing ../example/ndpiReader${EXE_SUFFIX}"
+if [ ! -x "../app/ndpiReader${EXE_SUFFIX}" ]; then
+  echo "$0: Missing ../app/ndpiReader${EXE_SUFFIX}"
   echo "$0: Run ./configure and make first"
   exit 1
 fi
@@ -97,18 +97,6 @@ if [ ${GPROF_ENABLED} -eq 1 ]; then
 else
   GPROF=false
 fi
-
-fuzzy_testing() {
-    if [ -f ../fuzz/fuzz_ndpi_reader ]; then
-	cp ../example/protos.txt .
-	cp ../example/categories.txt .
-	cp ../example/risky_domains.txt .
-	cp ../example/ja3_fingerprints.csv .
-	cp ../example/sha1_fingerprints.csv .
-	../fuzz/fuzz_ndpi_reader -dict=../fuzz/dictionary.dict -max_total_time="${MAX_TOTAL_TIME:-592}" -print_pcs=1 -workers="${FUZZY_WORKERS:-0}" -jobs="${FUZZY_JOBS:-0}" cfgs/default/pcap/
-	rm -f protos.txt categories.txt risky_domains.txt ja3_fingerprints.csv sha1_fingerprints.csv
-    fi
-}
 
 run_single_pcap()
 {
@@ -144,54 +132,48 @@ run_single_pcap()
         return 0
     fi
 
-    > "../../csv/$f.csv"
-    > "../../results/$f"
-    CMD="$READER -i pcap/$f -C ../../csv/$f.csv -w ../../results/$f $READER_EXTRA_PARAM"
+    CMD="$READER -i pcap/$f -w /tmp/reader.$$.out $READER_EXTRA_PARAM"
     CPUPROFILE=./result/$f.cprof HEAPPROFILE=./result/$f $CMD
     CMD_RET=$?
-    if [ $CMD_RET -eq 0 ] && [ -f ../../results/$f ]; then
+    if [ $CMD_RET -eq 0 ] && [ -f /tmp/reader.$$.out ]; then
 	# create result files if not present
         if [ ! -f "result/$f.out" ]; then
-            cp ../../results/$f "result/$f.out"
-	    fi
-        NUM_DIFF=$(${CMD_DIFF} "result/$f.out" "../../results/$f" | wc -l)
+            cp /tmp/reader.$$.out "result/$f.out"
+	fi
+        NUM_DIFF=$(${CMD_DIFF} "result/$f.out" /tmp/reader.$$.out | wc -l)
+    else
+        if [ $FORCE_PARALLEL_UTESTS -eq 1 ]; then
+            printf "ERROR (ndpiReader${EXE_SUFFIX} exit code: ${CMD_RET})\n"
         else
-            if [ $FORCE_PARALLEL_UTESTS -eq 1 ]; then
-                printf "ERROR (ndpiReader${EXE_SUFFIX} exit code: ${CMD_RET})\n"
-            else
-                printf "%-48s\tERROR (ndpiReader${EXE_SUFFIX} exit code: ${CMD_RET})\n" "$f"
-            FAILURES+=("$f") #TODO: find a way to update this variable also in parallel mode
-            fi
-	    return 1
+            printf "%-48s\tERROR (ndpiReader${EXE_SUFFIX} exit code: ${CMD_RET})\n" "$f"
+	    FAILURES+=("$f") #TODO: find a way to update this variable also in parallel mode
+        fi
+	return 1
     fi
 
     if [ "$NUM_DIFF" -eq 0 ]; then
         if [ $FORCE_PARALLEL_UTESTS -eq 0 ]; then
             printf "%-48s\tOK\n" "$f"
         fi
-        # /bin/rm -f ../../results/$f
-        # /bin/rm -f ../../csv/$f.csv
         return 0
     else
         if [ $FORCE_PARALLEL_UTESTS -eq 1 ]; then
-            printf "ERROR forced parallel error\n"
+            printf "ERROR\n"
         else
-            printf "%-48s\tERROR unknown error\n" "$f"
-            FAILURES+=("$f") #TODO: find a way to update this variable also in parallel mode
-        fi
-        echo "Difference:\n"
+            printf "%-48s\tERROR\n" "$f"
+	    FAILURES+=("$f") #TODO: find a way to update this variable also in parallel mode
+	fi
         echo "$CMD [old vs new]"
-        ${CMD_DIFF} "result/$f.out" ../../results/$f
+        ${CMD_DIFF} "result/$f.out" /tmp/reader.$$.out
         if [ ! -z "${CMD_COLORDIFF}" ] && [ ! -z "${CMD_WDIFF}" ]; then
-            ${CMD_WDIFF} -n -3 "result/$f.out" ../../results/$f | sort | uniq | ${CMD_COLORDIFF}
+            ${CMD_WDIFF} -n -3 "result/$f.out" /tmp/reader.$$.out | sort | uniq | ${CMD_COLORDIFF}
         fi
         if [ $FORCE_UPDATING_UTESTS_RESULTS -eq 1 ]; then
-            cp ../../results/$f "result/$f.out"
+            cp /tmp/reader.$$.out "result/$f.out"
         fi
     fi
 
-    # /bin/rm -f ../../results/$f
-    # /bin/rm -f ../../csv/$f.csv
+    /bin/rm -f /tmp/reader.$$.out
 
     return 1
 }
@@ -216,16 +198,12 @@ check_results() {
 
     if [ ${GPROF_ENABLED} -eq 1 ]; then
       GPROF_ARGS='-nodecount 100 -nodefraction 0 -symbolize=fastlocal'
-      ${GPROF} -top ${GPROF_ARGS} ../../../example/ndpiReader${EXE_SUFFIX} ./result/*.cprof || exit 1
-      ${GPROF} -png -output ./result/cpu_profile.png ${GPROF_ARGS} ../../../example/ndpiReader${EXE_SUFFIX} ./result/*.cprof || exit 1
-      ${GPROF} -top ${GPROF_ARGS} -sample_index=alloc_space  ../../../example/ndpiReader${EXE_SUFFIX} ./result/*.heap || exit 1
-      ${GPROF} -png -output ./result/heap_profile.png ${GPROF_ARGS} -sample_index=alloc_space ../../../example/ndpiReader${EXE_SUFFIX} ./result/*.heap || exit 1
+      ${GPROF} -top ${GPROF_ARGS} ../../../app/ndpiReader${EXE_SUFFIX} ./result/*.cprof || exit 1
+      ${GPROF} -png -output ./result/cpu_profile.png ${GPROF_ARGS} ../../../app/ndpiReader${EXE_SUFFIX} ./result/*.cprof || exit 1
+      ${GPROF} -top ${GPROF_ARGS} -sample_index=alloc_space  ../../../app/ndpiReader${EXE_SUFFIX} ./result/*.heap || exit 1
+      ${GPROF} -png -output ./result/heap_profile.png ${GPROF_ARGS} -sample_index=alloc_space ../../../app/ndpiReader${EXE_SUFFIX} ./result/*.heap || exit 1
     fi
 }
-
-if [ $FUZZY_TESTING_ENABLED -eq 1 ]; then
-    fuzzy_testing
-fi
 
 for d in $(find ./cfgs/* -type d -maxdepth 0 2>/dev/null) ; do
 
