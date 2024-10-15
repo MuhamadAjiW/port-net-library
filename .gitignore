@@ -4,7 +4,7 @@
 *.db-*
 *.dll
 *.ilk
-*.in
+# *.in
 *.ipch
 *.ko
 *.la
