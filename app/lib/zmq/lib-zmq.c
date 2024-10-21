@@ -23,12 +23,16 @@ uint8_t lzmq_send_to_server(char* ip, int port, FILE* file) {
     if (rc != 0) {
         fprintf(stderr, "Failed to bind to ZeroMQ socket: %s\n", zmq_strerror(errno));
         str_delete(&address);
+        zmq_close(socket);
+        zmq_ctx_destroy(context);
         return 2;
     }
 
     if (file == NULL) {
         fprintf(stderr, "Error: Unable to open CSV file.\n");
         str_delete(&address);
+        zmq_close(socket);
+        zmq_ctx_destroy(context);
         return 3;
     }
 

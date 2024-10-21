@@ -207,3 +207,4 @@ stamp-h1
 
 # Mark for ignore
 *.ignore
+**/a.out
