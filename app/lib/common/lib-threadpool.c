@@ -1,6 +1,6 @@
 #include "../../include/lib-threadpool.h"
 
-void thread_pool_init(int size, struct thread_pool_t* pool) {
+void thread_pool_init(struct thread_pool_t* pool, int size) {
     pool->size = size;
     pool->handler = (struct thread_pool_handler_t*)malloc(sizeof(struct thread_pool_handler_t) * size);
     pthread_mutex_init(&pool->pool_mutex, NULL);
@@ -16,8 +16,6 @@ void thread_pool_init(int size, struct thread_pool_t* pool) {
 
         pthread_create(&pool->handler[i].thread, NULL, thread_pool_runner, args);
     }
-
-    return pool;
 }
 
 void thread_pool_delete(struct thread_pool_t* pool) {
@@ -57,7 +55,8 @@ void thread_pool_assign(
     pthread_mutex_unlock(&(pool->handler[subthread_idx].thread_mutex));
 }
 
-void thread_pool_runner(struct thread_pool_runner_args_t* args) {
+void* thread_pool_runner(void* thread_pool_runner_args) {
+    struct thread_pool_runner_args_t* args = (struct thread_pool_runner_args_t*)thread_pool_runner_args;
     struct thread_pool_t* pool = args->pool;
     int index = args->index;
 
@@ -85,4 +84,6 @@ void thread_pool_runner(struct thread_pool_runner_args_t* args) {
     }
 
     free(args);
+
+    return NULL;
 }

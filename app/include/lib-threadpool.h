@@ -38,7 +38,7 @@ struct thread_pool_runner_args_t {
 };
 
 // Functions
-struct thread_pool_t thread_pool_init(int size);
+void thread_pool_init(struct thread_pool_t*, int size);
 void thread_pool_delete();
 void thread_pool_assign(
     struct thread_pool_t* pool,
@@ -47,6 +47,6 @@ void thread_pool_assign(
     void* __restrict__ __arg,
     void** thread_return
 );
-void thread_pool_runner(struct thread_pool_t* pool, int index);
+void* thread_pool_runner(void* thread_pool_runner_args);
 
 #endif
