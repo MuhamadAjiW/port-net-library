@@ -1,6 +1,17 @@
 
 #include "../../include/lib-print-ncurses.h"
 
+void ncurses_clean_twalk() {
+    for (int thread_id = 0; thread_id < num_threads; thread_id++) {
+        memset(ndpi_thread_info[thread_id].workflow->stats.protocol_counter, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.protocol_counter));
+        memset(ndpi_thread_info[thread_id].workflow->stats.protocol_counter_bytes, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.protocol_counter_bytes));
+        memset(ndpi_thread_info[thread_id].workflow->stats.protocol_flows, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.protocol_flows));
+        memset(ndpi_thread_info[thread_id].workflow->stats.flow_confidence, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.flow_confidence));
+        ndpi_thread_info[thread_id].workflow->stats.guessed_flow_protocols = 0;
+        ndpi_thread_info[thread_id].workflow->stats.num_dissector_calls = 0;
+    }
+}
+
 // Print result to an ncurses window
 void ncurses_printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
     u_int32_t i;
@@ -18,17 +29,9 @@ void ncurses_printResults(uint64_t processing_time_usec, uint64_t setup_time_use
             && (ndpi_thread_info[thread_id].workflow->stats.raw_packet_count == 0))
             continue;
 
-        memset(ndpi_thread_info[thread_id].workflow->stats.protocol_counter, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.protocol_counter));
-        memset(ndpi_thread_info[thread_id].workflow->stats.protocol_counter_bytes, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.protocol_counter_bytes));
-        memset(ndpi_thread_info[thread_id].workflow->stats.protocol_flows, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.protocol_flows));
-        memset(ndpi_thread_info[thread_id].workflow->stats.flow_confidence, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.flow_confidence));
-        ndpi_thread_info[thread_id].workflow->stats.guessed_flow_protocols = 0;
-        ndpi_thread_info[thread_id].workflow->stats.num_dissector_calls = 0;
-
         for (i = 0; i < NUM_ROOTS; i++) {
             ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
                 node_proto_guess_walker, &thread_id);
-
             if (verbose == 3 || stats_flag) ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
                 port_stats_walker, &thread_id);
         }

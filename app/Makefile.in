@@ -47,7 +47,7 @@ else
 LIBS+=-pthread
 endif
 
-CFLAGS+=-pthread -DDEPLOY_BUILD
+CFLAGS+=-pthread
 CHECK_CFLAGS:=$(CFLAGS) -DCHECK_BUILD
 
 all: ndpiReader$(EXE_SUFFIX) @DPDK_TARGET@
@@ -97,7 +97,7 @@ dpdk:
 	$(MAKE) -f Makefile.dpdk
 
 check: CFLAGS=$(CHECK_CFLAGS)
-check: ndpiReader$(EXE_SUFFIX)
+check: clean ndpiReader$(EXE_SUFFIX)
 	true # nothing to do here
 
 cppcheck:

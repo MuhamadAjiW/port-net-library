@@ -31,6 +31,7 @@ void* ldis_print(__attribute__((unused)) void* arg) {
         ncurses_printResults(processing_time_usec, setup_time_usec);
 
         refresh();
+        ncurses_clean_twalk();
         napms(1000);
     }
     endwin();
