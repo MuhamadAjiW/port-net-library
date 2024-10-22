@@ -2,6 +2,7 @@
 #define _APP_GLOBAL_H
 
 #include "lib-threadpool.h"
+#include "lib-zmq.h"
 #include "lib-log.h"
 
 #define THREAD_DISPLAY 0
@@ -36,9 +37,12 @@
 #define TAG_DISPLAY     "DISPLAY"
 #define TAG_ZMQ         "ZMQ"
 
-// TODO: Restructure other global variables here
+// _TODO: Restructure other global variables here
 extern struct thread_pool_t global_thread_pool;
 extern struct logger_t global_logger;
+extern char* global_zmq_server_addr;
+extern int global_zmq_server_port;
+
 
 uint8_t global_init();
 uint8_t global_clean();

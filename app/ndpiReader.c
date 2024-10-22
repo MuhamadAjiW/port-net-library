@@ -2211,12 +2211,16 @@ void run_detection() {
     }
     ldis_do_loop = 0;
 
-    // pthread_join(display_thread, NULL);
     DLOG(TAG_GENERAL, "Execution completed...");
 
 #ifdef USE_DPDK
     dpdk_port_deinit(dpdk_port_id);
 #endif
+
+    // _TODO: Execution completion event instead of busy waiting
+    while (global_thread_pool.handler[THREAD_DISPLAY].thread_queue_len > 0) {
+        zmq_sleep(1);
+    }
 
     gettimeofday(&end, NULL);
     processing_time_usec = (u_int64_t)end.tv_sec * 1000000 + end.tv_usec - ((u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec);

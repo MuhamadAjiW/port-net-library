@@ -6,51 +6,48 @@
 
 int lzmq_do_loop = 1;
 
-struct lzmq_interface lzmq_int_init(char* ip, int port, int type) {
-    struct lzmq_interface retval = { 0 };
-
+void lzmq_int_init(struct lzmq_interface_t* lzmq_int, char* ip, int port, int type) {
     string_t address = str_format("tcp://%s:%d", ip, port);
 
     if (str_is_null(address)) {
         printf("Failed to allocate address string\n");
-        return retval;
+        return;
     }
 
-    retval.context = zmq_ctx_new();
-    retval.socket = zmq_socket(retval.context, type);
+    lzmq_int->context = zmq_ctx_new();
+    lzmq_int->socket = zmq_socket(lzmq_int->context, type);
 
     int rc = 0;
     switch (type) {
     case ZMQ_PUB:
-        rc = zmq_bind(retval.socket, address.content);
+        rc = zmq_bind(lzmq_int->socket, address.content);
         break;
     case ZMQ_SUB:
-        rc = zmq_connect(retval.socket, address.content);
+        rc = zmq_connect(lzmq_int->socket, address.content);
         break;
 
     default:
         fprintf(stderr, "Invalid zeromq interface type: %s\n", zmq_strerror(errno));
         str_delete(&address);
-        lzmq_int_cleanup(&retval);
-        return retval;
+        lzmq_int_cleanup(lzmq_int);
+        return;
     }
 
     if (rc != 0) {
         fprintf(stderr, "Failed to bind to ZeroMQ socket: %s\n", zmq_strerror(errno));
         str_delete(&address);
-        lzmq_int_cleanup(&retval);
-        return retval;
+        lzmq_int_cleanup(lzmq_int);
+        return;
     }
 
     str_delete(&address);
-    return retval;
 }
 
-bool lzmq_int_initialized(struct lzmq_interface* interface) {
+bool lzmq_int_initialized(struct lzmq_interface_t* interface) {
     return (interface->socket != 0) && (interface->context != 0);
 }
 
-void lzmq_int_cleanup(struct lzmq_interface* interface) {
+void lzmq_int_cleanup(struct lzmq_interface_t* interface) {
     if (interface->socket != 0) {
         zmq_close(interface->socket);
     }
@@ -59,7 +56,7 @@ void lzmq_int_cleanup(struct lzmq_interface* interface) {
     }
 }
 
-uint8_t lzmq_send_file(struct lzmq_interface* interface, FILE* file, int flags) {
+uint8_t lzmq_send_file(struct lzmq_interface_t* interface, FILE* file, int flags) {
     if (file == NULL) {
         fprintf(stderr, "Error: Unable to open file.\n");
         return 3;
@@ -111,14 +108,14 @@ uint8_t lzmq_send_file(struct lzmq_interface* interface, FILE* file, int flags) 
     return 0;
 }
 
-uint8_t lzmq_send_str(struct lzmq_interface* interface, const char* data, int flags) {
+uint8_t lzmq_send_str(struct lzmq_interface_t* interface, const char* data, int flags) {
     pthread_mutex_lock(&interface->mutex);
     zmq_send(interface->socket, data, strlen(data), flags);
     pthread_mutex_unlock(&interface->mutex);
     return 1;
 }
 
-uint8_t lzmq_send_json(struct lzmq_interface* interface, json_object* json, int flags) {
+uint8_t lzmq_send_json(struct lzmq_interface_t* interface, json_object* json, int flags) {
     const char* json_serialized = json_object_to_json_string(json);
     return lzmq_send_str(interface, json_serialized, flags);
 }

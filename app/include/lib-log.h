@@ -5,6 +5,8 @@
 #include <pthread.h>
 #include "stdarg.h"
 #include "stdio.h"
+
+#include "lib-zmq.h"
 #include "lib-string.h"
 
 // Macros
@@ -15,6 +17,7 @@
 
 #define LOGGER_TYPE_FILE     0
 #define LOGGER_TYPE_STDOUT   1
+#define LOGGER_TYPE_ZMQ     2
 
 // Structs
 struct log_t {
@@ -25,12 +28,13 @@ struct log_t {
 };
 
 struct logger_t {
-    FILE* output_file;
     int type;
+    FILE* output_file;
+    struct lzmq_interface_t* zmq_int;
 };
 
 // Functions
-uint8_t logger_init(struct logger_t* logger, int type, char* path);
+uint8_t logger_init(struct logger_t* logger, int type, char* addr, int port);
 void logger_delete(struct logger_t* logger);
 uint8_t logger_log_stdout(struct log_t* log);
 uint8_t logger_log_file(struct logger_t* logger, struct log_t* log);

@@ -20,8 +20,12 @@ void thread_pool_init(struct thread_pool_t* pool, int size) {
 }
 
 void thread_pool_delete(struct thread_pool_t* pool) {
+    ILOG(TAG_THREADING, "Deleting threadpool");
+
     for (int i = 0; i < pool->size; i++) {
+        ILOG(TAG_THREADING, "Deleting thread %d", i);
         pool->handler[i].__runner_flag = 0;
+        pthread_cond_signal(&(pool->handler[i].task_signal));
         pthread_join(pool->handler[i].thread, NULL);
         pthread_mutex_destroy(&pool->handler[i].thread_mutex);
         free(pool->handler[i].thread_queue);
@@ -66,7 +70,9 @@ void* thread_pool_runner(void* thread_pool_runner_args) {
     while (pool->handler[index].__runner_flag) {
         while (pool->handler[index].thread_queue_len == 0) {
             pthread_cond_wait(&pool->handler[index].task_signal, &(pool->handler[index].thread_mutex));
+            if (!pool->handler[index].__runner_flag) break;
         }
+        if (!pool->handler[index].__runner_flag) break;
 
         struct thread_pool_task_t* task = &pool->handler[index].thread_queue[0];
         if (task->thread_return != NULL) {
@@ -77,7 +83,6 @@ void* thread_pool_runner(void* thread_pool_runner_args) {
         }
 
         // _TODO: Optimize with circular list
-        pthread_mutex_lock(&(pool->handler[index].thread_mutex));
         for (int i = 0; i < pool->handler[index].thread_queue_len - 1; i++) {
             pool->handler[index].thread_queue[i] = pool->handler[index].thread_queue[i + 1];
         }
