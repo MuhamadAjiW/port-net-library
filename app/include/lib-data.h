@@ -72,13 +72,23 @@ struct data_classification_t {
     uint64_t flow_count;
 };
 
-struct data_risk {
+struct data_risk_t {
     string_t name;
     uint64_t count;
     float ratio;
 };
 
-// _TODO Protocol Data
+struct data_all_t {
+    struct data_memory_t memory;
+    struct data_time_t time;
+    struct data_traffic_t traffic;
+    struct data_dpi_t dpi;
+    struct data_protocol_t* protocol;
+    struct data_classification_t* classification;
+    struct data_risk_t* risk;
+};
+
+// _TODO: granular packet data
 
 // Externs
 extern u_int32_t current_ndpi_memory, max_ndpi_memory;

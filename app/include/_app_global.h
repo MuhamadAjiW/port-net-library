@@ -1,6 +1,7 @@
 #ifndef _APP_GLOBAL_H
 #define _APP_GLOBAL_H
 
+#include "lib-data.h"
 #include "lib-threadpool.h"
 #include "lib-zmq.h"
 #include "lib-log.h"
@@ -40,9 +41,10 @@
 // _TODO: Restructure other global variables here
 extern struct thread_pool_t global_thread_pool;
 extern struct logger_t global_logger;
+extern struct lzmq_interface_t global_zmq_conn;
 extern char* global_zmq_server_addr;
 extern int global_zmq_server_port;
-
+extern struct data_all_t global_data;
 
 uint8_t global_init();
 uint8_t global_clean();

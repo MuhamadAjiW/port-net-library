@@ -212,3 +212,70 @@ void node_print_unknown_proto_walker(const void* node,
         num_flows++;
     }
 }
+
+/* *********************************************** */
+
+void global_data_clean() {
+    if (global_data.protocol != NULL) {
+        free(global_data.protocol);
+    }
+    if (global_data.classification != NULL) {
+        free(global_data.classification);
+    }
+    if (global_data.risk != NULL) {
+        free(global_data.risk);
+    }
+
+    memset(&global_data, 0, sizeof(global_data));
+}
+
+void global_data_generate(uint64_t processing_time_usec, uint64_t setup_time_usec) {
+    global_data_clean();
+
+    data_memory_get(&global_data.memory);
+    data_time_get(
+        &global_data.time,
+        processing_time_usec,
+        setup_time_usec
+    );
+    data_traffic_get(&global_data.traffic, cumulative_stats);
+    data_dpi_get(&global_data.dpi, cumulative_stats, processing_time_usec);
+
+    // _TODO: protocol and classification
+}
+
+void* global_data_send(__attribute__((unused)) void* args) {
+    // _TODO: protocol and classification
+    json_object* json_memory = data_memory_to_json(&global_data.memory);
+    json_object* json_time = data_time_to_json(&global_data.time);
+    json_object* json_traffic = data_traffic_to_json(&global_data.traffic);
+    json_object* json_dpi = data_dpi_to_json(&global_data.dpi);
+
+    lzmq_send_json(
+        &global_zmq_conn,
+        json_memory,
+        0
+    );
+    lzmq_send_json(
+        &global_zmq_conn,
+        json_time,
+        0
+    );
+    lzmq_send_json(
+        &global_zmq_conn,
+        json_traffic,
+        0
+    );
+    lzmq_send_json(
+        &global_zmq_conn,
+        json_dpi,
+        0
+    );
+
+    json_object_put(json_memory);
+    json_object_put(json_time);
+    json_object_put(json_traffic);
+    json_object_put(json_dpi);
+
+    return NULL;
+}

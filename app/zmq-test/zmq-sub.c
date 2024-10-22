@@ -31,10 +31,11 @@ uint8_t lzmq_receive_from_server(char* ip, int port, FILE* output_file) {
         zmq_ctx_destroy(context);
         return 3;
     }
+    printf("\nPolling...\n");
 
     zmq_setsockopt(socket, ZMQ_SUBSCRIBE, "", 0);
 
-    char buffer[512];
+    char buffer[256];
     char timestamp[20];
     time_t time_now;
     struct tm* t;
@@ -47,7 +48,7 @@ uint8_t lzmq_receive_from_server(char* ip, int port, FILE* output_file) {
             strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", t);
 
             buffer[bytes_received] = 0;
-            printf("Received data: %s\n", buffer);
+            printf("%s\n", buffer);
 
             fprintf(output_file, "%s: %s\n", timestamp, buffer);
             fflush(output_file);
@@ -64,7 +65,7 @@ uint8_t lzmq_receive_from_server(char* ip, int port, FILE* output_file) {
 
 int main() {
     char* ip = "127.0.0.1";
-    int port = 8888;
+    int port = 56;
     FILE* output_file = fopen("out.ignore", "w+");
     if (output_file == NULL) {
         perror("Error: Failed opening output file");
