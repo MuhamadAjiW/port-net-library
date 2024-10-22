@@ -54,11 +54,26 @@ uint8_t logger_log_raw(
     struct logger_t* logger,
     int level,
     char* tag,
-    char* message
+    char* __restrict__ pattern, ...
 ) {
+    va_list args;
+    va_start(args, pattern);
+    int len = vsnprintf(NULL, 0, pattern, args) + 1;
+    va_end(args);
+
+    char* message = malloc(len);
+    if (message == NULL) return 0;
+
+    va_start(args, pattern);
+    vsnprintf(message, len, pattern, args);
+    va_end(args);
+
     struct log_t log = log_create(level, tag, message);
     int retcode = logger_log(logger, &log);
+
     log_delete(&log);
+    free(message);
+
     return retcode;
 }
 

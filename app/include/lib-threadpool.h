@@ -2,6 +2,7 @@
 #define _LIB_THREAD_POOL_H
 
 #include <pthread.h>
+#include "_app_global.h"
 #include "lib-base.h"
 #include "stdint.h"
 #include "stdlib.h"

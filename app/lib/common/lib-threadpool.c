@@ -8,6 +8,7 @@ void thread_pool_init(struct thread_pool_t* pool, int size) {
     for (int i = 0; i < size; i++) {
         pool->handler[i].thread_queue = (struct thread_pool_task_t*)malloc(sizeof(struct thread_pool_task_t) * INIT_TASK_SIZE);
         pool->handler[i].thread_queue_size = INIT_TASK_SIZE;
+        pool->handler[i].__runner_flag = 1;
         pthread_mutex_init(&pool->handler[i].thread_mutex, NULL);
 
         struct thread_pool_runner_args_t* args = (struct thread_pool_runner_args_t*)malloc(sizeof(struct thread_pool_runner_args_t));
@@ -36,6 +37,7 @@ void thread_pool_assign(
     void* __restrict__ arg,
     void** thread_return
 ) {
+    DLOG(TAG_THREADING, "Assigning task to thread: %d", subthread_idx);
     pthread_mutex_lock(&(pool->handler[subthread_idx].thread_mutex));
     int index = pool->handler[subthread_idx].thread_queue_len++;
     if (index > pool->handler[subthread_idx].thread_queue_size) {
@@ -53,6 +55,7 @@ void thread_pool_assign(
     }
 
     pthread_mutex_unlock(&(pool->handler[subthread_idx].thread_mutex));
+    DLOG(TAG_THREADING, "Task assignment to thread %d completed", subthread_idx);
 }
 
 void* thread_pool_runner(void* thread_pool_runner_args) {

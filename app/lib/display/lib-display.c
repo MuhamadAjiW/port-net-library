@@ -3,6 +3,7 @@
 int ldis_do_loop = 1;
 
 void* ldis_print(__attribute__((unused)) void* arg) {
+    DLOG(TAG_DISPLAY, "Starting display...");
 
     u_int64_t processing_time_usec;
     u_int64_t setup_time_usec;
@@ -58,5 +59,6 @@ void* ldis_print(__attribute__((unused)) void* arg) {
     flows_with_risks = 0;
     risks_found = 0;
 
+    DLOG(TAG_DISPLAY, "Closing display...");
     return EXIT_SUCCESS;
 }

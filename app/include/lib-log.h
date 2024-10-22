@@ -3,8 +3,9 @@
 
 #include <time.h>
 #include <pthread.h>
-#include "lib-string.h"
+#include "stdarg.h"
 #include "stdio.h"
+#include "lib-string.h"
 
 // Macros
 #define LOG_LEVEL_ERROR       1
@@ -38,7 +39,7 @@ uint8_t logger_log_raw(
     struct logger_t* logger,
     int level,
     char* tag,
-    char* message
+    char* __restrict__ pattern, ...
 );
 
 /* ***************************************************** */
