@@ -7,6 +7,7 @@
 #include "lib-print.h"
 #include "lib-print-ncurses.h"
 
+// TODO: Document
 extern int ldis_do_loop;
 extern struct timeval startup_time, begin, end;
 

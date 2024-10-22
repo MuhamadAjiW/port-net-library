@@ -1,5 +1,5 @@
-#ifndef _LIB_CIPHER_H
-#define _LIB_CIPHER_H
+#ifndef _LIB_DATA_H
+#define _LIB_DATA_H
 
 #include <ndpi_typedefs.h>
 #include <ndpi_api.h>
@@ -9,6 +9,7 @@
 
 #include "lib-string.h"
 
+// TODO: Document
 // Structs
 struct data_memory {
     uint32_t mem_once;

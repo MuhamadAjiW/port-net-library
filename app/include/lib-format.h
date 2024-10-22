@@ -12,6 +12,7 @@
 #include "lib-scanner.h"
 #include "lib-reader.h"
 
+// TODO: Document
 // Functions
 char* formatPackets(float numPkts, char* buf);
 char* formatBytes(u_int32_t howMuch, char* buf, u_int buf_len);

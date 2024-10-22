@@ -59,7 +59,6 @@ void lzmq_int_cleanup(struct lzmq_interface* interface) {
     }
 }
 
-
 uint8_t lzmq_send_file(struct lzmq_interface* interface, FILE* file, int flags) {
     if (file == NULL) {
         fprintf(stderr, "Error: Unable to open CSV file.\n");

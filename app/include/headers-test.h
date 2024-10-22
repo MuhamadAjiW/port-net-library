@@ -5,6 +5,7 @@
 #include <assert.h>
 #include "headers.h"
 
+// TODO: Document
 // Macros
 // #define BIN_UNIT_TEST 1
 

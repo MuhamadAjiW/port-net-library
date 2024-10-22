@@ -4,6 +4,7 @@
 #include <ndpi_typedefs.h>
 #include "uthash.h"
 
+// TODO: Document
 // Structs
 // struct to add more statitcs in function printFlowStats
 typedef struct hash_stats {

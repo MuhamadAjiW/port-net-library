@@ -11,6 +11,7 @@
 #include "lib-format.h"
 #include "lib-ndpi.h"
 
+// TODO: Document
 // Macros
 #define NUM_DOH_BINS 2
 

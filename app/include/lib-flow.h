@@ -5,6 +5,7 @@
 #include "uthash.h"
 #include "reader_util.h"
 
+// TODO: Document
 // struct to hold count of flows received by destination ports
 struct port_flow_info {
     u_int32_t port; /* key */

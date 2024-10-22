@@ -3,6 +3,7 @@
 
 #include <ndpi_typedefs.h>
 
+// TODO: Document
 // Macros
 #define MAX_NUM_CFGS 32
 
