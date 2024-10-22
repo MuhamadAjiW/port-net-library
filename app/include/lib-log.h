@@ -15,9 +15,6 @@
 #define LOGGER_TYPE_FILE     0
 #define LOGGER_TYPE_STDOUT   1
 
-#define LLOG(logger, level, tag, message) \
-    logger_log_raw(logger, level, tag, message)
-
 // Structs
 struct log_t {
     int level;
@@ -32,7 +29,7 @@ struct logger_t {
 };
 
 // Functions
-uint8_t logger_init(struct logger_t* logger, char* path);
+uint8_t logger_init(struct logger_t* logger, int type, char* path);
 void logger_delete(struct logger_t* logger);
 uint8_t logger_log_stdout(struct log_t* log);
 uint8_t logger_log_file(struct logger_t* logger, struct log_t* log);

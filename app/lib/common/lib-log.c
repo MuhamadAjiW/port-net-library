@@ -1,13 +1,18 @@
 #include "../../include/lib-log.h"
 
-uint8_t logger_init(struct logger_t* logger, char* path) {
-    logger->output_file = fopen(path, "w+");
-    if (logger->output_file == NULL) {
-        fprintf(stderr, "Error: Unable to open CSV file.\n");
+uint8_t logger_init(struct logger_t* logger, int type, char* path) {
+    switch (type)
+    {
+    case LOGGER_TYPE_STDOUT:
+        return 1;
+    case LOGGER_TYPE_FILE:
+        logger->output_file = fopen(path, "w+");
+        if (logger->output_file == NULL) return 0;
+        return 1;
+
+    default:
         return 0;
     }
-
-    return 1;
 }
 
 void logger_delete(struct logger_t* logger) {
@@ -82,7 +87,7 @@ string_t log_generate_string(struct log_t* log) {
     t = localtime(&log->timestamp);
     strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", t);
 
-    output_string = str_format("%s [%s] [%s]: %s",
+    output_string = str_format("%s [%s] [%s]: %s\n",
         timestamp,
         log_level_to_string(log->level),
         log->tag.content,

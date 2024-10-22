@@ -2306,6 +2306,9 @@ void bpf_filter_port_array_add(int filter_array[], int size, int port) {
 /* *********************************************** */
 
 void run() {
+    global_init();
+    ILOG("PROGRAM", "Program is starting...");
+
     if (!quiet_mode) {
         printf("Using nDPI (%s) [%d thread(s)]\n", ndpi_revision(), num_threads);
 
@@ -2344,6 +2347,9 @@ void run() {
 #ifdef DEBUG_TRACE
     if (trace_fp) fclose(trace_fp);
 #endif
+
+    ILOG("PROGRAM", "Program is stopping...");
+    global_clean();
 }
 
 /**

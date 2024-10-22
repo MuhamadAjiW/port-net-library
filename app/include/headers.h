@@ -1,7 +1,7 @@
 #ifndef _LIB_HEADERS_H
 #define _LIB_HEADERS_H
 
-#include "_app_config.h"
+#include "_app_global.h"
 #include "_build_config.h"
 #include "lib-analytics.h"
 #include "lib-base.h"
