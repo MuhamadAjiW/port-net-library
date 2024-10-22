@@ -1,16 +1,20 @@
 #include "../../include/lib-threadpool.h"
 
-struct thread_pool_t thread_pool_create(int size) {
-    struct thread_pool_t pool;
-
-    pool.size = size;
-    pool.handler = (struct thread_pool_handler_t*)malloc(sizeof(struct thread_pool_handler_t) * size);
-    pthread_mutex_init(&pool.pool_mutex, NULL);
+void thread_pool_init(int size, struct thread_pool_t* pool) {
+    pool->size = size;
+    pool->handler = (struct thread_pool_handler_t*)malloc(sizeof(struct thread_pool_handler_t) * size);
+    pthread_mutex_init(&pool->pool_mutex, NULL);
 
     for (int i = 0; i < size; i++) {
-        pool.handler[i].thread_queue = (struct thread_pool_task_t*)malloc(sizeof(struct thread_pool_task_t) * INIT_TASK_SIZE);
-        pool.handler[i].thread_queue_size = INIT_TASK_SIZE;
-        pthread_mutex_init(&pool.handler[i].thread_mutex, NULL);
+        pool->handler[i].thread_queue = (struct thread_pool_task_t*)malloc(sizeof(struct thread_pool_task_t) * INIT_TASK_SIZE);
+        pool->handler[i].thread_queue_size = INIT_TASK_SIZE;
+        pthread_mutex_init(&pool->handler[i].thread_mutex, NULL);
+
+        struct thread_pool_runner_args_t* args = (struct thread_pool_runner_args_t*)malloc(sizeof(struct thread_pool_runner_args_t));
+        args->index = i;
+        args->pool = pool;
+
+        pthread_create(&pool->handler[i].thread, NULL, thread_pool_runner, args);
     }
 
     return pool;
@@ -53,7 +57,10 @@ void thread_pool_assign(
     pthread_mutex_unlock(&(pool->handler[subthread_idx].thread_mutex));
 }
 
-void thread_pool_runner(struct thread_pool_t* pool, int index) {
+void thread_pool_runner(struct thread_pool_runner_args_t* args) {
+    struct thread_pool_t* pool = args->pool;
+    int index = args->index;
+
     while (pool->handler[index].__runner_flag) {
         while (pool->handler[index].thread_queue_len == 0) {
             pthread_cond_wait(&pool->handler[index].task_signal, &(pool->handler[index].thread_mutex));
@@ -76,4 +83,6 @@ void thread_pool_runner(struct thread_pool_t* pool, int index) {
         pool->handler[index].thread_queue_len--;
         pthread_mutex_unlock(&(pool->handler[index].thread_mutex));
     }
+
+    free(args);
 }

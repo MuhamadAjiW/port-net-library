@@ -11,19 +11,19 @@
 
 // TODO: Document
 // Structs
-struct data_memory {
+struct data_memory_t {
     uint32_t mem_once;
     uint32_t mem_per_flow;
     uint32_t mem_actual;
     uint32_t mem_peak;
 };
 
-struct data_time {
+struct data_time_t {
     uint32_t setup_time;
     uint32_t processing_time;
 };
 
-struct data_traffic {
+struct data_traffic_t {
     uint64_t ethernet_bytes;
     uint64_t discarded_bytes;
     uint64_t total_packets;
@@ -45,7 +45,7 @@ struct data_traffic {
     uint64_t packet_larger_1500;
 };
 
-struct data_dpi {
+struct data_dpi_t {
     float ndpi_packets_per_second;
     float ndpi_bytes_per_second;
     int64_t start_time;
@@ -58,14 +58,14 @@ struct data_dpi {
     uint64_t dpi_other;
 };
 
-struct data_protocol {
+struct data_protocol_t {
     string_t name;
     uint64_t packet_count;
     uint64_t byte_count;
     uint64_t flow_count;
 };
 
-struct data_classification {
+struct data_classification_t {
     string_t name;
     uint64_t packet_count;
     uint64_t byte_count;
@@ -86,35 +86,55 @@ extern struct timeval pcap_start, pcap_end;
 extern u_int8_t live_capture;
 
 // Functions
-struct data_memory data_memory_get();
-json_object* data_memory_to_json(struct data_memory* data);
+void data_memory_get(struct data_memory_t* data_memory);
+json_object* data_memory_to_json(struct data_memory_t* data);
 
 /* ********************************** */
 
-struct data_time data_time_get(uint64_t processing_time_usec, uint64_t setup_time_usec);
-json_object* data_time_to_json(struct data_time* data);
+void data_time_get(
+    struct data_time_t* data_time,
+    uint64_t processing_time_usec,
+    uint64_t setup_time_usec
+);
+json_object* data_time_to_json(struct data_time_t* data);
 
 /* ********************************** */
 
-struct data_traffic data_traffic_get(ndpi_stats_t stats);
-json_object* data_traffic_to_json(struct data_traffic* data);
+void data_traffic_get(struct data_traffic_t* data_traffic, ndpi_stats_t stats);
+json_object* data_traffic_to_json(struct data_traffic_t* data);
 
 /* ********************************** */
 
-struct data_dpi data_dpi_get(ndpi_stats_t stats, uint64_t processing_time_usec);
-json_object* data_dpi_to_json(struct data_dpi* data);
+void data_dpi_get(
+    struct data_dpi_t* data_dpi,
+    ndpi_stats_t stats,
+    uint64_t processing_time_usec
+);
+json_object* data_dpi_to_json(struct data_dpi_t* data);
 
 /* ********************************** */
 
-struct data_protocol data_protocol_get(char* name, uint64_t packet_count, uint64_t byte_count, uint64_t flow_count);
-void data_protocol_clean(struct data_protocol* data);
-json_object* data_protocol_to_json(struct data_protocol* data);
+void data_protocol_get(
+    struct data_protocol_t* data_protocol,
+    char* name,
+    uint64_t packet_count,
+    uint64_t byte_count,
+    uint64_t flow_count
+);
+void data_protocol_clean(struct data_protocol_t* data);
+json_object* data_protocol_to_json(struct data_protocol_t* data);
 
 /* ********************************** */
 
-struct data_classification data_classification_get(char* name, uint64_t packet_count, uint64_t byte_count, uint64_t flow_count);
-void data_classification_clean(struct data_classification* data);
-json_object* data_classification_to_json(struct data_classification* data);
+void data_classification_get(
+    struct data_classification_t* data_classification,
+    char* name,
+    uint64_t packet_count,
+    uint64_t byte_count,
+    uint64_t flow_count
+);
+void data_classification_clean(struct data_classification_t* data);
+json_object* data_classification_to_json(struct data_classification_t* data);
 
 /* ********************************** */
 

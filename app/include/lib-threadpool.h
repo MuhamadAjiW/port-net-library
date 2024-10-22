@@ -8,9 +8,6 @@
 
 // TODO: Document
 #define INIT_TASK_SIZE 8
-#define SUBTHREADS_DISPLAY 0
-#define SUBTHREADS_ZMQ 1
-#define SUBTHREADS_LOG 2
 
 // Structs
 struct thread_pool_task_t {
@@ -35,8 +32,13 @@ struct thread_pool_t {
     int size;
 };
 
+struct thread_pool_runner_args_t {
+    struct thread_pool_t* pool;
+    int index;
+};
+
 // Functions
-struct thread_pool_t thread_pool_create(int size);
+struct thread_pool_t thread_pool_init(int size);
 void thread_pool_delete();
 void thread_pool_assign(
     struct thread_pool_t* pool,
