@@ -35,26 +35,31 @@ uint8_t lzmq_receive_from_server(char* ip, int port, FILE* output_file) {
 
     zmq_setsockopt(socket, ZMQ_SUBSCRIBE, "", 0);
 
-    char buffer[256];
+    zmq_msg_t message;
+    zmq_msg_init(&message);
+
     char timestamp[20];
     time_t time_now;
     struct tm* t;
+
     while (1) {
         printf("\nPolling...\n");
-        int bytes_received = zmq_recv(socket, buffer, sizeof(buffer) - 1, 0);
-        if (bytes_received > 0) {
-            time_now = time(NULL);
-            t = localtime(&time_now);
-            strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", t);
+        zmq_msg_recv(&message, socket, 0);
 
-            buffer[bytes_received] = 0;
-            printf("%s\n", buffer);
+        int message_size = zmq_msg_size(&message);
+        const char* message_data = (const char*)zmq_msg_data(&message);
 
-            fprintf(output_file, "%s: %s\n", timestamp, buffer);
-            fflush(output_file);
-        }
+        time_now = time(NULL);
+        t = localtime(&time_now);
+        strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", t);
+
+        printf("%.*s\n", message_size, message_data);
+        fprintf(output_file, "%s: %.*s\n", timestamp, message_size, message_data);
+        fflush(output_file);
+
     }
 
+    zmq_msg_close(&message);
     zmq_close(socket);
     zmq_ctx_destroy(context);
 
