@@ -3,6 +3,7 @@
 
 #include <ndpi_typedefs.h>
 #include <ndpi_api.h>
+#include <json-c/json.h>
 #include "stdint.h"
 #include "reader_util.h"
 
@@ -82,5 +83,38 @@ struct data_risk {
 extern u_int32_t current_ndpi_memory, max_ndpi_memory;
 extern struct timeval pcap_start, pcap_end;
 extern u_int8_t live_capture;
+
+// Functions
+struct data_memory data_memory_get();
+json_object* data_memory_to_json(struct data_memory* data);
+
+/* ********************************** */
+
+struct data_time data_time_get(uint64_t processing_time_usec, uint64_t setup_time_usec);
+json_object* data_time_to_json(struct data_time* data);
+
+/* ********************************** */
+
+struct data_traffic data_traffic_get(ndpi_stats_t stats);
+json_object* data_traffic_to_json(struct data_traffic* data);
+
+/* ********************************** */
+
+struct data_dpi data_dpi_get(ndpi_stats_t stats, uint64_t processing_time_usec);
+json_object* data_dpi_to_json(struct data_dpi* data);
+
+/* ********************************** */
+
+struct data_protocol data_protocol_get(char* name, uint64_t packet_count, uint64_t byte_count, uint64_t flow_count);
+void data_protocol_clean(struct data_protocol* data);
+json_object* data_protocol_to_json(struct data_protocol* data);
+
+/* ********************************** */
+
+struct data_classification data_classification_get(char* name, uint64_t packet_count, uint64_t byte_count, uint64_t flow_count);
+void data_classification_clean(struct data_classification* data);
+json_object* data_classification_to_json(struct data_classification* data);
+
+/* ********************************** */
 
 #endif

@@ -6,33 +6,63 @@
 
 int lzmq_do_loop = 1;
 
-/* ZeroMQ code */
-uint8_t lzmq_send_to_server(char* ip, int port, FILE* file) {
+struct lzmq_interface lzmq_int_init(char* ip, int port, int type) {
+    struct lzmq_interface retval = { 0 };
+
     string_t address = str_format("tcp://%s:%d", ip, port);
 
     if (str_is_null(address)) {
         printf("Failed to allocate address string\n");
-        return 1;
+        return retval;
     }
-    printf("ZMQ running at %s\n", address.content);
 
-    void* context = zmq_ctx_new();
+    retval.context = zmq_ctx_new();
+    retval.socket = zmq_socket(retval.context, type);
 
-    void* socket = zmq_socket(context, ZMQ_PUB);
-    int rc = zmq_bind(socket, address.content);
+    int rc = 0;
+    switch (type) {
+    case ZMQ_PUB:
+        rc = zmq_bind(retval.socket, address.content);
+        break;
+    case ZMQ_SUB:
+        rc = zmq_connect(retval.socket, address.content);
+        break;
+
+    default:
+        fprintf(stderr, "Invalid zeromq interface type: %s\n", zmq_strerror(errno));
+        str_delete(&address);
+        lzmq_int_cleanup(&retval);
+        return retval;
+    }
+
     if (rc != 0) {
         fprintf(stderr, "Failed to bind to ZeroMQ socket: %s\n", zmq_strerror(errno));
         str_delete(&address);
-        zmq_close(socket);
-        zmq_ctx_destroy(context);
-        return 2;
+        lzmq_int_cleanup(&retval);
+        return retval;
     }
 
+    str_delete(&address);
+    return retval;
+}
+
+bool lzmq_int_initialized(struct lzmq_interface* interface) {
+    return (interface->socket != 0) && (interface->context != 0);
+}
+
+void lzmq_int_cleanup(struct lzmq_interface* interface) {
+    if (interface->socket != 0) {
+        zmq_close(interface->socket);
+    }
+    if (interface->context != 0) {
+        zmq_ctx_destroy(interface->context);
+    }
+}
+
+
+uint8_t lzmq_send_file(struct lzmq_interface* interface, FILE* file, int flags) {
     if (file == NULL) {
         fprintf(stderr, "Error: Unable to open CSV file.\n");
-        str_delete(&address);
-        zmq_close(socket);
-        zmq_ctx_destroy(context);
         return 3;
     }
 
@@ -60,7 +90,7 @@ uint8_t lzmq_send_to_server(char* ip, int port, FILE* file) {
 
             fprintf(stderr, "Read line: %s", line);
 
-            int send_rc = zmq_send(socket, line, strlen(line), 0);
+            int send_rc = zmq_send(interface->socket, line, strlen(line), flags);
             if (send_rc == -1) {
                 fprintf(stderr, "Failed to send message via ZeroMQ: %s\n", zmq_strerror(errno));
                 break;
@@ -79,20 +109,17 @@ uint8_t lzmq_send_to_server(char* ip, int port, FILE* file) {
         fprintf(stderr, "File pointer is NULL, cannot proceed.\n");
     }
 
-    zmq_close(socket);
-    zmq_ctx_destroy(context);
-
-    str_delete(&address);
-
     return 0;
 }
 
-void* lzmq_do_nothing(__attribute__((unused)) void* arg) {
-    while (lzmq_do_loop) {
-        // printf("[DEV] Doing nothing with counter %d...\n", lzmq_do_loop);
-        zmq_sleep(1);
-    }
-    // printf("\n[DEV] ZeroMQ done doing nothing\n");
+uint8_t lzmq_send_str(struct lzmq_interface* interface, const char* data, int flags) {
+    pthread_mutex_lock(&interface->mutex);
+    zmq_send(interface->socket, data, strlen(data), flags);
+    pthread_mutex_unlock(&interface->mutex);
+    return 1;
+}
 
-    return 0;
+uint8_t lzmq_send_json(struct lzmq_interface* interface, json_object* json, int flags) {
+    const char* json_serialized = json_object_to_json_string(json);
+    return lzmq_send_str(interface, json_serialized, flags);
 }
