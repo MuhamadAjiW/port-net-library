@@ -1,4 +1,5 @@
 #include "../../include/lib-array.h"
+#include "../../include/_app_global.h"
 
 void dynarray_init(dynarray_t* array, uint64_t element_size) {
     array->content = malloc(element_size * DYNARRAY_DEFAULT_SIZE);
@@ -26,7 +27,7 @@ void dynarray_push_back(dynarray_t* array, void* content) {
         dynarray_resize(array, array->max_size * 2);
     }
 
-    memcpy(&array->content + (array->length * array->element_size), content, array->element_size);
+    memcpy(array->content + (array->length * array->element_size), content, array->element_size);
     array->length++;
 }
 

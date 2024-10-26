@@ -307,11 +307,31 @@ void data_aggregate() {
 
         // _TODO: Fix aggregation
     }
+
+
+
 }
 
 /* *********************************************** */
 
 void global_data_clean() {
+    struct data_protocol* protocol_array = global_data.protocol.content;
+    struct data_classification* classification_array = global_data.classification.content;
+    // struct data_risk* risk_array = global_data.risk.content;
+
+    DLOG(TAG_DATA, "Cleaning classification data, length %d", global_data.classification.length);
+    for (size_t i = 0; i < global_data.classification.length; i++) {
+        data_classification_clean(&classification_array[i]);
+    }
+    DLOG(TAG_DATA, "Cleaning protocol data, length %d", global_data.protocol.length);
+    for (size_t i = 0; i < global_data.protocol.length; i++) {
+        data_protocol_clean(&protocol_array[i]);
+    }
+    DLOG(TAG_DATA, "Cleaning risk data, length %d", global_data.risk.length);
+    // for (size_t i = 0; i < global_data.risk.length; i++) {
+    //     data_risk_clean(&risk_array[i]);
+    // }
+
     dynarray_delete(&global_data.protocol);
     dynarray_delete(&global_data.classification);
     dynarray_delete(&global_data.risk);
@@ -324,82 +344,101 @@ void global_data_init() {
     dynarray_init(&global_data.risk, sizeof(struct data_risk));
 }
 
-void global_data_generate(uint64_t processing_time_usec, uint64_t setup_time_usec) {
+void global_data_generate(
+    uint64_t processing_time_usec,
+    uint64_t setup_time_usec,
+    struct ndpi_detection_module_struct* ndpi_dm_struct
+) {
+    DLOG(TAG_DATA, "Aggregating global data");
     data_aggregate();
+    DLOG(TAG_DATA, "Cleaning global data");
     global_data_clean();
+    DLOG(TAG_DATA, "Initializing global data");
     global_data_init();
-    long long unsigned int breed_stats_pkts[NUM_BREEDS] = { 0 };
-    long long unsigned int breed_stats_bytes[NUM_BREEDS] = { 0 };
-    long long unsigned int breed_stats_flows[NUM_BREEDS] = { 0 };
-
+    DLOG(TAG_DATA, "fetching memory to global data");
     data_memory_get(&global_data.memory);
+    DLOG(TAG_DATA, "fetching time to global data");
     data_time_get(
         &global_data.time,
         processing_time_usec,
         setup_time_usec
     );
+    DLOG(TAG_DATA, "fetching traffic to global data");
     data_traffic_get(&global_data.traffic, cumulative_stats, processing_time_usec);
 
-    // _TODO: protocol, classification, risk
-    // for (uint32_t i = 0; i <= ndpi_get_num_supported_protocols(ndpi_thread_info[0].workflow->ndpi_struct); i++) {
-    //     ndpi_protocol_breed_t breed = ndpi_get_proto_breed(ndpi_thread_info[0].workflow->ndpi_struct,
-    //         ndpi_map_ndpi_id_to_user_proto_id(ndpi_thread_info[0].workflow->ndpi_struct, i));
+    struct data_classification temp_classification;
+    struct data_protocol temp_protocol;
+    // struct data_risk temp_risk;
 
-    //     if (cumulative_stats.protocol_counter[i] > 0) {
-    //         breed_stats_bytes[breed] += (long long unsigned int)cumulative_stats.protocol_counter_bytes[i];
-    //         breed_stats_pkts[breed] += (long long unsigned int)cumulative_stats.protocol_counter[i];
-    //         breed_stats_flows[breed] += (long long unsigned int)cumulative_stats.protocol_flows[i];
+    // _TODO: refactor, this is very ugly
+    long long unsigned int breed_stats_pkts[NUM_BREEDS] = { 0 };
+    long long unsigned int breed_stats_bytes[NUM_BREEDS] = { 0 };
+    long long unsigned int breed_stats_flows[NUM_BREEDS] = { 0 };
 
-    //         if (results_file)
-    //             fprintf(results_file, "%s\t%llu\t%llu\t%u\n",
-    //                 ndpi_get_proto_name(ndpi_thread_info[0].workflow->ndpi_struct,
-    //                     ndpi_map_ndpi_id_to_user_proto_id(ndpi_thread_info[0].workflow->ndpi_struct, i)),
-    //                 (long long unsigned int)cumulative_stats.protocol_counter[i],
-    //                 (long long unsigned int)cumulative_stats.protocol_counter_bytes[i],
-    //                 cumulative_stats.protocol_flows[i]);
+    for (uint32_t i = 0; i <= ndpi_get_num_supported_protocols(ndpi_dm_struct); i++) {
+        uint16_t user_proto_id = ndpi_map_ndpi_id_to_user_proto_id(ndpi_dm_struct, i);
+        ndpi_protocol_breed_t breed = ndpi_get_proto_breed(ndpi_dm_struct, user_proto_id);
 
-    //         if (!quiet_mode) {
-    //             printw("\t%-20s packets: %-13llu bytes: %-13llu "
-    //                 "flows: %-13u\n",
-    //                 ndpi_get_proto_name(ndpi_thread_info[0].workflow->ndpi_struct,
-    //                     ndpi_map_ndpi_id_to_user_proto_id(ndpi_thread_info[0].workflow->ndpi_struct, i)),
-    //                 (long long unsigned int)cumulative_stats.protocol_counter[i],
-    //                 (long long unsigned int)cumulative_stats.protocol_counter_bytes[i],
-    //                 cumulative_stats.protocol_flows[i]);
-    //         }
-    //     }
-    // }
+        if (cumulative_stats.protocol_counter[i] > 0) {
+            breed_stats_bytes[breed] += (long long unsigned int)cumulative_stats.protocol_counter_bytes[i];
+            breed_stats_pkts[breed] += (long long unsigned int)cumulative_stats.protocol_counter[i];
+            breed_stats_flows[breed] += (long long unsigned int)cumulative_stats.protocol_flows[i];
 
+            data_classification_get(
+                &temp_classification,
+                ndpi_get_proto_name(ndpi_thread_info[0].workflow->ndpi_struct, user_proto_id),
+                (long long unsigned int)cumulative_stats.protocol_counter[i],
+                (long long unsigned int)cumulative_stats.protocol_counter_bytes[i],
+                cumulative_stats.protocol_flows[i]
+            );
 
-    // if (!quiet_mode) {
-    //     printw("\n\nProtocol statistics:\n");
+            DLOG(TAG_DATA, "fetching classification to global data");
+            dynarray_push_back(&global_data.classification, (void*)&temp_classification);
+        }
+    }
 
-    //     for (uint32_t i = 0; i < NUM_BREEDS; i++) {
-    //         if (breed_stats_pkts[i] > 0) {
-    //             printw("\t%-20s packets: %-13llu bytes: %-13llu "
-    //                 "flows: %-13llu\n",
-    //                 ndpi_get_proto_breed_name(i),
-    //                 breed_stats_pkts[i], breed_stats_bytes[i], breed_stats_flows[i]);
-    //         }
-    //     }
-    // }
-    // if (results_file) {
-    //     fprintf(results_file, "\n");
-    //     for (uint32_t i = 0; i < NUM_BREEDS; i++) {
-    //         if (breed_stats_pkts[i] > 0) {
-    //             fprintf(results_file, "%-20s %13llu %-13llu %-13llu\n",
-    //                 ndpi_get_proto_breed_name(i),
-    //                 breed_stats_pkts[i], breed_stats_bytes[i], breed_stats_flows[i]);
-    //         }
-    //     }
-    // }
+    for (uint32_t i = 0; i < NUM_BREEDS; i++) {
+        if (breed_stats_pkts[i] > 0) {
+            data_protocol_get(
+                &temp_protocol,
+                ndpi_get_proto_breed_name(i),
+                breed_stats_pkts[i],
+                breed_stats_bytes[i],
+                breed_stats_flows[i]
+            );
+
+            DLOG(TAG_DATA, "fetching protocol to global data");
+            dynarray_push_back(&global_data.protocol, (void*)&temp_protocol);
+        }
+    }
+
+    // _TODO: risk data
 }
 
 void* global_data_send(__attribute__((unused)) void* args) {
-    // _TODO: protocol, classification, risk
+    // _TODO: risk data
+    struct data_classification* classification_array = global_data.classification.content;
+    struct data_protocol* protocol_array = global_data.protocol.content;
+
     json_object* json_memory = data_memory_to_json(&global_data.memory);
     json_object* json_time = data_time_to_json(&global_data.time);
     json_object* json_traffic = data_traffic_to_json(&global_data.traffic);
+
+    json_object* json_classification = json_object_new_object();
+    json_object* json_classification_array = json_object_new_array();
+    for (size_t i = 0; i < global_data.classification.length; i++) {
+        json_object* json_classification_entry = data_classification_to_json(&classification_array[i]);
+        json_object_array_add(json_classification_array, json_classification_entry);
+    }
+    json_object_object_add(json_classification, "classifications", json_classification_array);
+
+    json_object* json_protocol = json_object_new_object();
+    json_object* json_protocol_array = json_object_new_array();
+    for (size_t i = 0; i < global_data.protocol.length; i++) {
+        json_object* json_protocol_entry = data_protocol_to_json(&protocol_array[i]);
+        json_object_array_add(json_protocol_array, json_protocol_entry);
+    }
+    json_object_object_add(json_protocol, "protocols", json_protocol_array);
 
     lzmq_send_json(
         &global_zmq_conn,
@@ -416,10 +455,22 @@ void* global_data_send(__attribute__((unused)) void* args) {
         json_traffic,
         0
     );
+    lzmq_send_json(
+        &global_zmq_conn,
+        json_classification,
+        0
+    );
+    lzmq_send_json(
+        &global_zmq_conn,
+        json_protocol,
+        0
+    );
 
     json_object_put(json_memory);
     json_object_put(json_time);
     json_object_put(json_traffic);
+    json_object_put(json_classification);
+    json_object_put(json_protocol);
 
     return NULL;
 }

@@ -197,8 +197,8 @@ void ncurses_printResults(uint64_t processing_time_usec) {
 
     if (!quiet_mode) printw("\n\nDetected protocols:\n");
     for (i = 0; i <= ndpi_get_num_supported_protocols(ndpi_thread_info[0].workflow->ndpi_struct); i++) {
-        ndpi_protocol_breed_t breed = ndpi_get_proto_breed(ndpi_thread_info[0].workflow->ndpi_struct,
-            ndpi_map_ndpi_id_to_user_proto_id(ndpi_thread_info[0].workflow->ndpi_struct, i));
+        uint16_t user_proto_id = ndpi_map_ndpi_id_to_user_proto_id(ndpi_thread_info[0].workflow->ndpi_struct, i);
+        ndpi_protocol_breed_t breed = ndpi_get_proto_breed(ndpi_thread_info[0].workflow->ndpi_struct, user_proto_id);
 
         if (cumulative_stats.protocol_counter[i] > 0) {
             breed_stats_bytes[breed] += (long long unsigned int)cumulative_stats.protocol_counter_bytes[i];
@@ -207,8 +207,7 @@ void ncurses_printResults(uint64_t processing_time_usec) {
 
             if (results_file)
                 fprintf(results_file, "%s\t%llu\t%llu\t%u\n",
-                    ndpi_get_proto_name(ndpi_thread_info[0].workflow->ndpi_struct,
-                        ndpi_map_ndpi_id_to_user_proto_id(ndpi_thread_info[0].workflow->ndpi_struct, i)),
+                    ndpi_get_proto_name(ndpi_thread_info[0].workflow->ndpi_struct, user_proto_id),
                     (long long unsigned int)cumulative_stats.protocol_counter[i],
                     (long long unsigned int)cumulative_stats.protocol_counter_bytes[i],
                     cumulative_stats.protocol_flows[i]);
@@ -216,8 +215,7 @@ void ncurses_printResults(uint64_t processing_time_usec) {
             if (!quiet_mode) {
                 printw("\t%-20s packets: %-13llu bytes: %-13llu "
                     "flows: %-13u\n",
-                    ndpi_get_proto_name(ndpi_thread_info[0].workflow->ndpi_struct,
-                        ndpi_map_ndpi_id_to_user_proto_id(ndpi_thread_info[0].workflow->ndpi_struct, i)),
+                    ndpi_get_proto_name(ndpi_thread_info[0].workflow->ndpi_struct, user_proto_id),
                     (long long unsigned int)cumulative_stats.protocol_counter[i],
                     (long long unsigned int)cumulative_stats.protocol_counter_bytes[i],
                     cumulative_stats.protocol_flows[i]);

@@ -61,7 +61,11 @@ void data_aggregate();
 /* *********************************************** */
 
 void global_data_clean();
-void global_data_generate(uint64_t processing_time_usec, uint64_t setup_time_usec);
+void global_data_generate(
+    uint64_t processing_time_usec,
+    uint64_t setup_time_usec,
+    struct ndpi_detection_module_struct* ndpi_dm_struct
+);
 void* global_data_send(__attribute__((unused)) void* args);
 
 #endif
