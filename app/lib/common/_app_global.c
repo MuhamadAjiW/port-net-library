@@ -12,8 +12,8 @@ struct data_all_t global_data;
 
 uint8_t global_init() {
     thread_pool_init(&global_thread_pool, INIT_TASK_SIZE);
-    // logger_init(&global_logger, DEFAULT_LOGGER_TYPE, DEFAULT_LOGGER_PATH, 0);
-    logger_init(&global_logger, LOGGER_TYPE_ZMQ, "127.0.0.1", 8888);
+    logger_init(&global_logger, DEFAULT_LOGGER_TYPE, DEFAULT_LOGGER_PATH, 0);
+    // logger_init(&global_logger, LOGGER_TYPE_ZMQ, "127.0.0.1", 8888);
     lzmq_int_init(&global_zmq_conn, global_zmq_server_addr, global_zmq_server_port, ZMQ_PUB);
     return 1;
 }

@@ -29,7 +29,7 @@ void* ldis_print(__attribute__((unused)) void* arg) {
         u_int64_t setup_time_usec = (u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec - ((u_int64_t)startup_time.tv_sec * 1000000 + startup_time.tv_usec);
 
         global_data_generate(processing_time_usec, setup_time_usec);
-        ncurses_printResults(processing_time_usec, setup_time_usec);
+        ncurses_printResults(processing_time_usec);
         thread_pool_assign(&global_thread_pool, THREAD_ZMQ, global_data_send, NULL, NULL);
 
         refresh();

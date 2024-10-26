@@ -54,6 +54,12 @@ void node_print_known_proto_walker(const void* node,
 void node_print_unknown_proto_walker(const void* node,
     ndpi_VISIT which, int depth, void* user_data);
 
+/* *********************************************** */
+
+void data_aggregate();
+
+/* *********************************************** */
+
 void global_data_clean();
 void global_data_generate(uint64_t processing_time_usec, uint64_t setup_time_usec);
 void* global_data_send(__attribute__((unused)) void* args);

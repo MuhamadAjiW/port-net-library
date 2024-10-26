@@ -19,43 +19,45 @@ struct data_memory_t {
 };
 
 struct data_time_t {
-    uint32_t setup_time;
-    uint32_t processing_time;
+    uint64_t setup_time;
+    uint64_t processing_time;
 };
 
 struct data_traffic_t {
-    uint64_t ethernet_bytes;
-    uint64_t discarded_bytes;
-    uint64_t total_packets;
-    uint64_t ip_packets;
-    uint64_t ip_bytes;
-    uint64_t unique_flows;
-    uint64_t tcp_packets;
-    uint64_t udp_packets;
-    uint64_t vlan_packets;
-    uint64_t mpls_packets;
-    uint64_t ppoe_packets;
-    uint64_t fragmented_packets;
-    uint64_t max_packet_size;
+    uint64_t total_wire_bytes;
+    uint64_t total_discarded_bytes;
+    uint64_t raw_packet_count;
+    uint64_t ip_packet_count;
+    uint64_t total_ip_bytes;
+    uint32_t avg_pkt_size;
+    uint32_t ndpi_flow_count;
+    uint64_t tcp_count;
+    uint64_t udp_count;
+    uint64_t vlan_count;
+    uint64_t mpls_count;
+    uint64_t pppoe_count;
+    uint64_t fragmented_count;
+    uint16_t max_packet_len;
     uint64_t packet_less_64;
     uint64_t packet_range_64_to_128;
     uint64_t packet_range_128_to_256;
     uint64_t packet_range_256_to_1024;
     uint64_t packet_range_1024_to_1500;
     uint64_t packet_larger_1500;
-};
-
-struct data_dpi_t {
     float ndpi_packets_per_second;
     float ndpi_bytes_per_second;
     int64_t start_time;
     int64_t end_time;
+    float traffic_duration;
     float traffic_packets_per_second;
     float traffic_bytes_per_second;
     uint32_t guessed_flow_protocols;
-    uint64_t dpi_tcp;
-    uint64_t dpi_udp;
-    uint64_t dpi_other;
+    uint64_t dpi_tcp_count;
+    uint64_t dpi_udp_count;
+    uint64_t dpi_other_count;
+    uint32_t dpi_tcp_flow;
+    uint32_t dpi_udp_flow;
+    uint32_t dpi_other_flow;
 };
 
 struct data_protocol_t {
@@ -82,7 +84,6 @@ struct data_all_t {
     struct data_memory_t memory;
     struct data_time_t time;
     struct data_traffic_t traffic;
-    struct data_dpi_t dpi;
     struct data_protocol_t* protocol;
     struct data_classification_t* classification;
     struct data_risk_t* risk;
@@ -110,17 +111,12 @@ json_object* data_time_to_json(struct data_time_t* data);
 
 /* ********************************** */
 
-void data_traffic_get(struct data_traffic_t* data_traffic, ndpi_stats_t stats);
-json_object* data_traffic_to_json(struct data_traffic_t* data);
-
-/* ********************************** */
-
-void data_dpi_get(
-    struct data_dpi_t* data_dpi,
+void data_traffic_get(
+    struct data_traffic_t* data_traffic,
     ndpi_stats_t stats,
     uint64_t processing_time_usec
 );
-json_object* data_dpi_to_json(struct data_dpi_t* data);
+json_object* data_traffic_to_json(struct data_traffic_t* data);
 
 /* ********************************** */
 

@@ -25,11 +25,11 @@
 #define LLOG(level, tag, message, ...) \
     logger_log_raw(&global_logger, level, tag, message, ##__VA_ARGS__)
 #else
-#define ELOG(tag, message)
-#define WLOG(tag, message)
-#define ILOG(tag, message)
-#define DLOG(tag, message)
-#define LLOG(level, tag, message)
+#define ELOG(tag, message, ...)
+#define WLOG(tag, message, ...)
+#define ILOG(tag, message, ...)
+#define DLOG(tag, message, ...)
+#define LLOG(level, tag, message, ...)
 #endif
 
 #define TAG_GENERAL     "GENERAL"
@@ -37,6 +37,7 @@
 #define TAG_NDPI        "NDPI"
 #define TAG_DISPLAY     "DISPLAY"
 #define TAG_ZMQ         "ZMQ"
+#define TAG_DATA        "DATA"
 
 // _TODO: Restructure other global variables here
 extern struct thread_pool_t global_thread_pool;

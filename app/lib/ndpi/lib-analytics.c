@@ -215,6 +215,102 @@ void node_print_unknown_proto_walker(const void* node,
 
 /* *********************************************** */
 
+void data_aggregate() {
+    char buf[32];
+
+    memset(&cumulative_stats, 0, sizeof(cumulative_stats));
+
+    for (int thread_id = 0; thread_id < num_threads; thread_id++) {
+        if ((ndpi_thread_info[thread_id].workflow->stats.total_wire_bytes == 0)
+            && (ndpi_thread_info[thread_id].workflow->stats.raw_packet_count == 0))
+            continue;
+
+        for (int i = 0; i < NUM_ROOTS; i++) {
+            ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
+                node_proto_guess_walker, &thread_id);
+            if (verbose == 3 || stats_flag) ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
+                port_stats_walker, &thread_id);
+        }
+
+        /* Stats aggregation */
+        cumulative_stats.guessed_flow_protocols += ndpi_thread_info[thread_id].workflow->stats.guessed_flow_protocols;
+        cumulative_stats.raw_packet_count += ndpi_thread_info[thread_id].workflow->stats.raw_packet_count;
+        cumulative_stats.ip_packet_count += ndpi_thread_info[thread_id].workflow->stats.ip_packet_count;
+        cumulative_stats.total_wire_bytes += ndpi_thread_info[thread_id].workflow->stats.total_wire_bytes;
+        cumulative_stats.total_ip_bytes += ndpi_thread_info[thread_id].workflow->stats.total_ip_bytes;
+        cumulative_stats.total_discarded_bytes += ndpi_thread_info[thread_id].workflow->stats.total_discarded_bytes;
+
+        for (uint32_t i = 0; i < ndpi_get_num_supported_protocols(ndpi_thread_info[0].workflow->ndpi_struct); i++) {
+            cumulative_stats.protocol_counter[i] += ndpi_thread_info[thread_id].workflow->stats.protocol_counter[i];
+            cumulative_stats.protocol_counter_bytes[i] += ndpi_thread_info[thread_id].workflow->stats.protocol_counter_bytes[i];
+            cumulative_stats.protocol_flows[i] += ndpi_thread_info[thread_id].workflow->stats.protocol_flows[i];
+        }
+
+        cumulative_stats.ndpi_flow_count += ndpi_thread_info[thread_id].workflow->stats.ndpi_flow_count;
+        cumulative_stats.flow_count[0] += ndpi_thread_info[thread_id].workflow->stats.flow_count[0];
+        cumulative_stats.flow_count[1] += ndpi_thread_info[thread_id].workflow->stats.flow_count[1];
+        cumulative_stats.flow_count[2] += ndpi_thread_info[thread_id].workflow->stats.flow_count[2];
+        cumulative_stats.tcp_count += ndpi_thread_info[thread_id].workflow->stats.tcp_count;
+        cumulative_stats.udp_count += ndpi_thread_info[thread_id].workflow->stats.udp_count;
+        cumulative_stats.mpls_count += ndpi_thread_info[thread_id].workflow->stats.mpls_count;
+        cumulative_stats.pppoe_count += ndpi_thread_info[thread_id].workflow->stats.pppoe_count;
+        cumulative_stats.vlan_count += ndpi_thread_info[thread_id].workflow->stats.vlan_count;
+        cumulative_stats.fragmented_count += ndpi_thread_info[thread_id].workflow->stats.fragmented_count;
+        for (uint32_t i = 0; i < sizeof(cumulative_stats.packet_len) / sizeof(cumulative_stats.packet_len[0]); i++)
+            cumulative_stats.packet_len[i] += ndpi_thread_info[thread_id].workflow->stats.packet_len[i];
+        cumulative_stats.max_packet_len += ndpi_thread_info[thread_id].workflow->stats.max_packet_len;
+
+        cumulative_stats.dpi_packet_count[0] += ndpi_thread_info[thread_id].workflow->stats.dpi_packet_count[0];
+        cumulative_stats.dpi_packet_count[1] += ndpi_thread_info[thread_id].workflow->stats.dpi_packet_count[1];
+        cumulative_stats.dpi_packet_count[2] += ndpi_thread_info[thread_id].workflow->stats.dpi_packet_count[2];
+
+        for (uint32_t i = 0; i < sizeof(cumulative_stats.flow_confidence) / sizeof(cumulative_stats.flow_confidence[0]); i++)
+            cumulative_stats.flow_confidence[i] += ndpi_thread_info[thread_id].workflow->stats.flow_confidence[i];
+
+        cumulative_stats.num_dissector_calls += ndpi_thread_info[thread_id].workflow->stats.num_dissector_calls;
+
+        /* LRU caches */
+        for (uint32_t i = 0; i < NDPI_LRUCACHE_MAX; i++) {
+            struct ndpi_lru_cache_stats s;
+            int scope;
+            char param[64];
+
+            snprintf(param, sizeof(param), "lru.%s.scope", ndpi_lru_cache_idx_to_name(i));
+            if (ndpi_get_config(ndpi_thread_info[thread_id].workflow->ndpi_struct, NULL, param, buf, sizeof(buf)) != NULL) {
+                scope = atoi(buf);
+                if (scope == NDPI_LRUCACHE_SCOPE_LOCAL ||
+                    (scope == NDPI_LRUCACHE_SCOPE_GLOBAL && thread_id == 0)) {
+                    ndpi_get_lru_cache_stats(ndpi_thread_info[thread_id].workflow->g_ctx,
+                        ndpi_thread_info[thread_id].workflow->ndpi_struct, i, &s);
+                    cumulative_stats.lru_stats[i].n_insert += s.n_insert;
+                    cumulative_stats.lru_stats[i].n_search += s.n_search;
+                    cumulative_stats.lru_stats[i].n_found += s.n_found;
+                }
+            }
+        }
+
+        /* Automas */
+        for (uint32_t i = 0; i < NDPI_AUTOMA_MAX; i++) {
+            struct ndpi_automa_stats s;
+            ndpi_get_automa_stats(ndpi_thread_info[thread_id].workflow->ndpi_struct, i, &s);
+            cumulative_stats.automa_stats[i].n_search += s.n_search;
+            cumulative_stats.automa_stats[i].n_found += s.n_found;
+        }
+
+        /* Patricia trees */
+        for (uint32_t i = 0; i < NDPI_PTREE_MAX; i++) {
+            struct ndpi_patricia_tree_stats s;
+            ndpi_get_patricia_stats(ndpi_thread_info[thread_id].workflow->ndpi_struct, i, &s);
+            cumulative_stats.patricia_stats[i].n_search += s.n_search;
+            cumulative_stats.patricia_stats[i].n_found += s.n_found;
+        }
+
+        // _TODO: Fix aggregation
+    }
+}
+
+/* *********************************************** */
+
 void global_data_clean() {
     if (global_data.protocol != NULL) {
         free(global_data.protocol);
@@ -230,7 +326,11 @@ void global_data_clean() {
 }
 
 void global_data_generate(uint64_t processing_time_usec, uint64_t setup_time_usec) {
+    data_aggregate();
     global_data_clean();
+    long long unsigned int breed_stats_pkts[NUM_BREEDS] = { 0 };
+    long long unsigned int breed_stats_bytes[NUM_BREEDS] = { 0 };
+    long long unsigned int breed_stats_flows[NUM_BREEDS] = { 0 };
 
     data_memory_get(&global_data.memory);
     data_time_get(
@@ -238,18 +338,68 @@ void global_data_generate(uint64_t processing_time_usec, uint64_t setup_time_use
         processing_time_usec,
         setup_time_usec
     );
-    data_traffic_get(&global_data.traffic, cumulative_stats);
-    data_dpi_get(&global_data.dpi, cumulative_stats, processing_time_usec);
+    data_traffic_get(&global_data.traffic, cumulative_stats, processing_time_usec);
 
-    // _TODO: protocol and classification
+    // _TODO: protocol, classification, risk
+    // for (uint32_t i = 0; i <= ndpi_get_num_supported_protocols(ndpi_thread_info[0].workflow->ndpi_struct); i++) {
+    //     ndpi_protocol_breed_t breed = ndpi_get_proto_breed(ndpi_thread_info[0].workflow->ndpi_struct,
+    //         ndpi_map_ndpi_id_to_user_proto_id(ndpi_thread_info[0].workflow->ndpi_struct, i));
+
+    //     if (cumulative_stats.protocol_counter[i] > 0) {
+    //         breed_stats_bytes[breed] += (long long unsigned int)cumulative_stats.protocol_counter_bytes[i];
+    //         breed_stats_pkts[breed] += (long long unsigned int)cumulative_stats.protocol_counter[i];
+    //         breed_stats_flows[breed] += (long long unsigned int)cumulative_stats.protocol_flows[i];
+
+    //         if (results_file)
+    //             fprintf(results_file, "%s\t%llu\t%llu\t%u\n",
+    //                 ndpi_get_proto_name(ndpi_thread_info[0].workflow->ndpi_struct,
+    //                     ndpi_map_ndpi_id_to_user_proto_id(ndpi_thread_info[0].workflow->ndpi_struct, i)),
+    //                 (long long unsigned int)cumulative_stats.protocol_counter[i],
+    //                 (long long unsigned int)cumulative_stats.protocol_counter_bytes[i],
+    //                 cumulative_stats.protocol_flows[i]);
+
+    //         if (!quiet_mode) {
+    //             printw("\t%-20s packets: %-13llu bytes: %-13llu "
+    //                 "flows: %-13u\n",
+    //                 ndpi_get_proto_name(ndpi_thread_info[0].workflow->ndpi_struct,
+    //                     ndpi_map_ndpi_id_to_user_proto_id(ndpi_thread_info[0].workflow->ndpi_struct, i)),
+    //                 (long long unsigned int)cumulative_stats.protocol_counter[i],
+    //                 (long long unsigned int)cumulative_stats.protocol_counter_bytes[i],
+    //                 cumulative_stats.protocol_flows[i]);
+    //         }
+    //     }
+    // }
+
+
+    // if (!quiet_mode) {
+    //     printw("\n\nProtocol statistics:\n");
+
+    //     for (uint32_t i = 0; i < NUM_BREEDS; i++) {
+    //         if (breed_stats_pkts[i] > 0) {
+    //             printw("\t%-20s packets: %-13llu bytes: %-13llu "
+    //                 "flows: %-13llu\n",
+    //                 ndpi_get_proto_breed_name(i),
+    //                 breed_stats_pkts[i], breed_stats_bytes[i], breed_stats_flows[i]);
+    //         }
+    //     }
+    // }
+    // if (results_file) {
+    //     fprintf(results_file, "\n");
+    //     for (uint32_t i = 0; i < NUM_BREEDS; i++) {
+    //         if (breed_stats_pkts[i] > 0) {
+    //             fprintf(results_file, "%-20s %13llu %-13llu %-13llu\n",
+    //                 ndpi_get_proto_breed_name(i),
+    //                 breed_stats_pkts[i], breed_stats_bytes[i], breed_stats_flows[i]);
+    //         }
+    //     }
+    // }
 }
 
 void* global_data_send(__attribute__((unused)) void* args) {
-    // _TODO: protocol and classification
+    // _TODO: protocol, classification, risk
     json_object* json_memory = data_memory_to_json(&global_data.memory);
     json_object* json_time = data_time_to_json(&global_data.time);
     json_object* json_traffic = data_traffic_to_json(&global_data.traffic);
-    json_object* json_dpi = data_dpi_to_json(&global_data.dpi);
 
     lzmq_send_json(
         &global_zmq_conn,
@@ -266,16 +416,10 @@ void* global_data_send(__attribute__((unused)) void* args) {
         json_traffic,
         0
     );
-    lzmq_send_json(
-        &global_zmq_conn,
-        json_dpi,
-        0
-    );
 
     json_object_put(json_memory);
     json_object_put(json_time);
     json_object_put(json_traffic);
-    json_object_put(json_dpi);
 
     return NULL;
 }

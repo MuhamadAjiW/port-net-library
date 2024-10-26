@@ -6,7 +6,7 @@
 
 // TODO: Document
 void ncurses_clean_twalk();
-void ncurses_printResults(u_int64_t processing_time_usec, u_int64_t setup_time_usec);
+void ncurses_printResults(u_int64_t processing_time_usec);
 void ncurses_printRiskStats();
 void ncurses_printFlowsStats();
 char* ncurses_print_cipher(ndpi_cipher_weakness c);

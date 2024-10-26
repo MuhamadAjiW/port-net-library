@@ -42,105 +42,113 @@ json_object* data_time_to_json(struct data_time_t* data) {
 
 /* ********************************** */
 
-void data_traffic_get(struct data_traffic_t* data_traffic, ndpi_stats_t stats) {
-    data_traffic->ethernet_bytes = stats.total_wire_bytes;
-    data_traffic->discarded_bytes = stats.total_discarded_bytes;
-    data_traffic->total_packets = stats.raw_packet_count;
-    data_traffic->ip_packets = stats.ip_packet_count;
-    data_traffic->ip_bytes = stats.total_ip_bytes;
-    data_traffic->unique_flows = stats.ndpi_flow_count;
-    data_traffic->tcp_packets = stats.tcp_count;
-    data_traffic->udp_packets = stats.udp_count;
-    data_traffic->vlan_packets = stats.vlan_count;
-    data_traffic->mpls_packets = stats.mpls_count;
-    data_traffic->ppoe_packets = stats.pppoe_count;
-    data_traffic->fragmented_packets = stats.fragmented_count;
-    data_traffic->max_packet_size = stats.max_packet_len;
+void data_traffic_get(
+    struct data_traffic_t* data_traffic,
+    ndpi_stats_t stats,
+    uint64_t processing_time_usec
+) {
+    data_traffic->total_wire_bytes = stats.total_wire_bytes;
+    data_traffic->total_discarded_bytes = stats.total_discarded_bytes;
+    data_traffic->raw_packet_count = stats.raw_packet_count;
+    data_traffic->ip_packet_count = stats.ip_packet_count;
+    data_traffic->total_ip_bytes = stats.total_ip_bytes;
+    data_traffic->ndpi_flow_count = stats.ndpi_flow_count;
+    data_traffic->tcp_count = stats.tcp_count;
+    data_traffic->udp_count = stats.udp_count;
+    data_traffic->vlan_count = stats.vlan_count;
+    data_traffic->mpls_count = stats.mpls_count;
+    data_traffic->pppoe_count = stats.pppoe_count;
+    data_traffic->fragmented_count = stats.fragmented_count;
+    data_traffic->max_packet_len = stats.max_packet_len;
     data_traffic->packet_less_64 = stats.packet_len[0];
     data_traffic->packet_range_64_to_128 = stats.packet_len[1];
     data_traffic->packet_range_128_to_256 = stats.packet_len[2];
     data_traffic->packet_range_256_to_1024 = stats.packet_len[3];
     data_traffic->packet_range_1024_to_1500 = stats.packet_len[4];
     data_traffic->packet_larger_1500 = stats.packet_len[5];
+
+    if (stats.total_ip_bytes && stats.raw_packet_count) {
+        data_traffic->avg_pkt_size = (unsigned int)(stats.total_ip_bytes / stats.raw_packet_count);
+    }
+    else {
+        data_traffic->avg_pkt_size = 0;
+    }
+
+    if (processing_time_usec > 0) {
+        float t = (float)(stats.ip_packet_count * 1000000) / (float)processing_time_usec;
+        float b = (float)(stats.total_wire_bytes * 8 * 1000000) / (float)processing_time_usec;
+
+        data_traffic->ndpi_packets_per_second = t;
+        data_traffic->ndpi_bytes_per_second = b;
+        data_traffic->start_time = (long)pcap_start.tv_sec;
+        data_traffic->end_time = (long)pcap_end.tv_sec;
+
+        if (live_capture) data_traffic->traffic_duration = processing_time_usec;
+        else data_traffic->traffic_duration = ((u_int64_t)pcap_end.tv_sec * 1000000 + pcap_end.tv_usec) - ((u_int64_t)pcap_start.tv_sec * 1000000 + pcap_start.tv_usec);
+
+        if (data_traffic->traffic_duration != 0) {
+            t = (float)(stats.ip_packet_count * 1000000) / data_traffic->traffic_duration;
+            b = (float)(stats.total_wire_bytes * 8 * 1000000) / data_traffic->traffic_duration;
+        }
+        else {
+            t = 0;
+            b = 0;
+        }
+
+        data_traffic->traffic_packets_per_second = t;
+        data_traffic->traffic_bytes_per_second = b;
+    }
+    data_traffic->guessed_flow_protocols = stats.guessed_flow_protocols;
+    data_traffic->dpi_tcp_count = stats.dpi_packet_count[0];
+    data_traffic->dpi_udp_count = stats.dpi_packet_count[1];
+    data_traffic->dpi_other_count = stats.dpi_packet_count[2];
+    data_traffic->dpi_tcp_flow = stats.flow_count[0];
+    data_traffic->dpi_udp_flow = stats.flow_count[1];
+    data_traffic->dpi_other_flow = stats.flow_count[2];
+
+    // _TODO: Port confidence
 }
 
 json_object* data_traffic_to_json(struct data_traffic_t* data) {
     json_object* retval = json_object_new_object();
 
-    json_object_object_add(retval, "ethernet_bytes", json_object_new_uint64(data->ethernet_bytes));
-    json_object_object_add(retval, "discarded_bytes", json_object_new_uint64(data->discarded_bytes));
-    json_object_object_add(retval, "total_packets", json_object_new_uint64(data->total_packets));
-    json_object_object_add(retval, "ip_packets", json_object_new_uint64(data->ip_packets));
-    json_object_object_add(retval, "ip_bytes", json_object_new_uint64(data->ip_bytes));
-    json_object_object_add(retval, "unique_flows", json_object_new_uint64(data->unique_flows));
-    json_object_object_add(retval, "tcp_packets", json_object_new_uint64(data->tcp_packets));
-    json_object_object_add(retval, "udp_packets", json_object_new_uint64(data->udp_packets));
-    json_object_object_add(retval, "vlan_packets", json_object_new_uint64(data->vlan_packets));
-    json_object_object_add(retval, "mpls_packets", json_object_new_uint64(data->mpls_packets));
-    json_object_object_add(retval, "ppoe_packets", json_object_new_uint64(data->ppoe_packets));
-    json_object_object_add(retval, "fragmented_packets", json_object_new_uint64(data->fragmented_packets));
-    json_object_object_add(retval, "max_packet_size", json_object_new_uint64(data->max_packet_size));
+    json_object_object_add(retval, "total_wire_bytes", json_object_new_uint64(data->total_wire_bytes));
+    json_object_object_add(retval, "total_discarded_bytes", json_object_new_uint64(data->total_discarded_bytes));
+    json_object_object_add(retval, "raw_packet_count", json_object_new_uint64(data->raw_packet_count));
+    json_object_object_add(retval, "ip_packet_count", json_object_new_uint64(data->ip_packet_count));
+    json_object_object_add(retval, "avg_pkt_size", json_object_new_uint64(data->avg_pkt_size));
+    json_object_object_add(retval, "total_ip_bytes", json_object_new_uint64(data->total_ip_bytes));
+    json_object_object_add(retval, "ndpi_flow_count", json_object_new_uint64(data->ndpi_flow_count));
+    json_object_object_add(retval, "tcp_count", json_object_new_uint64(data->tcp_count));
+    json_object_object_add(retval, "udp_count", json_object_new_uint64(data->udp_count));
+    json_object_object_add(retval, "vlan_count", json_object_new_uint64(data->vlan_count));
+    json_object_object_add(retval, "mpls_count", json_object_new_uint64(data->mpls_count));
+    json_object_object_add(retval, "pppoe_count", json_object_new_uint64(data->pppoe_count));
+    json_object_object_add(retval, "fragmented_count", json_object_new_uint64(data->fragmented_count));
+    json_object_object_add(retval, "max_packet_len", json_object_new_uint64(data->max_packet_len));
     json_object_object_add(retval, "packet_less_64", json_object_new_uint64(data->packet_less_64));
     json_object_object_add(retval, "packet_range_64_to_128", json_object_new_uint64(data->packet_range_64_to_128));
     json_object_object_add(retval, "packet_range_128_to_256", json_object_new_uint64(data->packet_range_128_to_256));
     json_object_object_add(retval, "packet_range_256_to_1024", json_object_new_uint64(data->packet_range_256_to_1024));
     json_object_object_add(retval, "packet_range_1024_to_1500", json_object_new_uint64(data->packet_range_1024_to_1500));
     json_object_object_add(retval, "packet_larger_1500", json_object_new_uint64(data->packet_larger_1500));
-
-    return retval;
-}
-
-/* ********************************** */
-
-void data_dpi_get(
-    struct data_dpi_t* data_dpi,
-    ndpi_stats_t stats,
-    uint64_t processing_time_usec
-) {
-    float t = (float)(stats.ip_packet_count * 1000000) / (float)processing_time_usec;
-    float b = (float)(stats.total_wire_bytes * 8 * 1000000) / (float)processing_time_usec;
-    float traffic_duration;
-
-    data_dpi->ndpi_packets_per_second = t;
-    data_dpi->ndpi_bytes_per_second = b;
-    data_dpi->start_time = (long)pcap_start.tv_sec;
-    data_dpi->end_time = (long)pcap_end.tv_sec;
-
-    if (live_capture) traffic_duration = processing_time_usec;
-    else traffic_duration = ((u_int64_t)pcap_end.tv_sec * 1000000 + pcap_end.tv_usec) - ((u_int64_t)pcap_start.tv_sec * 1000000 + pcap_start.tv_usec);
-
-    if (traffic_duration != 0) {
-        t = (float)(stats.ip_packet_count * 1000000) / (float)traffic_duration;
-        b = (float)(stats.total_wire_bytes * 8 * 1000000) / (float)traffic_duration;
-    }
-    else {
-        t = 0;
-        b = 0;
-    }
-
-    data_dpi->traffic_packets_per_second = t;
-    data_dpi->traffic_bytes_per_second = b;
-    data_dpi->guessed_flow_protocols = stats.guessed_flow_protocols;
-    data_dpi->dpi_tcp = stats.dpi_packet_count[0];
-    data_dpi->dpi_udp = stats.dpi_packet_count[1];
-    data_dpi->dpi_other = stats.dpi_packet_count[2];
-
-    // _TODO: Port confidence
-}
-
-json_object* data_dpi_to_json(struct data_dpi_t* data) {
-    json_object* retval = json_object_new_object();
-
     json_object_object_add(retval, "ndpi_packets_per_second", json_object_new_double((double)data->ndpi_packets_per_second));
     json_object_object_add(retval, "ndpi_bytes_per_second", json_object_new_double((double)data->ndpi_bytes_per_second));
+
+    // _TODO: format as string instead
     json_object_object_add(retval, "start_time", json_object_new_int64(data->start_time));
     json_object_object_add(retval, "end_time", json_object_new_int64(data->end_time));
+    json_object_object_add(retval, "traffic_duration", json_object_new_double((double)data->traffic_duration));
+
     json_object_object_add(retval, "traffic_packets_per_second", json_object_new_double((double)data->traffic_packets_per_second));
     json_object_object_add(retval, "traffic_bytes_per_second", json_object_new_double((double)data->traffic_bytes_per_second));
     json_object_object_add(retval, "guessed_flow_protocols", json_object_new_uint64(data->guessed_flow_protocols));
-    json_object_object_add(retval, "dpi_tcp", json_object_new_uint64(data->dpi_tcp));
-    json_object_object_add(retval, "dpi_udp", json_object_new_uint64(data->dpi_udp));
-    json_object_object_add(retval, "dpi_other", json_object_new_uint64(data->dpi_other));
+    json_object_object_add(retval, "dpi_tcp_count", json_object_new_uint64(data->dpi_tcp_count));
+    json_object_object_add(retval, "dpi_udp_count", json_object_new_uint64(data->dpi_udp_count));
+    json_object_object_add(retval, "dpi_other_count", json_object_new_uint64(data->dpi_other_count));
+    json_object_object_add(retval, "dpi_tcp_flow", json_object_new_uint64(data->dpi_tcp_flow));
+    json_object_object_add(retval, "dpi_udp_flow", json_object_new_uint64(data->dpi_udp_flow));
+    json_object_object_add(retval, "dpi_other_flow", json_object_new_uint64(data->dpi_other_flow));
 
     return retval;
 }
