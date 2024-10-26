@@ -424,6 +424,14 @@ void* global_data_send(__attribute__((unused)) void* args) {
     json_object* json_time = data_time_to_json(&global_data.time);
     json_object* json_traffic = data_traffic_to_json(&global_data.traffic);
 
+    json_object* json_protocol = json_object_new_object();
+    json_object* json_protocol_array = json_object_new_array();
+    for (size_t i = 0; i < global_data.protocol.length; i++) {
+        json_object* json_protocol_entry = data_protocol_to_json(&protocol_array[i]);
+        json_object_array_add(json_protocol_array, json_protocol_entry);
+    }
+    json_object_object_add(json_protocol, "protocols", json_protocol_array);
+
     json_object* json_classification = json_object_new_object();
     json_object* json_classification_array = json_object_new_array();
     for (size_t i = 0; i < global_data.classification.length; i++) {
@@ -432,13 +440,6 @@ void* global_data_send(__attribute__((unused)) void* args) {
     }
     json_object_object_add(json_classification, "classifications", json_classification_array);
 
-    json_object* json_protocol = json_object_new_object();
-    json_object* json_protocol_array = json_object_new_array();
-    for (size_t i = 0; i < global_data.protocol.length; i++) {
-        json_object* json_protocol_entry = data_protocol_to_json(&protocol_array[i]);
-        json_object_array_add(json_protocol_array, json_protocol_entry);
-    }
-    json_object_object_add(json_protocol, "protocols", json_protocol_array);
 
     lzmq_send_json(
         &global_zmq_conn,
@@ -457,20 +458,20 @@ void* global_data_send(__attribute__((unused)) void* args) {
     );
     lzmq_send_json(
         &global_zmq_conn,
-        json_classification,
+        json_protocol,
         0
     );
     lzmq_send_json(
         &global_zmq_conn,
-        json_protocol,
+        json_classification,
         0
     );
 
     json_object_put(json_memory);
     json_object_put(json_time);
     json_object_put(json_traffic);
-    json_object_put(json_classification);
     json_object_put(json_protocol);
+    json_object_put(json_classification);
 
     return NULL;
 }

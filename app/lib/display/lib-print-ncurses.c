@@ -16,9 +16,6 @@ void ncurses_clean_twalk() {
 void ncurses_printResults(uint64_t processing_time_usec) {
     u_int32_t i;
     char buf[32];
-    long long unsigned int breed_stats_pkts[NUM_BREEDS] = { 0 };
-    long long unsigned int breed_stats_bytes[NUM_BREEDS] = { 0 };
-    long long unsigned int breed_stats_flows[NUM_BREEDS] = { 0 };
 
     if (global_data.traffic.total_wire_bytes == 0)
         goto free_stats;
@@ -195,55 +192,28 @@ void ncurses_printResults(uint64_t processing_time_usec) {
         }
     }
 
-    if (!quiet_mode) printw("\n\nDetected protocols:\n");
-    for (i = 0; i <= ndpi_get_num_supported_protocols(ndpi_thread_info[0].workflow->ndpi_struct); i++) {
-        uint16_t user_proto_id = ndpi_map_ndpi_id_to_user_proto_id(ndpi_thread_info[0].workflow->ndpi_struct, i);
-        ndpi_protocol_breed_t breed = ndpi_get_proto_breed(ndpi_thread_info[0].workflow->ndpi_struct, user_proto_id);
-
-        if (cumulative_stats.protocol_counter[i] > 0) {
-            breed_stats_bytes[breed] += (long long unsigned int)cumulative_stats.protocol_counter_bytes[i];
-            breed_stats_pkts[breed] += (long long unsigned int)cumulative_stats.protocol_counter[i];
-            breed_stats_flows[breed] += (long long unsigned int)cumulative_stats.protocol_flows[i];
-
-            if (results_file)
-                fprintf(results_file, "%s\t%llu\t%llu\t%u\n",
-                    ndpi_get_proto_name(ndpi_thread_info[0].workflow->ndpi_struct, user_proto_id),
-                    (long long unsigned int)cumulative_stats.protocol_counter[i],
-                    (long long unsigned int)cumulative_stats.protocol_counter_bytes[i],
-                    cumulative_stats.protocol_flows[i]);
-
-            if (!quiet_mode) {
-                printw("\t%-20s packets: %-13llu bytes: %-13llu "
-                    "flows: %-13u\n",
-                    ndpi_get_proto_name(ndpi_thread_info[0].workflow->ndpi_struct, user_proto_id),
-                    (long long unsigned int)cumulative_stats.protocol_counter[i],
-                    (long long unsigned int)cumulative_stats.protocol_counter_bytes[i],
-                    cumulative_stats.protocol_flows[i]);
-            }
-        }
+    printw("\n\nDetected protocols:\n");
+    struct data_protocol* protocol_array = global_data.protocol.content;
+    for (size_t i = 0; i < global_data.protocol.length; i++) {
+        printw("\t%-20s packets: %-13llu bytes: %-13llu "
+            "flows: %-13llu\n",
+            protocol_array[i].name.content,
+            (long long unsigned int)protocol_array[i].packet_count,
+            (long long unsigned int)protocol_array[i].byte_count,
+            (long long unsigned int)protocol_array[i].flow_count
+        );
     }
 
-    if (!quiet_mode) {
-        printw("\n\nProtocol statistics:\n");
-
-        for (i = 0; i < NUM_BREEDS; i++) {
-            if (breed_stats_pkts[i] > 0) {
-                printw("\t%-20s packets: %-13llu bytes: %-13llu "
-                    "flows: %-13llu\n",
-                    ndpi_get_proto_breed_name(i),
-                    breed_stats_pkts[i], breed_stats_bytes[i], breed_stats_flows[i]);
-            }
-        }
-    }
-    if (results_file) {
-        fprintf(results_file, "\n");
-        for (i = 0; i < NUM_BREEDS; i++) {
-            if (breed_stats_pkts[i] > 0) {
-                fprintf(results_file, "%-20s %13llu %-13llu %-13llu\n",
-                    ndpi_get_proto_breed_name(i),
-                    breed_stats_pkts[i], breed_stats_bytes[i], breed_stats_flows[i]);
-            }
-        }
+    printw("\n\nProtocol statistics:\n");
+    struct data_classification* classification_array = global_data.classification.content;
+    for (size_t i = 0; i < global_data.classification.length; i++) {
+        printw("\t%-20s packets: %-13llu bytes: %-13llu "
+            "flows: %-13llu\n",
+            classification_array[i].name.content,
+            (long long unsigned int)classification_array[i].packet_count,
+            (long long unsigned int)classification_array[i].byte_count,
+            (long long unsigned int)classification_array[i].flow_count
+        );
     }
 
     ncurses_printRiskStats();
