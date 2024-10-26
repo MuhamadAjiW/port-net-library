@@ -3,11 +3,27 @@
 
 #include <zmq.h>
 #include <stdio.h>
+#include <pthread.h>
+#include <json-c/json.h>
+#include "lib-base.h"
 
 // TODO: Document
+struct lzmq_interface {
+    void* context;
+    void* socket;
+    int type;
+    pthread_mutex_t mutex;
+};
+
+// Externs
 extern int lzmq_do_loop;
 
-uint8_t lzmq_send_to_server(char* ip, int port, FILE* file);
-void* lzmq_do_nothing(void* arg);
+// Functions
+void lzmq_int_init(struct lzmq_interface* lzmq_int, char* ip, int port, int type);
+bool lzmq_int_initialized(struct lzmq_interface* interface);
+void lzmq_int_cleanup(struct lzmq_interface* interface);
+uint8_t lzmq_send_file(struct lzmq_interface* interface, FILE* file, int flags);
+uint8_t lzmq_send_str(struct lzmq_interface* interface, const char* data, int flags);
+uint8_t lzmq_send_json(struct lzmq_interface* interface, json_object* json, int flags);
 
 #endif

@@ -338,18 +338,26 @@ case "$host" in
       
       AC_CHECK_LIB([zmq], [zmq_ctx_new], [
         AC_DEFINE([HAVE_ZMQ], [1], [Define if libzmq is available])
-        ZMQ_LIB="-lzmq"
-        LIBS="${LIBS} ${ZMQ_LIB}"
+        ZMQ_FLAG="-lzmq"
+        LIBS="${LIBS} ${ZMQ_FLAG}"
       ], [
         AC_MSG_ERROR([Missing libzmq(-dev) library required to compile the application.])
       ])
       
       AC_CHECK_LIB([ncurses], [initscr], [
         AC_DEFINE([HAVE_NCURSES], [1], [Define if ncurses is available])
-        NCURSES_LIB="-lncurses"
-        LIBS="${LIBS} ${NCURSES_LIB}"
+        NCURSES_FLAG="-lncurses"
+        LIBS="${LIBS} ${NCURSES_FLAG}"
       ], [
         AC_MSG_ERROR([Missing libncurses(-dev) library required to compile the application.])
+      ])
+
+      AC_CHECK_LIB([json-c], [json_object_put], [
+        AC_DEFINE([HAVE_NCURSES], [1], [Define if json-c is available])
+        JSONC_FLAG="-ljson-c"
+        LIBS="${LIBS} ${JSONC_FLAG}"
+      ], [
+        AC_MSG_ERROR([Missing libjson-c(-dev) library required to compile the application.])
       ])
 
       EXE_SUFFIX=""
@@ -460,8 +468,9 @@ AC_SUBST(NDPI_PATCH)
 AC_SUBST(NDPI_VERSION_SHORT)
 AC_SUBST(PCAP_INC)
 AC_SUBST(PCAP_LIB)
-AC_SUBST(ZMQ_LIB)
-AC_SUBST(NCURSES_LIB)
+AC_SUBST(ZMQ_FLAG)
+AC_SUBST(NCURSES_FLAG)
+AC_SUBST(JSONC_FLAG)
 AC_SUBST(LIBRRD)
 AC_SUBST(ADDITIONAL_INCS)
 AC_SUBST(ADDITIONAL_LIBS)

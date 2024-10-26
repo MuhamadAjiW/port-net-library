@@ -42,7 +42,7 @@
 /* PF_RING nBPF is present */
 #undef HAVE_NBPF
 
-/* Define if ncurses is available */
+/* Define if json-c is available */
 #undef HAVE_NCURSES
 
 /* Define to 1 if you have the <netinet/in.h> header file. */

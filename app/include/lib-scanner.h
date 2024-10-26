@@ -8,6 +8,7 @@
 
 #include "lib-flow.h"
 
+// TODO: Document
 void deleteScanners(struct single_flow_info* scanners);
 void updateScanners(struct single_flow_info** scanners, u_int32_t saddr,
     u_int8_t version, u_int32_t dport);

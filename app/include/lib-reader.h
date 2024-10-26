@@ -9,6 +9,7 @@
 #include "lib-scanner.h"
 #include "lib-flow.h"
 
+// TODO: Document
 #ifndef IPVERSION
 #define	IPVERSION	4 /* on *nix it is defined in netinet/ip.h */ 
 #endif

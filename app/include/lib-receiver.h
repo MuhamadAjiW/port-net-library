@@ -5,6 +5,7 @@
 #include <ndpi_api.h>
 #include "uthash.h"
 
+// TODO: Document
 // Structs
 // struct to hold top receiver hosts
 struct receiver {

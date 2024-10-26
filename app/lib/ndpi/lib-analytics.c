@@ -212,3 +212,266 @@ void node_print_unknown_proto_walker(const void* node,
         num_flows++;
     }
 }
+
+/* *********************************************** */
+
+void data_aggregate() {
+    char buf[32];
+
+    memset(&cumulative_stats, 0, sizeof(cumulative_stats));
+
+    for (int thread_id = 0; thread_id < num_threads; thread_id++) {
+        if ((ndpi_thread_info[thread_id].workflow->stats.total_wire_bytes == 0)
+            && (ndpi_thread_info[thread_id].workflow->stats.raw_packet_count == 0))
+            continue;
+
+        for (int i = 0; i < NUM_ROOTS; i++) {
+            ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
+                node_proto_guess_walker, &thread_id);
+            if (verbose == 3 || stats_flag) ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
+                port_stats_walker, &thread_id);
+        }
+
+        /* Stats aggregation */
+        cumulative_stats.guessed_flow_protocols += ndpi_thread_info[thread_id].workflow->stats.guessed_flow_protocols;
+        cumulative_stats.raw_packet_count += ndpi_thread_info[thread_id].workflow->stats.raw_packet_count;
+        cumulative_stats.ip_packet_count += ndpi_thread_info[thread_id].workflow->stats.ip_packet_count;
+        cumulative_stats.total_wire_bytes += ndpi_thread_info[thread_id].workflow->stats.total_wire_bytes;
+        cumulative_stats.total_ip_bytes += ndpi_thread_info[thread_id].workflow->stats.total_ip_bytes;
+        cumulative_stats.total_discarded_bytes += ndpi_thread_info[thread_id].workflow->stats.total_discarded_bytes;
+
+        for (uint32_t i = 0; i < ndpi_get_num_supported_protocols(ndpi_thread_info[0].workflow->ndpi_struct); i++) {
+            cumulative_stats.protocol_counter[i] += ndpi_thread_info[thread_id].workflow->stats.protocol_counter[i];
+            cumulative_stats.protocol_counter_bytes[i] += ndpi_thread_info[thread_id].workflow->stats.protocol_counter_bytes[i];
+            cumulative_stats.protocol_flows[i] += ndpi_thread_info[thread_id].workflow->stats.protocol_flows[i];
+        }
+
+        cumulative_stats.ndpi_flow_count += ndpi_thread_info[thread_id].workflow->stats.ndpi_flow_count;
+        cumulative_stats.flow_count[0] += ndpi_thread_info[thread_id].workflow->stats.flow_count[0];
+        cumulative_stats.flow_count[1] += ndpi_thread_info[thread_id].workflow->stats.flow_count[1];
+        cumulative_stats.flow_count[2] += ndpi_thread_info[thread_id].workflow->stats.flow_count[2];
+        cumulative_stats.tcp_count += ndpi_thread_info[thread_id].workflow->stats.tcp_count;
+        cumulative_stats.udp_count += ndpi_thread_info[thread_id].workflow->stats.udp_count;
+        cumulative_stats.mpls_count += ndpi_thread_info[thread_id].workflow->stats.mpls_count;
+        cumulative_stats.pppoe_count += ndpi_thread_info[thread_id].workflow->stats.pppoe_count;
+        cumulative_stats.vlan_count += ndpi_thread_info[thread_id].workflow->stats.vlan_count;
+        cumulative_stats.fragmented_count += ndpi_thread_info[thread_id].workflow->stats.fragmented_count;
+        for (uint32_t i = 0; i < sizeof(cumulative_stats.packet_len) / sizeof(cumulative_stats.packet_len[0]); i++)
+            cumulative_stats.packet_len[i] += ndpi_thread_info[thread_id].workflow->stats.packet_len[i];
+        cumulative_stats.max_packet_len += ndpi_thread_info[thread_id].workflow->stats.max_packet_len;
+
+        cumulative_stats.dpi_packet_count[0] += ndpi_thread_info[thread_id].workflow->stats.dpi_packet_count[0];
+        cumulative_stats.dpi_packet_count[1] += ndpi_thread_info[thread_id].workflow->stats.dpi_packet_count[1];
+        cumulative_stats.dpi_packet_count[2] += ndpi_thread_info[thread_id].workflow->stats.dpi_packet_count[2];
+
+        for (uint32_t i = 0; i < sizeof(cumulative_stats.flow_confidence) / sizeof(cumulative_stats.flow_confidence[0]); i++)
+            cumulative_stats.flow_confidence[i] += ndpi_thread_info[thread_id].workflow->stats.flow_confidence[i];
+
+        cumulative_stats.num_dissector_calls += ndpi_thread_info[thread_id].workflow->stats.num_dissector_calls;
+
+        /* LRU caches */
+        for (uint32_t i = 0; i < NDPI_LRUCACHE_MAX; i++) {
+            struct ndpi_lru_cache_stats s;
+            int scope;
+            char param[64];
+
+            snprintf(param, sizeof(param), "lru.%s.scope", ndpi_lru_cache_idx_to_name(i));
+            if (ndpi_get_config(ndpi_thread_info[thread_id].workflow->ndpi_struct, NULL, param, buf, sizeof(buf)) != NULL) {
+                scope = atoi(buf);
+                if (scope == NDPI_LRUCACHE_SCOPE_LOCAL ||
+                    (scope == NDPI_LRUCACHE_SCOPE_GLOBAL && thread_id == 0)) {
+                    ndpi_get_lru_cache_stats(ndpi_thread_info[thread_id].workflow->g_ctx,
+                        ndpi_thread_info[thread_id].workflow->ndpi_struct, i, &s);
+                    cumulative_stats.lru_stats[i].n_insert += s.n_insert;
+                    cumulative_stats.lru_stats[i].n_search += s.n_search;
+                    cumulative_stats.lru_stats[i].n_found += s.n_found;
+                }
+            }
+        }
+
+        /* Automas */
+        for (uint32_t i = 0; i < NDPI_AUTOMA_MAX; i++) {
+            struct ndpi_automa_stats s;
+            ndpi_get_automa_stats(ndpi_thread_info[thread_id].workflow->ndpi_struct, i, &s);
+            cumulative_stats.automa_stats[i].n_search += s.n_search;
+            cumulative_stats.automa_stats[i].n_found += s.n_found;
+        }
+
+        /* Patricia trees */
+        for (uint32_t i = 0; i < NDPI_PTREE_MAX; i++) {
+            struct ndpi_patricia_tree_stats s;
+            ndpi_get_patricia_stats(ndpi_thread_info[thread_id].workflow->ndpi_struct, i, &s);
+            cumulative_stats.patricia_stats[i].n_search += s.n_search;
+            cumulative_stats.patricia_stats[i].n_found += s.n_found;
+        }
+
+        // _TODO: Fix aggregation
+    }
+
+
+
+}
+
+/* *********************************************** */
+
+void global_data_clean() {
+    struct data_protocol* protocol_array = global_data.protocol.content;
+    struct data_classification* classification_array = global_data.classification.content;
+    // struct data_risk* risk_array = global_data.risk.content;
+
+    DLOG(TAG_DATA, "Cleaning classification data, length %d", global_data.classification.length);
+    for (size_t i = 0; i < global_data.classification.length; i++) {
+        data_classification_clean(&classification_array[i]);
+    }
+    DLOG(TAG_DATA, "Cleaning protocol data, length %d", global_data.protocol.length);
+    for (size_t i = 0; i < global_data.protocol.length; i++) {
+        data_protocol_clean(&protocol_array[i]);
+    }
+    DLOG(TAG_DATA, "Cleaning risk data, length %d", global_data.risk.length);
+    // for (size_t i = 0; i < global_data.risk.length; i++) {
+    //     data_risk_clean(&risk_array[i]);
+    // }
+
+    dynarray_delete(&global_data.protocol);
+    dynarray_delete(&global_data.classification);
+    dynarray_delete(&global_data.risk);
+    memset(&global_data, 0, sizeof(global_data));
+}
+
+void global_data_init() {
+    dynarray_init(&global_data.protocol, sizeof(struct data_protocol));
+    dynarray_init(&global_data.classification, sizeof(struct data_classification));
+    dynarray_init(&global_data.risk, sizeof(struct data_risk));
+}
+
+void global_data_generate(
+    uint64_t processing_time_usec,
+    uint64_t setup_time_usec,
+    struct ndpi_detection_module_struct* ndpi_dm_struct
+) {
+    DLOG(TAG_DATA, "Aggregating global data");
+    data_aggregate();
+    DLOG(TAG_DATA, "Cleaning global data");
+    global_data_clean();
+    DLOG(TAG_DATA, "Initializing global data");
+    global_data_init();
+    DLOG(TAG_DATA, "fetching memory to global data");
+    data_memory_get(&global_data.memory);
+    DLOG(TAG_DATA, "fetching time to global data");
+    data_time_get(
+        &global_data.time,
+        processing_time_usec,
+        setup_time_usec
+    );
+    DLOG(TAG_DATA, "fetching traffic to global data");
+    data_traffic_get(&global_data.traffic, cumulative_stats, processing_time_usec);
+
+    struct data_classification temp_classification;
+    struct data_protocol temp_protocol;
+    // struct data_risk temp_risk;
+
+    // _TODO: refactor, this is very ugly
+    long long unsigned int breed_stats_pkts[NUM_BREEDS] = { 0 };
+    long long unsigned int breed_stats_bytes[NUM_BREEDS] = { 0 };
+    long long unsigned int breed_stats_flows[NUM_BREEDS] = { 0 };
+
+    for (uint32_t i = 0; i <= ndpi_get_num_supported_protocols(ndpi_dm_struct); i++) {
+        uint16_t user_proto_id = ndpi_map_ndpi_id_to_user_proto_id(ndpi_dm_struct, i);
+        ndpi_protocol_breed_t breed = ndpi_get_proto_breed(ndpi_dm_struct, user_proto_id);
+
+        if (cumulative_stats.protocol_counter[i] > 0) {
+            breed_stats_bytes[breed] += (long long unsigned int)cumulative_stats.protocol_counter_bytes[i];
+            breed_stats_pkts[breed] += (long long unsigned int)cumulative_stats.protocol_counter[i];
+            breed_stats_flows[breed] += (long long unsigned int)cumulative_stats.protocol_flows[i];
+
+            data_classification_get(
+                &temp_classification,
+                ndpi_get_proto_name(ndpi_thread_info[0].workflow->ndpi_struct, user_proto_id),
+                (long long unsigned int)cumulative_stats.protocol_counter[i],
+                (long long unsigned int)cumulative_stats.protocol_counter_bytes[i],
+                cumulative_stats.protocol_flows[i]
+            );
+
+            DLOG(TAG_DATA, "fetching classification to global data");
+            dynarray_push_back(&global_data.classification, (void*)&temp_classification);
+        }
+    }
+
+    for (uint32_t i = 0; i < NUM_BREEDS; i++) {
+        if (breed_stats_pkts[i] > 0) {
+            data_protocol_get(
+                &temp_protocol,
+                ndpi_get_proto_breed_name(i),
+                breed_stats_pkts[i],
+                breed_stats_bytes[i],
+                breed_stats_flows[i]
+            );
+
+            DLOG(TAG_DATA, "fetching protocol to global data");
+            dynarray_push_back(&global_data.protocol, (void*)&temp_protocol);
+        }
+    }
+
+    // _TODO: risk data
+}
+
+void* global_data_send(__attribute__((unused)) void* args) {
+    // _TODO: risk data
+    struct data_classification* classification_array = global_data.classification.content;
+    struct data_protocol* protocol_array = global_data.protocol.content;
+
+    json_object* json_memory = data_memory_to_json(&global_data.memory);
+    json_object* json_time = data_time_to_json(&global_data.time);
+    json_object* json_traffic = data_traffic_to_json(&global_data.traffic);
+
+    json_object* json_protocol = json_object_new_object();
+    json_object* json_protocol_array = json_object_new_array();
+    for (size_t i = 0; i < global_data.protocol.length; i++) {
+        json_object* json_protocol_entry = data_protocol_to_json(&protocol_array[i]);
+        json_object_array_add(json_protocol_array, json_protocol_entry);
+    }
+    json_object_object_add(json_protocol, "protocols", json_protocol_array);
+
+    json_object* json_classification = json_object_new_object();
+    json_object* json_classification_array = json_object_new_array();
+    for (size_t i = 0; i < global_data.classification.length; i++) {
+        json_object* json_classification_entry = data_classification_to_json(&classification_array[i]);
+        json_object_array_add(json_classification_array, json_classification_entry);
+    }
+    json_object_object_add(json_classification, "classifications", json_classification_array);
+
+
+    lzmq_send_json(
+        &global_zmq_conn,
+        json_memory,
+        0
+    );
+    lzmq_send_json(
+        &global_zmq_conn,
+        json_time,
+        0
+    );
+    lzmq_send_json(
+        &global_zmq_conn,
+        json_traffic,
+        0
+    );
+    lzmq_send_json(
+        &global_zmq_conn,
+        json_protocol,
+        0
+    );
+    lzmq_send_json(
+        &global_zmq_conn,
+        json_classification,
+        0
+    );
+
+    json_object_put(json_memory);
+    json_object_put(json_time);
+    json_object_put(json_traffic);
+    json_object_put(json_protocol);
+    json_object_put(json_classification);
+
+    return NULL;
+}

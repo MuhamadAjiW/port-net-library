@@ -1918,9 +1918,9 @@ static void runPcapLoop(u_int16_t thread_id) {
             printf("Unsupported datalink %d. Skip pcap\n", datalink_type);
             return;
         }
-        printf("[DEV] Looping detection\n");
+        DLOG(TAG_NDPI, "Looping detection");
         int ret = pcap_loop(ndpi_thread_info[thread_id].workflow->pcap_handle, -1, &ndpi_process_packet, (u_char*)&thread_id);
-        printf("[DEV] Looping Done\n");
+        DLOG(TAG_NDPI, "Looping Done");
         if (ret == -1)
             printf("Error while reading pcap file: '%s'\n", pcap_geterr(ndpi_thread_info[thread_id].workflow->pcap_handle));
     }
@@ -2168,11 +2168,12 @@ void run_detection() {
     int status;
     void* thd_res;
 
-    printf("\n[DEV] Program execution starting with %d threads...\n", num_threads);
-    pthread_t display_thread;
-    pthread_t lzmq_thread;
-    pthread_create(&display_thread, NULL, ldis_print, NULL);
-    pthread_create(&lzmq_thread, NULL, lzmq_do_nothing, NULL);
+    ILOG(TAG_GENERAL, "Program execution starting with %d threads...", num_threads);
+
+    // pthread_t display_thread;
+    // pthread_create(&display_thread, NULL, ldis_print, NULL);
+
+    thread_pool_assign(&global_thread_pool, THREAD_DISPLAY, ldis_print, NULL, NULL);
 
     /* Running processing threads */
     for (thread_id = 0; thread_id < num_threads; thread_id++) {
@@ -2208,16 +2209,18 @@ void run_detection() {
             exit(-1);
         }
     }
-    lzmq_do_loop = 0;
     ldis_do_loop = 0;
 
-    pthread_join(display_thread, NULL);
-    pthread_join(lzmq_thread, NULL);
-    printf("\n[DEV] Execution completed...%d\n", num_threads);
+    DLOG(TAG_GENERAL, "Execution completed...");
 
 #ifdef USE_DPDK
     dpdk_port_deinit(dpdk_port_id);
 #endif
+
+    // _TODO: Execution completion event instead of busy waiting
+    while (global_thread_pool.handler[THREAD_DISPLAY].thread_queue_len > 0) {
+        zmq_sleep(1);
+    }
 
     gettimeofday(&end, NULL);
     processing_time_usec = (u_int64_t)end.tv_sec * 1000000 + end.tv_usec - ((u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec);
@@ -2225,7 +2228,7 @@ void run_detection() {
 
     /* Printing cumulative results */
     printResults(processing_time_usec, setup_time_usec);
-    printf("\n[DEV] Printing completed...\n\n");
+    ILOG(TAG_GENERAL, "Printing completed...");
 
     for (thread_id = 0; thread_id < num_threads; thread_id++) {
         if (ndpi_thread_info[thread_id].workflow->pcap_handle != NULL)
@@ -2306,6 +2309,9 @@ void bpf_filter_port_array_add(int filter_array[], int size, int port) {
 /* *********************************************** */
 
 void run() {
+    global_init();
+    ILOG(TAG_GENERAL, "Program is starting...");
+
     if (!quiet_mode) {
         printf("Using nDPI (%s) [%d thread(s)]\n", ndpi_revision(), num_threads);
 
@@ -2344,6 +2350,9 @@ void run() {
 #ifdef DEBUG_TRACE
     if (trace_fp) fclose(trace_fp);
 #endif
+
+    ILOG(TAG_GENERAL, "Program is stopping...");
+    global_clean();
 }
 
 /**

@@ -280,7 +280,7 @@ void printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
             if (enable_malloc_bins)
                 printf("\tData-path malloc histogram: %s\n", ndpi_print_bin(&malloc_bins, 0, buf, sizeof(buf)));
         }
-    }
+        }
 
     if (results_file) {
         if (cumulative_stats.guessed_flow_protocols)
@@ -479,7 +479,7 @@ free_stats:
         port_stats_delete(dstStats);
         dstStats = NULL;
     }
-}
+    }
 
 void printRiskStats() {
     if (!quiet_mode) {
@@ -1305,8 +1305,8 @@ void printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) {
             if (csv_fp)
                 fprintf(csv_fp, "\n");
                   //  return;
+        }
     }
-}
 
     if (csv_fp || (verbose > 1)) {
 #if 1
