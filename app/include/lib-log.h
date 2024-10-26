@@ -20,27 +20,27 @@
 #define LOGGER_TYPE_ZMQ     2
 
 // Structs
-struct log_t {
+typedef struct log_t {
     int level;
     time_t timestamp;
     string_t tag;
     string_t message;
-};
+} log_t;
 
-struct logger_t {
+struct logger {
     int type;
     FILE* output_file;
-    struct lzmq_interface_t* zmq_int;
+    struct lzmq_interface* zmq_int;
 };
 
 // Functions
-uint8_t logger_init(struct logger_t* logger, int type, char* addr, int port);
-void logger_delete(struct logger_t* logger);
-uint8_t logger_log_stdout(struct log_t* log);
-uint8_t logger_log_file(struct logger_t* logger, struct log_t* log);
-uint8_t logger_log(struct logger_t* logger, struct log_t* log);
+uint8_t logger_init(struct logger* logger, int type, char* addr, int port);
+void logger_delete(struct logger* logger);
+uint8_t logger_log_stdout(log_t* log);
+uint8_t logger_log_file(struct logger* logger, log_t* log);
+uint8_t logger_log(struct logger* logger, log_t* log);
 uint8_t logger_log_raw(
-    struct logger_t* logger,
+    struct logger* logger,
     int level,
     char* tag,
     char* __restrict__ pattern, ...
@@ -48,9 +48,9 @@ uint8_t logger_log_raw(
 
 /* ***************************************************** */
 
-struct log_t log_create(int level, char* tag, char* message);
-void log_delete(struct log_t* log);
-string_t log_generate_string(struct log_t* log);
+log_t log_create(int level, char* tag, char* message);
+void log_delete(log_t* log);
+string_t log_generate_string(log_t* log);
 const char* log_level_to_string(int level);
 
 #endif

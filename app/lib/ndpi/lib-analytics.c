@@ -312,22 +312,22 @@ void data_aggregate() {
 /* *********************************************** */
 
 void global_data_clean() {
-    if (global_data.protocol != NULL) {
-        free(global_data.protocol);
-    }
-    if (global_data.classification != NULL) {
-        free(global_data.classification);
-    }
-    if (global_data.risk != NULL) {
-        free(global_data.risk);
-    }
-
+    dynarray_delete(&global_data.protocol);
+    dynarray_delete(&global_data.classification);
+    dynarray_delete(&global_data.risk);
     memset(&global_data, 0, sizeof(global_data));
+}
+
+void global_data_init() {
+    dynarray_init(&global_data.protocol, sizeof(struct data_protocol));
+    dynarray_init(&global_data.classification, sizeof(struct data_classification));
+    dynarray_init(&global_data.risk, sizeof(struct data_risk));
 }
 
 void global_data_generate(uint64_t processing_time_usec, uint64_t setup_time_usec) {
     data_aggregate();
     global_data_clean();
+    global_data_init();
     long long unsigned int breed_stats_pkts[NUM_BREEDS] = { 0 };
     long long unsigned int breed_stats_bytes[NUM_BREEDS] = { 0 };
     long long unsigned int breed_stats_flows[NUM_BREEDS] = { 0 };

@@ -8,22 +8,23 @@
 #include "reader_util.h"
 
 #include "lib-string.h"
+#include "lib-array.h"
 
 // TODO: Document
 // Structs
-struct data_memory_t {
+struct data_memory {
     uint32_t mem_once;
     uint32_t mem_per_flow;
     uint32_t mem_actual;
     uint32_t mem_peak;
 };
 
-struct data_time_t {
+struct data_time {
     uint64_t setup_time;
     uint64_t processing_time;
 };
 
-struct data_traffic_t {
+struct data_traffic {
     uint64_t total_wire_bytes;
     uint64_t total_discarded_bytes;
     uint64_t raw_packet_count;
@@ -60,33 +61,33 @@ struct data_traffic_t {
     uint32_t dpi_other_flow;
 };
 
-struct data_protocol_t {
+struct data_protocol {
     string_t name;
     uint64_t packet_count;
     uint64_t byte_count;
     uint64_t flow_count;
 };
 
-struct data_classification_t {
+struct data_classification {
     string_t name;
     uint64_t packet_count;
     uint64_t byte_count;
     uint64_t flow_count;
 };
 
-struct data_risk_t {
+struct data_risk {
     string_t name;
     uint64_t count;
     float ratio;
 };
 
-struct data_all_t {
-    struct data_memory_t memory;
-    struct data_time_t time;
-    struct data_traffic_t traffic;
-    struct data_protocol_t* protocol;
-    struct data_classification_t* classification;
-    struct data_risk_t* risk;
+struct data_all {
+    struct data_memory memory;
+    struct data_time time;
+    struct data_traffic traffic;
+    dynarray_t protocol;
+    dynarray_t classification;
+    dynarray_t risk;
 };
 
 // _TODO: granular packet data
@@ -97,50 +98,50 @@ extern struct timeval pcap_start, pcap_end;
 extern u_int8_t live_capture;
 
 // Functions
-void data_memory_get(struct data_memory_t* data_memory);
-json_object* data_memory_to_json(struct data_memory_t* data);
+void data_memory_get(struct data_memory* data_memory);
+json_object* data_memory_to_json(struct data_memory* data);
 
 /* ********************************** */
 
 void data_time_get(
-    struct data_time_t* data_time,
+    struct data_time* data_time,
     uint64_t processing_time_usec,
     uint64_t setup_time_usec
 );
-json_object* data_time_to_json(struct data_time_t* data);
+json_object* data_time_to_json(struct data_time* data);
 
 /* ********************************** */
 
 void data_traffic_get(
-    struct data_traffic_t* data_traffic,
+    struct data_traffic* data_traffic,
     ndpi_stats_t stats,
     uint64_t processing_time_usec
 );
-json_object* data_traffic_to_json(struct data_traffic_t* data);
+json_object* data_traffic_to_json(struct data_traffic* data);
 
 /* ********************************** */
 
 void data_protocol_get(
-    struct data_protocol_t* data_protocol,
+    struct data_protocol* data_protocol,
     char* name,
     uint64_t packet_count,
     uint64_t byte_count,
     uint64_t flow_count
 );
-void data_protocol_clean(struct data_protocol_t* data);
-json_object* data_protocol_to_json(struct data_protocol_t* data);
+void data_protocol_clean(struct data_protocol* data);
+json_object* data_protocol_to_json(struct data_protocol* data);
 
 /* ********************************** */
 
 void data_classification_get(
-    struct data_classification_t* data_classification,
+    struct data_classification* data_classification,
     char* name,
     uint64_t packet_count,
     uint64_t byte_count,
     uint64_t flow_count
 );
-void data_classification_clean(struct data_classification_t* data);
-json_object* data_classification_to_json(struct data_classification_t* data);
+void data_classification_clean(struct data_classification* data);
+json_object* data_classification_to_json(struct data_classification* data);
 
 /* ********************************** */
 

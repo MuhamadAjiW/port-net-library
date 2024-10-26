@@ -6,7 +6,7 @@
 
 int lzmq_do_loop = 1;
 
-void lzmq_int_init(struct lzmq_interface_t* lzmq_int, char* ip, int port, int type) {
+void lzmq_int_init(struct lzmq_interface* lzmq_int, char* ip, int port, int type) {
     string_t address = str_format("tcp://%s:%d", ip, port);
 
     if (str_is_null(address)) {
@@ -43,11 +43,11 @@ void lzmq_int_init(struct lzmq_interface_t* lzmq_int, char* ip, int port, int ty
     str_delete(&address);
 }
 
-bool lzmq_int_initialized(struct lzmq_interface_t* interface) {
+bool lzmq_int_initialized(struct lzmq_interface* interface) {
     return (interface->socket != 0) && (interface->context != 0);
 }
 
-void lzmq_int_cleanup(struct lzmq_interface_t* interface) {
+void lzmq_int_cleanup(struct lzmq_interface* interface) {
     if (interface->socket != 0) {
         zmq_close(interface->socket);
     }
@@ -56,7 +56,7 @@ void lzmq_int_cleanup(struct lzmq_interface_t* interface) {
     }
 }
 
-uint8_t lzmq_send_file(struct lzmq_interface_t* interface, FILE* file, int flags) {
+uint8_t lzmq_send_file(struct lzmq_interface* interface, FILE* file, int flags) {
     if (file == NULL) {
         fprintf(stderr, "Error: Unable to open file.\n");
         return 3;
@@ -108,14 +108,14 @@ uint8_t lzmq_send_file(struct lzmq_interface_t* interface, FILE* file, int flags
     return 0;
 }
 
-uint8_t lzmq_send_str(struct lzmq_interface_t* interface, const char* data, int flags) {
+uint8_t lzmq_send_str(struct lzmq_interface* interface, const char* data, int flags) {
     pthread_mutex_lock(&interface->mutex);
     zmq_send(interface->socket, data, strlen(data), flags);
     pthread_mutex_unlock(&interface->mutex);
     return 1;
 }
 
-uint8_t lzmq_send_json(struct lzmq_interface_t* interface, json_object* json, int flags) {
+uint8_t lzmq_send_json(struct lzmq_interface* interface, json_object* json, int flags) {
     const char* json_serialized = json_object_to_json_string(json);
     return lzmq_send_str(interface, json_serialized, flags);
 }

@@ -1,14 +1,14 @@
 #include "../../include/_app_global.h"
 
 
-struct thread_pool_t global_thread_pool;
-struct logger_t global_logger;
-struct lzmq_interface_t global_zmq_conn;
+struct thread_pool global_thread_pool;
+struct logger global_logger;
+struct lzmq_interface global_zmq_conn;
 
 // _TODO: use environment variable files instead
 char* global_zmq_server_addr = "127.0.0.1";
 int global_zmq_server_port = 56;
-struct data_all_t global_data;
+struct data_all global_data;
 
 uint8_t global_init() {
     thread_pool_init(&global_thread_pool, INIT_TASK_SIZE);

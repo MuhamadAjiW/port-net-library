@@ -1,6 +1,6 @@
 #include "../../include/lib-log.h"
 
-uint8_t logger_init(struct logger_t* logger, int type, char* addr, int port) {
+uint8_t logger_init(struct logger* logger, int type, char* addr, int port) {
     logger->type = type;
     switch (type)
     {
@@ -11,7 +11,7 @@ uint8_t logger_init(struct logger_t* logger, int type, char* addr, int port) {
         if (logger->output_file == NULL) return 0;
         return 1;
     case LOGGER_TYPE_ZMQ:
-        logger->zmq_int = malloc(sizeof(struct lzmq_interface_t));
+        logger->zmq_int = malloc(sizeof(struct lzmq_interface));
         lzmq_int_init(logger->zmq_int, addr, port, ZMQ_PUB);
         return 1;
 
@@ -20,7 +20,7 @@ uint8_t logger_init(struct logger_t* logger, int type, char* addr, int port) {
     }
 }
 
-void logger_delete(struct logger_t* logger) {
+void logger_delete(struct logger* logger) {
     switch (logger->type)
     {
     case LOGGER_TYPE_STDOUT:
@@ -38,7 +38,7 @@ void logger_delete(struct logger_t* logger) {
     }
 }
 
-uint8_t logger_log_stdout(struct log_t* log) {
+uint8_t logger_log_stdout(log_t* log) {
     string_t str = log_generate_string(log);
     printf(str.content);
     str_delete(&str);
@@ -46,7 +46,7 @@ uint8_t logger_log_stdout(struct log_t* log) {
     return 1;
 }
 
-uint8_t logger_log_file(struct logger_t* logger, struct log_t* log) {
+uint8_t logger_log_file(struct logger* logger, log_t* log) {
     if (logger->output_file == NULL) return 0;
     string_t str = log_generate_string(log);
 
@@ -57,7 +57,7 @@ uint8_t logger_log_file(struct logger_t* logger, struct log_t* log) {
     return 1;
 }
 
-uint8_t logger_log_zmq(struct logger_t* logger, struct log_t* log) {
+uint8_t logger_log_zmq(struct logger* logger, log_t* log) {
     if (!lzmq_int_initialized(logger->zmq_int)) return 0;
 
     string_t str = log_generate_string(log);
@@ -68,7 +68,7 @@ uint8_t logger_log_zmq(struct logger_t* logger, struct log_t* log) {
     return 1;
 }
 
-uint8_t logger_log(struct logger_t* logger, struct log_t* log) {
+uint8_t logger_log(struct logger* logger, log_t* log) {
     // printf("logging something step 2\n");
     switch (logger->type) {
     case LOGGER_TYPE_FILE:
@@ -88,7 +88,7 @@ uint8_t logger_log(struct logger_t* logger, struct log_t* log) {
 }
 
 uint8_t logger_log_raw(
-    struct logger_t* logger,
+    struct logger* logger,
     int level,
     char* tag,
     char* __restrict__ pattern, ...
@@ -107,7 +107,7 @@ uint8_t logger_log_raw(
     vsnprintf(message, len, pattern, args);
     va_end(args);
 
-    struct log_t log = log_create(level, tag, message);
+    log_t log = log_create(level, tag, message);
     int retcode = logger_log(logger, &log);
 
     log_delete(&log);
@@ -118,8 +118,8 @@ uint8_t logger_log_raw(
 
 /* ***************************************************** */
 
-struct log_t log_create(int level, char* tag, char* message) {
-    struct log_t log;
+log_t log_create(int level, char* tag, char* message) {
+    log_t log;
 
     log.message = str_new(message);
     log.tag = str_new(tag);
@@ -129,12 +129,12 @@ struct log_t log_create(int level, char* tag, char* message) {
     return log;
 }
 
-void log_delete(struct log_t* log) {
+void log_delete(log_t* log) {
     str_delete(&(log->message));
     str_delete(&(log->tag));
 }
 
-string_t log_generate_string(struct log_t* log) {
+string_t log_generate_string(log_t* log) {
     string_t output_string;
     struct tm* t;
     char timestamp[20];

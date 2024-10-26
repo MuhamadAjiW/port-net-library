@@ -40,12 +40,12 @@
 #define TAG_DATA        "DATA"
 
 // _TODO: Restructure other global variables here
-extern struct thread_pool_t global_thread_pool;
-extern struct logger_t global_logger;
-extern struct lzmq_interface_t global_zmq_conn;
+extern struct thread_pool global_thread_pool;
+extern struct logger global_logger;
+extern struct lzmq_interface global_zmq_conn;
 extern char* global_zmq_server_addr;
 extern int global_zmq_server_port;
-extern struct data_all_t global_data;
+extern struct data_all global_data;
 
 uint8_t global_init();
 uint8_t global_clean();

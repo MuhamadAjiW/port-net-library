@@ -2,14 +2,14 @@
 
 /* ********************************** */
 
-void data_memory_get(struct data_memory_t* data_memory) {
+void data_memory_get(struct data_memory* data_memory) {
     data_memory->mem_once = ndpi_get_ndpi_detection_module_size();
     data_memory->mem_per_flow = ndpi_detection_get_sizeof_ndpi_flow_struct();
     data_memory->mem_actual = current_ndpi_memory;
     data_memory->mem_peak = max_ndpi_memory;
 }
 
-json_object* data_memory_to_json(struct data_memory_t* data) {
+json_object* data_memory_to_json(struct data_memory* data) {
     json_object* retval = json_object_new_object();
 
     json_object_object_add(retval, "mem_once", json_object_new_uint64((uint64_t)data->mem_once));
@@ -23,7 +23,7 @@ json_object* data_memory_to_json(struct data_memory_t* data) {
 /* ********************************** */
 
 void data_time_get(
-    struct data_time_t* data_time,
+    struct data_time* data_time,
     uint64_t processing_time_usec,
     uint64_t setup_time_usec
 ) {
@@ -31,7 +31,7 @@ void data_time_get(
     data_time->processing_time = (unsigned long)(processing_time_usec / 1000);
 }
 
-json_object* data_time_to_json(struct data_time_t* data) {
+json_object* data_time_to_json(struct data_time* data) {
     json_object* retval = json_object_new_object();
 
     json_object_object_add(retval, "setup_time", json_object_new_uint64(data->setup_time));
@@ -43,7 +43,7 @@ json_object* data_time_to_json(struct data_time_t* data) {
 /* ********************************** */
 
 void data_traffic_get(
-    struct data_traffic_t* data_traffic,
+    struct data_traffic* data_traffic,
     ndpi_stats_t stats,
     uint64_t processing_time_usec
 ) {
@@ -109,7 +109,7 @@ void data_traffic_get(
     // _TODO: Port confidence
 }
 
-json_object* data_traffic_to_json(struct data_traffic_t* data) {
+json_object* data_traffic_to_json(struct data_traffic* data) {
     json_object* retval = json_object_new_object();
 
     json_object_object_add(retval, "total_wire_bytes", json_object_new_uint64(data->total_wire_bytes));
@@ -156,7 +156,7 @@ json_object* data_traffic_to_json(struct data_traffic_t* data) {
 /* ********************************** */
 
 void data_protocol_get(
-    struct data_protocol_t* data_protocol,
+    struct data_protocol* data_protocol,
     char* name,
     uint64_t packet_count,
     uint64_t byte_count,
@@ -168,11 +168,11 @@ void data_protocol_get(
     data_protocol->flow_count = flow_count;
 }
 
-void data_protocol_clean(struct data_protocol_t* data) {
+void data_protocol_clean(struct data_protocol* data) {
     str_delete(&data->name);
 }
 
-json_object* data_protocol_to_json(struct data_protocol_t* data) {
+json_object* data_protocol_to_json(struct data_protocol* data) {
     json_object* retval = json_object_new_object();
 
     json_object_object_add(retval, "name", json_object_new_string(data->name.content));
@@ -186,7 +186,7 @@ json_object* data_protocol_to_json(struct data_protocol_t* data) {
 /* ********************************** */
 
 void data_classification_get(
-    struct data_classification_t* data_classification,
+    struct data_classification* data_classification,
     char* name,
     uint64_t packet_count,
     uint64_t byte_count,
@@ -198,11 +198,11 @@ void data_classification_get(
     data_classification->flow_count = flow_count;
 }
 
-void data_classification_clean(struct data_classification_t* data) {
+void data_classification_clean(struct data_classification* data) {
     str_delete(&data->name);
 }
 
-json_object* data_classification_to_json(struct data_classification_t* data) {
+json_object* data_classification_to_json(struct data_classification* data) {
     json_object* retval = json_object_new_object();
 
     json_object_object_add(retval, "name", json_object_new_string(data->name.content));
