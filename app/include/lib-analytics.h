@@ -56,7 +56,11 @@ void node_print_unknown_proto_walker(const void* node,
 
 /* *********************************************** */
 
+void data_reset_counters();
 void data_aggregate();
+void data_aggregate_traffic();
+void data_aggregate_risk();
+void data_aggregate_flow();
 
 /* *********************************************** */
 

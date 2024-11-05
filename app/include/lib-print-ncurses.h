@@ -6,7 +6,6 @@
 #include <ncurses.h>
 
 // TODO: Document
-void ncurses_clean_twalk();
 void* ncurses_printResults(void* processing_time_usec_arg);
 void ncurses_printRiskStats();
 void ncurses_printFlowsStats();

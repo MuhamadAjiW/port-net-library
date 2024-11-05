@@ -77,7 +77,7 @@ struct data_classification {
 
 struct data_risk {
     string_t name;
-    uint64_t count;
+    uint32_t flow_count;
     float ratio;
 };
 
@@ -142,6 +142,17 @@ void data_classification_get(
 );
 void data_classification_clean(struct data_classification* data);
 json_object* data_classification_to_json(struct data_classification* data);
+
+/* ********************************** */
+
+void data_risk_get(
+    struct data_risk* data_risk,
+    char* name,
+    uint64_t flow_count,
+    float ratio
+);
+void data_risk_clean(struct data_risk* data);
+json_object* data_risk_to_json(struct data_risk* data);
 
 /* ********************************** */
 

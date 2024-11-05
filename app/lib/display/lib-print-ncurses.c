@@ -1,17 +1,6 @@
 
 #include "../../include/lib-print-ncurses.h"
 
-void ncurses_clean_twalk() {
-    for (int thread_id = 0; thread_id < num_threads; thread_id++) {
-        memset(ndpi_thread_info[thread_id].workflow->stats.protocol_counter, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.protocol_counter));
-        memset(ndpi_thread_info[thread_id].workflow->stats.protocol_counter_bytes, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.protocol_counter_bytes));
-        memset(ndpi_thread_info[thread_id].workflow->stats.protocol_flows, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.protocol_flows));
-        memset(ndpi_thread_info[thread_id].workflow->stats.flow_confidence, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.flow_confidence));
-        ndpi_thread_info[thread_id].workflow->stats.guessed_flow_protocols = 0;
-        ndpi_thread_info[thread_id].workflow->stats.num_dissector_calls = 0;
-    }
-}
-
 // Print result to an ncurses window
 void* ncurses_printResults(__attribute__((unused)) void* processing_time_usec_arg) {
     uint64_t processing_time_usec = *(uint64_t*)processing_time_usec_arg;
@@ -191,7 +180,7 @@ void* ncurses_printResults(__attribute__((unused)) void* processing_time_usec_ar
             if (enable_malloc_bins)
                 printw("\tData-path malloc histogram: %s\n", ndpi_print_bin(&malloc_bins, 0, buf, sizeof(buf)));
         }
-    }
+        }
 
     printw("\n\nDetected protocols:\n");
     struct data_protocol* protocol_array = global_data.protocol.content;
@@ -262,34 +251,22 @@ free_stats:
     }
 
     return NULL;
-}
+    }
 
 void ncurses_printRiskStats() {
     if (!quiet_mode) {
-        u_int thread_id, i;
-
-        memset(risk_stats, 0, sizeof(risk_stats));
-        flows_with_risks = 0;
-        risks_found = 0;
-
-        // _TODO: Move to aggregate
-        for (thread_id = 0; thread_id < num_threads; thread_id++) {
-            for (i = 0; i < NUM_ROOTS; i++)
-                ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
-                    node_flow_risk_walker, &thread_id);
-        }
-
-        if (risks_found) {
+        if (global_data.risk.length > 0) {
             printw("\nRisk stats [found %u (%.1f %%) flows with risks]:\n",
                 flows_with_risks,
-                (100. * flows_with_risks) / (float)cumulative_stats.ndpi_flow_count);
+                (100. * flows_with_risks) / (float)global_data.traffic.ndpi_flow_count);
 
-            for (i = 0; i < NDPI_MAX_RISK; i++) {
-                ndpi_risk_enum r = (ndpi_risk_enum)i;
-
-                if (risk_stats[r] != 0)
-                    printw("\t%-40s %5u [%4.01f %%]\n", ndpi_risk2str(r), risk_stats[r],
-                        (float)(risk_stats[r] * 100) / (float)risks_found);
+            struct data_risk* risk_array = global_data.risk.content;
+            for (size_t i = 0; i < global_data.risk.length; i++) {
+                printw("\t%-40s %5u [%4.01f %%]\n",
+                    risk_array[i].name.content,
+                    risk_array[i].flow_count,
+                    risk_array[i].ratio
+                );
             }
 
             printw("\n\tNOTE: as one flow can have multiple risks set, the sum of the\n"
@@ -999,7 +976,6 @@ char* ncurses_print_cipher(ndpi_cipher_weakness c) {
 }
 
 void ncurses_printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) {
-    FILE* out = results_file ? results_file : stdout;
     u_int8_t known_tls;
     char buf[32], buf1[64];
     char buf_ver[16];
@@ -1024,7 +1000,6 @@ void ncurses_printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thre
     if (enable_flow_stats) {
       /* Print entropy values for monitored flows. */
         flowGetBDMeanandVariance(flow);
-        fflush(out);
         printw("[score: %.4f]", flow->entropy->score);
     }
 
@@ -1378,10 +1353,10 @@ void ncurses_printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thre
         flow->human_readeable_string_buffer);
 
 #ifdef DIRECTION_BINS
-    print_bin(out, "Plen c2s", &flow->payload_len_bin_src2dst);
-    print_bin(out, "Plen s2c", &flow->payload_len_bin_dst2src);
+    ncurses_print_bin("Plen c2s", &flow->payload_len_bin_src2dst);
+    ncurses_print_bin("Plen s2c", &flow->payload_len_bin_dst2src);
 #else
-    print_bin(out, "Plen Bins", &flow->payload_len_bin);
+    ncurses_print_bin("Plen Bins", &flow->payload_len_bin);
 #endif
 
     if (flow->flow_payload && (flow->flow_payload_len > 0)) {

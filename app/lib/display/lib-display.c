@@ -34,8 +34,9 @@ void* ldis_print(__attribute__((unused)) void* arg) {
         thread_pool_assign(&global_thread_pool, THREAD_ZMQ_SECONDARY, global_flow_send, NULL, NULL);
         ncurses_printResults((void*)&processing_time_usec);
 
+        // printw("[DEV] That's all");
+
         refresh();
-        ncurses_clean_twalk();
         napms(1000);
     }
     endwin();
@@ -43,5 +44,7 @@ void* ldis_print(__attribute__((unused)) void* arg) {
 
     printf("Done, closing display\n");
     DLOG(TAG_DISPLAY, "Closing display...");
+
+    data_reset_counters();
     return EXIT_SUCCESS;
 }

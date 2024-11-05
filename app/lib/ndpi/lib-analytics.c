@@ -215,7 +215,33 @@ void node_print_unknown_proto_walker(const void* node,
 
 /* *********************************************** */
 
+void data_reset_counters() {
+    // Traffic counters
+    for (int thread_id = 0; thread_id < num_threads; thread_id++) {
+        memset(ndpi_thread_info[thread_id].workflow->stats.protocol_counter, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.protocol_counter));
+        memset(ndpi_thread_info[thread_id].workflow->stats.protocol_counter_bytes, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.protocol_counter_bytes));
+        memset(ndpi_thread_info[thread_id].workflow->stats.protocol_flows, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.protocol_flows));
+        memset(ndpi_thread_info[thread_id].workflow->stats.flow_confidence, 0, sizeof(ndpi_thread_info[thread_id].workflow->stats.flow_confidence));
+        ndpi_thread_info[thread_id].workflow->stats.guessed_flow_protocols = 0;
+        ndpi_thread_info[thread_id].workflow->stats.num_dissector_calls = 0;
+    }
+
+    // Risk counters
+    memset(risk_stats, 0, sizeof(risk_stats));
+    flows_with_risks = 0;
+    risks_found = 0;
+
+    // Flow counters
+}
+
 void data_aggregate() {
+    data_reset_counters();
+    data_aggregate_traffic();
+    data_aggregate_risk();
+    data_aggregate_flow();
+}
+
+void data_aggregate_traffic() {
     char buf[32];
 
     memset(&cumulative_stats, 0, sizeof(cumulative_stats));
@@ -305,11 +331,20 @@ void data_aggregate() {
             cumulative_stats.patricia_stats[i].n_found += s.n_found;
         }
 
-        // _TODO: Fix aggregation
+        // _TODO: Port Confidence
     }
+}
 
+void data_aggregate_risk() {
+    for (uint8_t thread_id = 0; thread_id < num_threads; thread_id++) {
+        for (int i = 0; i < NUM_ROOTS; i++)
+            ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
+                node_flow_risk_walker, &thread_id);
+    }
+}
 
-
+void data_aggregate_flow() {
+    // _TODO: Implement
 }
 
 /* *********************************************** */
@@ -368,13 +403,14 @@ void global_data_generate(
 
     struct data_classification temp_classification;
     struct data_protocol temp_protocol;
-    // struct data_risk temp_risk;
+    struct data_risk temp_risk;
 
     // _TODO: refactor, this is very ugly
     long long unsigned int breed_stats_pkts[NUM_BREEDS] = { 0 };
     long long unsigned int breed_stats_bytes[NUM_BREEDS] = { 0 };
     long long unsigned int breed_stats_flows[NUM_BREEDS] = { 0 };
 
+    DLOG(TAG_DATA, "fetching classification to global data");
     for (uint32_t i = 0; i <= ndpi_get_num_supported_protocols(ndpi_dm_struct); i++) {
         uint16_t user_proto_id = ndpi_map_ndpi_id_to_user_proto_id(ndpi_dm_struct, i);
         ndpi_protocol_breed_t breed = ndpi_get_proto_breed(ndpi_dm_struct, user_proto_id);
@@ -392,11 +428,11 @@ void global_data_generate(
                 cumulative_stats.protocol_flows[i]
             );
 
-            DLOG(TAG_DATA, "fetching classification to global data");
             dynarray_push_back(&global_data.classification, (void*)&temp_classification);
         }
     }
 
+    DLOG(TAG_DATA, "fetching protocol to global data");
     for (uint32_t i = 0; i < NUM_BREEDS; i++) {
         if (breed_stats_pkts[i] > 0) {
             data_protocol_get(
@@ -407,12 +443,29 @@ void global_data_generate(
                 breed_stats_flows[i]
             );
 
-            DLOG(TAG_DATA, "fetching protocol to global data");
             dynarray_push_back(&global_data.protocol, (void*)&temp_protocol);
         }
     }
 
-    // _TODO: risk data
+    DLOG(TAG_DATA, "fetching risk to global data");
+    if (risks_found) {
+        for (int i = 0; i < NDPI_MAX_RISK; i++) {
+            ndpi_risk_enum r = (ndpi_risk_enum)i;
+
+            if (risk_stats[r] != 0) {
+                data_risk_get(
+                    &temp_risk,
+                    (char*)ndpi_risk2str(r),
+                    risk_stats[r],
+                    (float)(risk_stats[r] * 100) / (float)risks_found
+                );
+
+                dynarray_push_back(&global_data.risk, (void*)&temp_risk);
+            }
+        }
+    }
+
+    // _TODO: flow data
 }
 
 void* global_data_send(__attribute__((unused)) void* args) {

@@ -212,3 +212,30 @@ json_object* data_classification_to_json(struct data_classification* data) {
 
     return retval;
 }
+
+/* ********************************** */
+
+void data_risk_get(
+    struct data_risk* data_risk,
+    char* name,
+    uint64_t flow_count,
+    float ratio
+) {
+    data_risk->name = str_new(name);
+    data_risk->flow_count = flow_count;
+    data_risk->ratio = ratio;
+}
+
+void data_risk_clean(struct data_risk* data) {
+    str_delete(&data->name);
+}
+
+json_object* data_risk_to_json(struct data_risk* data) {
+    json_object* retval = json_object_new_object();
+
+    json_object_object_add(retval, "name", json_object_new_string(data->name.content));
+    json_object_object_add(retval, "flow_count", json_object_new_int(data->flow_count));
+    json_object_object_add(retval, "ratio", json_object_new_double((double)data->ratio));
+
+    return retval;
+}
