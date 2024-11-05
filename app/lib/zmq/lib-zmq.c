@@ -6,8 +6,8 @@
 
 int lzmq_do_loop = 1;
 
-int lzmq_int_init(struct lzmq_interface* lzmq_int, char* ip, int port, int type) {
-    string_t address = str_format("tcp://%s:%d", ip, port);
+int lzmq_int_init(struct lzmq_interface* lzmq_int, char* addr_cp, int type) {
+    string_t address = str_format("tcp://%s", addr_cp);
 
     if (str_is_null(address)) {
         printf("Failed to allocate address string\n");
@@ -59,6 +59,8 @@ void lzmq_int_cleanup(struct lzmq_interface* interface) {
 }
 
 uint8_t lzmq_send_file(struct lzmq_interface* interface, FILE* file, int flags) {
+    if (!lzmq_int_initialized(interface)) return 0;
+
     if (file == NULL) {
         fprintf(stderr, "Error: Unable to open file.\n");
         return 3;
@@ -111,6 +113,8 @@ uint8_t lzmq_send_file(struct lzmq_interface* interface, FILE* file, int flags) 
 }
 
 uint8_t lzmq_send_str(struct lzmq_interface* interface, const char* data, int flags) {
+    if (!lzmq_int_initialized(interface)) return 0;
+
     pthread_mutex_lock(&interface->mutex);
     zmq_send(interface->socket, data, strlen(data), flags);
     pthread_mutex_unlock(&interface->mutex);
@@ -118,6 +122,8 @@ uint8_t lzmq_send_str(struct lzmq_interface* interface, const char* data, int fl
 }
 
 uint8_t lzmq_send_json(struct lzmq_interface* interface, json_object* json, int flags) {
+    if (!lzmq_int_initialized(interface)) return 0;
+
     const char* json_serialized = json_object_to_json_string(json);
     return lzmq_send_str(interface, json_serialized, flags);
 }

@@ -551,10 +551,6 @@ static struct option longopts[] = {
   { "num-threads", required_argument, NULL, 'n'},
   { "address-cache-dump", required_argument, NULL, 'N'},
   { "ignore-vlanid", no_argument, NULL, 'I'},
-  { "zmq-server", optional_argument, NULL, 'Z'},
-  { "zmq-flow", optional_argument, NULL, 'z'},
-  { "logging-type", optional_argument, NULL, 'O'},
-  { "logging-path", optional_argument, NULL, 'o'},
 
 
   { "protos", required_argument, NULL, 'p'},
@@ -572,6 +568,11 @@ static struct option longopts[] = {
   { "payload-analysis", required_argument, NULL, 'P'},
   { "result-path", required_argument, NULL, 'w'},
   { "quiet", no_argument, NULL, 'q'},
+
+  { "zmq-server", optional_argument, NULL, 'Z'},
+  { "zmq-flow", optional_argument, NULL, 'z'},
+  { "logging-type", optional_argument, NULL, 'O'},
+  { "logging-path", optional_argument, NULL, 'o'},
 
   { "cfg", required_argument, NULL, OPTLONG_VALUE_CFG},
   { "openvpn_heuristics", no_argument, NULL, OPTLONG_VALUE_OPENVPN_HEURISTICS},
@@ -805,7 +806,7 @@ static void parseOptions(int argc, char** argv) {
 #endif
 
     while ((opt = getopt_long(argc, argv,
-        "a:Ab:B:e:E:c:C:dDFf:g:G:i:Ij:k:K:S:hHp:pP:l:r:Rs:tu:v:V:n:rp:x:X:w:q0123:456:7:89:m:MN:T:U:L:l:O:o:",
+        "a:Ab:B:e:E:c:C:dDFf:g:G:i:Ij:k:K:S:hHp:pP:l:r:Rs:tu:v:V:n:rp:x:X:w:q0123:456:7:89:m:MN:T:U:L:l:O:o:Z:z:",
         longopts, &option_idx)) != EOF) {
 #ifdef DEBUG_TRACE
         if (trace_fp) fprintf(trace_fp, " #### Handling option -%c [%s] #### \n", opt, optarg ? optarg : "");
@@ -1171,11 +1172,13 @@ static void parseOptions(int argc, char** argv) {
             break;
 
         case 'Z':
-            max_num_udp_dissected_pkts = atoi(optarg);
+            global_zmq_data_addr = optarg;
             break;
+
         case 'z':
-            max_num_udp_dissected_pkts = atoi(optarg);
+            global_zmq_flow_addr = optarg;
             break;
+
         case 'O':
             if (strcasecmp(optarg, "file") == 0 && strlen(optarg) == 4)
             {
@@ -1194,6 +1197,7 @@ static void parseOptions(int argc, char** argv) {
                 exit(1);
             }
             break;
+
         case 'o':
             global_logger_path = optarg;
             break;

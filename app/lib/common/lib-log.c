@@ -18,18 +18,12 @@ uint8_t logger_init(struct logger* logger, int type, char* addr) {
     case LOGGER_TYPE_ZMQ:
         logger->zmq_int = malloc(sizeof(struct lzmq_interface));
 
-        char* ip = malloc(16);
-        int port = 0;
-        int success = 0;
-
-        if (parse_ip_port(addr, ip, &port)) {
-            if (lzmq_int_init(logger->zmq_int, ip, port, ZMQ_PUB)) {
-                free(ip);
-                logger->type = type;
-                return success;
-            }
+        if (lzmq_int_init(logger->zmq_int, addr, ZMQ_PUB)) {
+            logger->type = type;
+            return 1;
         }
-        free(ip);
+
+        free(logger->zmq_int);
         break;
     }
 

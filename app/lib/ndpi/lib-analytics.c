@@ -442,27 +442,27 @@ void* global_data_send(__attribute__((unused)) void* args) {
 
 
     lzmq_send_json(
-        &global_zmq_conn,
+        &global_zmq_data_conn,
         json_memory,
         0
     );
     lzmq_send_json(
-        &global_zmq_conn,
+        &global_zmq_data_conn,
         json_time,
         0
     );
     lzmq_send_json(
-        &global_zmq_conn,
+        &global_zmq_data_conn,
         json_traffic,
         0
     );
     lzmq_send_json(
-        &global_zmq_conn,
+        &global_zmq_data_conn,
         json_protocol,
         0
     );
     lzmq_send_json(
-        &global_zmq_conn,
+        &global_zmq_data_conn,
         json_classification,
         0
     );

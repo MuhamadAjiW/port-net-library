@@ -1,0 +1,34 @@
+#!/bin/bash
+source "etc/run.config"
+
+if [ -z "$INTERFACE" ]; then
+    echo "Error: INTERFACE is not set or is empty in etc/run.config."
+    exit 1
+fi
+
+if [ ! -z "$REBUILD" ]; then
+    make clean
+    make
+fi
+
+EXEC_STR="sudo ./ndpiReader -i $INTERFACE"
+
+if [ ! -z "$CSV_ADDR" ]; then
+    EXEC_STR+=" -C $CSV_ADDR"
+fi
+if [ ! -z "$LOG_TYPE" ]; then
+    EXEC_STR+=" -O $LOG_TYPE"
+fi
+if [ ! -z "$LOG_ADDR" ]; then
+    EXEC_STR+=" -o $LOG_ADDR"
+fi
+if [ ! -z "$ZMQ_DATA_ADDR" ]; then
+    EXEC_STR+=" -Z $ZMQ_DATA_ADDR"
+fi
+if [ ! -z "$ZMQ_FLOW_ADDR" ]; then
+    EXEC_STR+=" -z $ZMQ_FLOW_ADDR"
+fi
+
+echo "$EXEC_STR"
+eval "$EXEC_STR"
+# sudo ./ndpiReader -i ens33 -C out.ignore/out.csv
