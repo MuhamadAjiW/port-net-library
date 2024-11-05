@@ -470,8 +470,9 @@ void global_data_generate(
 
 void* global_data_send(__attribute__((unused)) void* args) {
     // _TODO: risk data
-    struct data_classification* classification_array = global_data.classification.content;
     struct data_protocol* protocol_array = global_data.protocol.content;
+    struct data_classification* classification_array = global_data.classification.content;
+    struct data_risk* risk_array = global_data.risk.content;
 
     json_object* json_memory = data_memory_to_json(&global_data.memory);
     json_object* json_time = data_time_to_json(&global_data.time);
@@ -492,6 +493,14 @@ void* global_data_send(__attribute__((unused)) void* args) {
         json_object_array_add(json_classification_array, json_classification_entry);
     }
     json_object_object_add(json_classification, "classifications", json_classification_array);
+
+    json_object* json_risk = json_object_new_object();
+    json_object* json_risk_array = json_object_new_array();
+    for (size_t i = 0; i < global_data.risk.length; i++) {
+        json_object* json_risk_entry = data_risk_to_json(&risk_array[i]);
+        json_object_array_add(json_risk_array, json_risk_entry);
+    }
+    json_object_object_add(json_risk, "risks", json_risk_array);
 
 
     lzmq_send_json(
@@ -519,12 +528,18 @@ void* global_data_send(__attribute__((unused)) void* args) {
         json_classification,
         0
     );
+    lzmq_send_json(
+        &global_zmq_data_conn,
+        json_risk,
+        0
+    );
 
     json_object_put(json_memory);
     json_object_put(json_time);
     json_object_put(json_traffic);
     json_object_put(json_protocol);
     json_object_put(json_classification);
+    json_object_put(json_risk);
 
     return NULL;
 }
