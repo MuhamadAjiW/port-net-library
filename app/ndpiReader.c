@@ -387,7 +387,8 @@ static void help(u_int long_help) {
         "          [-p <protos>][-l <loops> [-q][-d][-h][-H][-D][-e <len>][-E <path>][-t][-v <level>]\n"
         "          [-n <threads>][-N <path>][-w <file>][-c <file>][-C <file>][-j <file>][-x <file>]\n"
         "          [-r <file>][-R][-j <file>][-S <file>][-T <num>][-U <num>] [-x <domain>]\n"
-        "          [-a <mode>][-B proto_list]\n\n"
+        "          [-a <mode>][-B proto_list][-Z <zmq stats publisher:port>][-z <zmq flow publisher:port>]\n"
+        "          [-O <mode>][-o <address/path>]\n\n"
         "Usage:\n"
         "  -i <file.pcap|device>     | Specify a pcap file/playlist to read packets from or a\n"
         "                            | device for live capture (comma-separated list)\n"
@@ -455,6 +456,10 @@ static void help(u_int long_help) {
         "  -A                        | Dump internal statistics (LRU caches / Patricia trees / Ahocarasick automas / ...\n"
         "  -M                        | Memory allocation stats on data-path (only by the library).\n"
         "                            | It works only on single-thread configuration\n"
+        "  -Z <address:port>         | Address for ZeroMQ stats publisher destination <address:port>\n"
+        "  -z <address:port>         | Address for ZeroMQ flow publisher destination <address:port>\n"
+        "  -O <stdout/file/zmq>      | Modes for logging\n"
+        "  -o <address/path>         | Address for ZeroMQ or file path for logging output\n"
         "  --openvp_heuristics       | Enable OpenVPN heuristics.\n"
         "                            | It is a shortcut to --cfg=openvpn.heuristics,0x01\n"
         "  --tls_heuristics          | Enable TLS heuristics.\n"
@@ -546,6 +551,11 @@ static struct option longopts[] = {
   { "num-threads", required_argument, NULL, 'n'},
   { "address-cache-dump", required_argument, NULL, 'N'},
   { "ignore-vlanid", no_argument, NULL, 'I'},
+  { "zmq-server", optional_argument, NULL, 'Z'},
+  { "zmq-flow", optional_argument, NULL, 'z'},
+  { "logging-type", optional_argument, NULL, 'O'},
+  { "logging-path", optional_argument, NULL, 'o'},
+
 
   { "protos", required_argument, NULL, 'p'},
   { "capture-duration", required_argument, NULL, 's'},
@@ -700,49 +710,6 @@ void extcap_capture(int datalink_type) {
 
 /* ********************************** */
 
-void printCSVHeader() {
-    if (!csv_fp) return;
-
-    fprintf(csv_fp, "#flow_id|protocol|first_seen|last_seen|duration|src_ip|src_port|dst_ip|dst_port|ndpi_proto_num|ndpi_proto|proto_by_ip|server_name_sni|");
-    fprintf(csv_fp, "c_to_s_pkts|c_to_s_bytes|c_to_s_goodput_bytes|s_to_c_pkts|s_to_c_bytes|s_to_c_goodput_bytes|");
-    fprintf(csv_fp, "data_ratio|str_data_ratio|c_to_s_goodput_ratio|s_to_c_goodput_ratio|");
-
-    /* IAT (Inter Arrival Time) */
-    fprintf(csv_fp, "iat_flow_min|iat_flow_avg|iat_flow_max|iat_flow_stddev|");
-    fprintf(csv_fp, "iat_c_to_s_min|iat_c_to_s_avg|iat_c_to_s_max|iat_c_to_s_stddev|");
-    fprintf(csv_fp, "iat_s_to_c_min|iat_s_to_c_avg|iat_s_to_c_max|iat_s_to_c_stddev|");
-
-    /* Packet Length */
-    fprintf(csv_fp, "pktlen_c_to_s_min|pktlen_c_to_s_avg|pktlen_c_to_s_max|pktlen_c_to_s_stddev|");
-    fprintf(csv_fp, "pktlen_s_to_c_min|pktlen_s_to_c_avg|pktlen_s_to_c_max|pktlen_s_to_c_stddev|");
-
-    /* TCP flags */
-    fprintf(csv_fp, "cwr|ece|urg|ack|psh|rst|syn|fin|");
-
-    fprintf(csv_fp, "c_to_s_cwr|c_to_s_ece|c_to_s_urg|c_to_s_ack|c_to_s_psh|c_to_s_rst|c_to_s_syn|c_to_s_fin|");
-
-    fprintf(csv_fp, "s_to_c_cwr|s_to_c_ece|s_to_c_urg|s_to_c_ack|s_to_c_psh|s_to_c_rst|s_to_c_syn|s_to_c_fin|");
-
-    /* TCP window */
-    fprintf(csv_fp, "c_to_s_init_win|s_to_c_init_win|");
-
-    /* Flow info */
-    fprintf(csv_fp, "server_info|");
-    fprintf(csv_fp, "tls_version|quic_version|ja3c|tls_client_unsafe|");
-    fprintf(csv_fp, "ja3s|tls_server_unsafe|");
-    fprintf(csv_fp, "advertised_alpns|negotiated_alpn|tls_supported_versions|");
-#if 0
-    fprintf(csv_fp, "tls_issuerDN|tls_subjectDN|");
-#endif
-    fprintf(csv_fp, "ssh_client_hassh|ssh_server_hassh|flow_info|plen_bins|http_user_agent");
-
-    if (enable_flow_stats) {
-        fprintf(csv_fp, "|byte_dist_mean|byte_dist_std|entropy|total_entropy");
-    }
-
-    fprintf(csv_fp, "\n");
-}
-
 static int parse_three_strings(char* param, char** s1, char** s2, char** s3)
 {
     char* saveptr, * tmp_str, * s1_str, * s2_str = NULL, * s3_str;
@@ -838,7 +805,7 @@ static void parseOptions(int argc, char** argv) {
 #endif
 
     while ((opt = getopt_long(argc, argv,
-        "a:Ab:B:e:E:c:C:dDFf:g:G:i:Ij:k:K:S:hHp:pP:l:r:Rs:tu:v:V:n:rp:x:X:w:q0123:456:7:89:m:MN:T:U:",
+        "a:Ab:B:e:E:c:C:dDFf:g:G:i:Ij:k:K:S:hHp:pP:l:r:Rs:tu:v:V:n:rp:x:X:w:q0123:456:7:89:m:MN:T:U:L:l:O:o:",
         longopts, &option_idx)) != EOF) {
 #ifdef DEBUG_TRACE
         if (trace_fp) fprintf(trace_fp, " #### Handling option -%c [%s] #### \n", opt, optarg ? optarg : "");
@@ -1203,6 +1170,34 @@ static void parseOptions(int argc, char** argv) {
             max_num_udp_dissected_pkts = atoi(optarg);
             break;
 
+        case 'Z':
+            max_num_udp_dissected_pkts = atoi(optarg);
+            break;
+        case 'z':
+            max_num_udp_dissected_pkts = atoi(optarg);
+            break;
+        case 'O':
+            if (strcasecmp(optarg, "file") == 0 && strlen(optarg) == 4)
+            {
+                global_logger_type = LOGGER_TYPE_FILE;
+            }
+            else if (strcasecmp(optarg, "zmq") == 0 && strlen(optarg) == 3)
+            {
+                global_logger_type = LOGGER_TYPE_ZMQ;
+            }
+            else if (strcasecmp(optarg, "stdout") == 0 && strlen(optarg) == 6)
+            {
+                global_logger_type = LOGGER_TYPE_STDOUT;
+            }
+            else {
+                printf("Unknown logging type. Valid values are: stdout, file, zmq\n");
+                exit(1);
+            }
+            break;
+        case 'o':
+            global_logger_path = optarg;
+            break;
+
         case OPTLONG_VALUE_CFG:
             if (parse_three_strings(optarg, &s1, &s2, &s3) == -1 ||
                 reader_add_cfg(s1, s2, s3, 0) == -1) {
@@ -1234,7 +1229,7 @@ static void parseOptions(int argc, char** argv) {
     if (extcap_exit)
         exit(0);
 
-    printCSVHeader();
+    printCSVHeader(csv_fp, enable_flow_stats);
 
 #ifndef USE_DPDK
     if (do_extcap_capture) {

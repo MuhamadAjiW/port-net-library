@@ -6,12 +6,12 @@
 
 int lzmq_do_loop = 1;
 
-void lzmq_int_init(struct lzmq_interface* lzmq_int, char* ip, int port, int type) {
+int lzmq_int_init(struct lzmq_interface* lzmq_int, char* ip, int port, int type) {
     string_t address = str_format("tcp://%s:%d", ip, port);
 
     if (str_is_null(address)) {
         printf("Failed to allocate address string\n");
-        return;
+        return 0;
     }
 
     lzmq_int->context = zmq_ctx_new();
@@ -30,17 +30,19 @@ void lzmq_int_init(struct lzmq_interface* lzmq_int, char* ip, int port, int type
         fprintf(stderr, "Invalid zeromq interface type: %s\n", zmq_strerror(errno));
         str_delete(&address);
         lzmq_int_cleanup(lzmq_int);
-        return;
+        return 0;
     }
 
     if (rc != 0) {
         fprintf(stderr, "Failed to bind to ZeroMQ socket: %s\n", zmq_strerror(errno));
         str_delete(&address);
         lzmq_int_cleanup(lzmq_int);
-        return;
+        return 0;
     }
 
     str_delete(&address);
+
+    return 1;
 }
 
 bool lzmq_int_initialized(struct lzmq_interface* interface) {

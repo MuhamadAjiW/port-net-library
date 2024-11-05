@@ -34,7 +34,7 @@ struct logger {
 };
 
 // Functions
-uint8_t logger_init(struct logger* logger, int type, char* addr, int port);
+uint8_t logger_init(struct logger* logger, int type, char* addr);
 void logger_delete(struct logger* logger);
 uint8_t logger_log_stdout(log_t* log);
 uint8_t logger_log_file(struct logger* logger, log_t* log);

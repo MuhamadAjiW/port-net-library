@@ -1,23 +1,40 @@
 #include "../../include/lib-log.h"
 
-uint8_t logger_init(struct logger* logger, int type, char* addr, int port) {
-    logger->type = type;
+uint8_t logger_init(struct logger* logger, int type, char* addr) {
     switch (type)
     {
     case LOGGER_TYPE_STDOUT:
-        return 1;
-    case LOGGER_TYPE_FILE:
-        logger->output_file = fopen(addr, "w+");
-        if (logger->output_file == NULL) return 0;
-        return 1;
-    case LOGGER_TYPE_ZMQ:
-        logger->zmq_int = malloc(sizeof(struct lzmq_interface));
-        lzmq_int_init(logger->zmq_int, addr, port, ZMQ_PUB);
+        logger->type = type;
         return 1;
 
-    default:
-        return 0;
+    case LOGGER_TYPE_FILE:
+        logger->output_file = fopen(addr, "w+");
+        if (logger->output_file != NULL) {
+            logger->type = type;
+            return 1;
+        }
+        break;
+
+    case LOGGER_TYPE_ZMQ:
+        logger->zmq_int = malloc(sizeof(struct lzmq_interface));
+
+        char* ip = malloc(16);
+        int port = 0;
+        int success = 0;
+
+        if (parse_ip_port(addr, ip, &port)) {
+            if (lzmq_int_init(logger->zmq_int, ip, port, ZMQ_PUB)) {
+                free(ip);
+                logger->type = type;
+                return success;
+            }
+        }
+        free(ip);
+        break;
     }
+
+    logger->type = 0;
+    return 0;
 }
 
 void logger_delete(struct logger* logger) {

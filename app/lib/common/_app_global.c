@@ -5,15 +5,16 @@ struct thread_pool global_thread_pool;
 struct logger global_logger;
 struct lzmq_interface global_zmq_conn;
 
-// _TODO: use environment variable files instead
+// _TODO: consider using environment variable files instead
 char* global_zmq_server_addr = "127.0.0.1";
-int global_zmq_server_port = 56;
+uint16_t global_zmq_server_port = 56;
 struct data_all global_data;
+uint8_t global_logger_type = DEFAULT_LOGGER_TYPE;
+char* global_logger_path = DEFAULT_LOGGER_PATH;
 
 uint8_t global_init() {
     thread_pool_init(&global_thread_pool, INIT_TASK_SIZE);
-    logger_init(&global_logger, DEFAULT_LOGGER_TYPE, DEFAULT_LOGGER_PATH, 0);
-    // logger_init(&global_logger, LOGGER_TYPE_ZMQ, "127.0.0.1", 8888);
+    logger_init(&global_logger, global_logger_type, global_logger_path);
     lzmq_int_init(&global_zmq_conn, global_zmq_server_addr, global_zmq_server_port, ZMQ_PUB);
     return 1;
 }

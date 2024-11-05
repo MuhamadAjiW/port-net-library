@@ -44,8 +44,10 @@ extern struct thread_pool global_thread_pool;
 extern struct logger global_logger;
 extern struct lzmq_interface global_zmq_conn;
 extern char* global_zmq_server_addr;
-extern int global_zmq_server_port;
+extern uint16_t global_zmq_server_port;
 extern struct data_all global_data;
+extern uint8_t global_logger_type;
+extern char* global_logger_path;
 
 uint8_t global_init();
 uint8_t global_clean();

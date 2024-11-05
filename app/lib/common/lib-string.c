@@ -175,3 +175,17 @@ string_t str_format(char* __restrict__ pattern, ...) {
 
     return retval;
 }
+
+/* ***************************************************** */
+
+uint8_t parse_ip_port(char* address, char* ip, int* port) {
+    char* port_mark = strrchr(address, ':');
+
+    if (!port_mark) return 0;
+
+    strncpy(ip, address, port_mark - address);
+    ip[port_mark - address] = '\0';
+    *port = atoi(port_mark + 1);
+
+    return 1;
+}

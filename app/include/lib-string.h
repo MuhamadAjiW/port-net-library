@@ -170,4 +170,8 @@ bool str_addc(string_t* mainstring, char c);
 */
 string_t str_format(char* __restrict__ pattern, ...);
 
+/* ***************************************************** */
+
+uint8_t parse_ip_port(char* address, char* ip, int* port);
+
 #endif
