@@ -7,8 +7,9 @@
 #include "lib-log.h"
 
 #define THREAD_DISPLAY 0
-#define THREAD_ZMQ 1
-#define THREAD_LOG 2
+#define THREAD_ZMQ_PRIMARY 1
+#define THREAD_ZMQ_SECONDARY 2
+#define THREAD_LOG 3
 
 #define DEFAULT_LOGGER_TYPE LOGGER_TYPE_FILE
 #define DEFAULT_LOGGER_PATH "./ndpiReader.log"

@@ -67,5 +67,6 @@ void global_data_generate(
     struct ndpi_detection_module_struct* ndpi_dm_struct
 );
 void* global_data_send(__attribute__((unused)) void* args);
+void* global_flow_send(__attribute__((unused)) void* args);
 
 #endif

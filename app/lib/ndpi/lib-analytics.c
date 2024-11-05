@@ -475,3 +475,9 @@ void* global_data_send(__attribute__((unused)) void* args) {
 
     return NULL;
 }
+
+void* global_flow_send(__attribute__((unused)) void* args) {
+    // _TODO: Implement
+
+    return NULL;
+}

@@ -13,7 +13,8 @@ void ncurses_clean_twalk() {
 }
 
 // Print result to an ncurses window
-void ncurses_printResults(uint64_t processing_time_usec) {
+void* ncurses_printResults(__attribute__((unused)) void* processing_time_usec_arg) {
+    uint64_t processing_time_usec = *(uint64_t*)processing_time_usec_arg;
     u_int32_t i;
     char buf[32];
 
@@ -259,6 +260,8 @@ free_stats:
         port_stats_delete(dstStats);
         dstStats = NULL;
     }
+
+    return NULL;
 }
 
 void ncurses_printRiskStats() {
