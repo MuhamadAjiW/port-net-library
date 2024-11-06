@@ -2,7 +2,7 @@
 #include "../../include/lib-print-ncurses.h"
 
 // Print result to an ncurses window
-void* ncurses_printResults(__attribute__((unused)) void* processing_time_usec_arg) {
+void* ncurses_print_result(__attribute__((unused)) void* processing_time_usec_arg) {
     uint64_t processing_time_usec = *(uint64_t*)processing_time_usec_arg;
     u_int32_t i;
     char buf[32];
@@ -101,7 +101,6 @@ void* ncurses_printResults(__attribute__((unused)) void* processing_time_usec_ar
                 global_data.traffic.dpi_packet_count[FLOW_OTHER] / (float)global_data.traffic.dpi_flow_count[FLOW_OTHER]);
         }
 
-        // _TODO: Port confidence
         for (i = 0; i < NDPI_CONFIDENCE_MAX; i++) {
             if (global_data.traffic.flow_confidence[i] != 0) {
                 printw("\tConfidence: %-10s %-13llu (flows)\n", ndpi_confidence_get_name(i),
@@ -210,10 +209,8 @@ void* ncurses_printResults(__attribute__((unused)) void* processing_time_usec_ar
         );
     }
 
-    // _TODO: Verify these functions
-    ncurses_printRiskStats();
-    ncurses_printFlowsStats();
-
+    ncurses_print_risk_stats();
+    ncurses_print_flows_stats();
 
     if (stats_flag || verbose == 3) {
         HASH_SORT(srcStats, port_stats_sort);
@@ -257,7 +254,7 @@ free_stats:
     return NULL;
 }
 
-void ncurses_printRiskStats() {
+void ncurses_print_risk_stats() {
     if (!quiet_mode) {
         if (global_data.risk.length > 0) {
             printw("\nRisk stats [found %u (%.1f %%) flows with risks]:\n",
@@ -280,7 +277,7 @@ void ncurses_printRiskStats() {
     }
 }
 
-void ncurses_printFlowsStats() {
+void ncurses_print_flows_stats() {
     int thread_id;
     u_int32_t total_flows = 0;
 
@@ -808,7 +805,7 @@ void ncurses_printFlowsStats() {
 #endif
 
             print_flow:
-                ncurses_printFlow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
+                ncurses_print_flow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
             }
 
 #ifndef DIRECTION_BINS
@@ -921,8 +918,9 @@ void ncurses_printFlowsStats() {
 
         qsort(all_flows, num_flows, sizeof(struct flow_info), cmpFlows);
 
-        for (i = 0; i < num_flows; i++)
-            ncurses_printFlow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
+        for (i = 0; i < num_flows; i++) {
+            ncurses_print_flow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
+        }
     }
     else {
         unsigned int i;
@@ -930,13 +928,15 @@ void ncurses_printFlowsStats() {
         // _TODO: Move to aggregate
         num_flows = 0;
         for (thread_id = 0; thread_id < num_threads; thread_id++) {
-            for (i = 0; i < NUM_ROOTS; i++)
+            for (i = 0; i < NUM_ROOTS; i++) {
                 ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
                     node_print_known_proto_walker, &thread_id);
+            }
         }
 
-        for (i = 0; i < num_flows; i++)
-            ncurses_printFlow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
+        for (i = 0; i < num_flows; i++) {
+            ncurses_print_flow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
+        }
     }
 
     if (serialization_fp != NULL &&
@@ -955,9 +955,8 @@ void ncurses_printFlowsStats() {
             }
         }
 
-        for (i = 0; i < num_flows; i++)
-        {
-            ncurses_printFlowSerialized(all_flows[i].flow);
+        for (i = 0; i < num_flows; i++) {
+            ncurses_print_flow_serialized(all_flows[i].flow);
         }
     }
 
@@ -979,7 +978,7 @@ char* ncurses_print_cipher(ndpi_cipher_weakness c) {
     }
 }
 
-void ncurses_printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) {
+void ncurses_print_flow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) {
     u_int8_t known_tls;
     char buf[32], buf1[64];
     char buf_ver[16];
@@ -1377,7 +1376,7 @@ void ncurses_printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thre
     printw("\n");
 }
 
-void ncurses_printFlowSerialized(struct ndpi_flow_info* flow)
+void ncurses_print_flow_serialized(struct ndpi_flow_info* flow)
 {
     char* json_str = NULL;
     u_int32_t json_str_len = 0;

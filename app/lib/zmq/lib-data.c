@@ -67,6 +67,8 @@ json_object* data_traffic_to_json(struct data_traffic* data) {
     json_object_object_add(retval, "dpi_udp_flow", json_object_new_uint64(data->dpi_flow_count[FLOW_UDP]));
     json_object_object_add(retval, "dpi_other_flow", json_object_new_uint64(data->dpi_flow_count[FLOW_OTHER]));
 
+    // _TODO: Port confidence
+
     return retval;
 }
 
@@ -155,4 +157,11 @@ json_object* data_risk_to_json(struct data_risk* data) {
     json_object_object_add(retval, "ratio", json_object_new_double((double)data->ratio));
 
     return retval;
+}
+
+/* ********************************** */
+
+json_object* data_flow_to_json(struct ndpi_flow_info* data) {
+    // _TODO: Implement
+    return NULL;
 }

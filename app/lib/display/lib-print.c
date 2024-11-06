@@ -1,7 +1,7 @@
 #include "../../include/lib-print.h"
 
 // Print result
-void printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
+void print_result(uint64_t processing_time_usec, uint64_t setup_time_usec) {
     u_int32_t i;
     char buf[32];
 
@@ -333,8 +333,8 @@ void printResults(uint64_t processing_time_usec, uint64_t setup_time_usec) {
         }
     }
 
-    printRiskStats();
-    printFlowsStats();
+    print_risk_stats();
+    print_flows_stats();
 
     if (stats_flag || verbose == 3) {
         HASH_SORT(srcStats, port_stats_sort);
@@ -379,7 +379,7 @@ free_stats:
     global_data_clean();
 }
 
-void printRiskStats() {
+void print_risk_stats() {
     if (!quiet_mode) {
         u_int thread_id, i;
 
@@ -409,7 +409,7 @@ void printRiskStats() {
     }
 }
 
-void printFlowsStats() {
+void print_flows_stats() {
     int thread_id;
     u_int32_t total_flows = 0;
     FILE* out = results_file ? results_file : stdout;
@@ -935,7 +935,7 @@ void printFlowsStats() {
 #endif
 
             print_flow:
-                printFlow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
+                print_flow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
             }
 
 #ifndef DIRECTION_BINS
@@ -1048,7 +1048,7 @@ void printFlowsStats() {
         qsort(all_flows, num_flows, sizeof(struct flow_info), cmpFlows);
 
         for (i = 0; i < num_flows; i++)
-            printFlow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
+            print_flow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
     }
     else if (csv_fp != NULL) {
         unsigned int i;
@@ -1061,7 +1061,7 @@ void printFlowsStats() {
         }
 
         for (i = 0; i < num_flows; i++)
-            printFlow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
+            print_flow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
     }
 
     if (serialization_fp != NULL &&
@@ -1081,14 +1081,14 @@ void printFlowsStats() {
 
         for (i = 0; i < num_flows; i++)
         {
-            printFlowSerialized(all_flows[i].flow);
+            print_flow_serialized(all_flows[i].flow);
         }
     }
 
     ndpi_free(all_flows);
 }
 
-void printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) {
+void print_flow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) {
     FILE* out = results_file ? results_file : stdout;
     u_int8_t known_tls;
     char buf[32], buf1[64];
@@ -1606,7 +1606,7 @@ void printFlow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) {
     }
 }
 
-void printFlowSerialized(struct ndpi_flow_info* flow)
+void print_flow_serialized(struct ndpi_flow_info* flow)
 {
     char* json_str = NULL;
     u_int32_t json_str_len = 0;

@@ -148,7 +148,6 @@ u_int8_t stats_flag = 0;
 u_int8_t human_readeable_string_len = 5;
 u_int8_t max_num_udp_dissected_pkts = 24 /* 8 is enough for most protocols, Signal and SnapchatCall require more */, max_num_tcp_dissected_pkts = 80 /* due to telnet */;
 u_int32_t risk_stats[NDPI_MAX_RISK] = { 0 }, risks_found = 0, flows_with_risks = 0;
-struct ndpi_stats cumulative_stats;
 
 u_int8_t shutdown_app = 0, quiet_mode = 0;
 u_int8_t num_threads = 1;
@@ -1282,13 +1281,13 @@ static void parseOptions(int argc, char** argv) {
 #endif
 #endif
 #endif
-}
+    }
 
-/* *********************************************** */
+    /* *********************************************** */
 
-/**
- * @brief Idle Scan Walker
- */
+    /**
+     * @brief Idle Scan Walker
+     */
 static void node_idle_scan_walker(const void* node, ndpi_VISIT which, int depth, void* user_data) {
     struct ndpi_flow_info* flow = *(struct ndpi_flow_info**)node;
     u_int16_t thread_id = *((u_int16_t*)user_data);
@@ -1868,7 +1867,7 @@ static void ndpi_process_packet(u_char* args,
         processing_time_usec = (u_int64_t)end.tv_sec * 1000000 + end.tv_usec - ((u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec);
         setup_time_usec = (u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec - ((u_int64_t)startup_time.tv_sec * 1000000 + startup_time.tv_usec);
 
-        printResults(processing_time_usec, setup_time_usec);
+        print_result(processing_time_usec, setup_time_usec);
 
         for (i = 0; i < ndpi_thread_info[thread_id].workflow->prefs.num_roots; i++) {
             ndpi_tdestroy(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i], ndpi_flow_info_freer);
@@ -1886,7 +1885,7 @@ static void ndpi_process_packet(u_char* args,
 
     /*
       Leave the free as last statement to avoid crashes when ndpi_detection_giveup()
-      is called above by printResults()
+      is called above by print_result()
     */
     if (packet_checked) {
         ndpi_free(packet_checked);
@@ -2013,12 +2012,12 @@ pcap_loop:
     }
 
     return NULL;
-}
+    }
 
-/* ***************************************************** */
-/**
- * @brief Begin, process, end detection process
- */
+    /* ***************************************************** */
+    /**
+     * @brief Begin, process, end detection process
+     */
 void run_detection() {
     u_int64_t processing_time_usec, setup_time_usec;
 #ifdef WIN64
@@ -2121,7 +2120,7 @@ void run_detection() {
     setup_time_usec = (u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec - ((u_int64_t)startup_time.tv_sec * 1000000 + startup_time.tv_usec);
 
     /* Printing cumulative results */
-    printResults(processing_time_usec, setup_time_usec);
+    print_result(processing_time_usec, setup_time_usec);
     ILOG(TAG_GENERAL, "Printing completed...");
 
     for (thread_id = 0; thread_id < num_threads; thread_id++) {

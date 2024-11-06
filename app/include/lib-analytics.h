@@ -11,13 +11,13 @@
 #include "lib-format.h"
 #include "lib-ndpi.h"
 #include "_app_global.h"
+#include "_build_config.h"
 
 // TODO: Document
 // Macros
 #define NUM_DOH_BINS 2
 
 // Externs
-extern struct ndpi_stats cumulative_stats;
 extern struct reader_thread ndpi_thread_info[MAX_NUM_READER_THREADS];
 extern u_int8_t num_threads;
 extern u_int8_t verbose, enable_flow_stats;
