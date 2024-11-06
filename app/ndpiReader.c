@@ -177,7 +177,7 @@ u_int32_t current_ndpi_memory = 0, max_ndpi_memory = 0;
 struct ndpi_bin doh_ndpi_bins[NUM_DOH_BINS];
 float doh_max_distance = 35.5;
 
-void run_test(); /* Forward */
+void run_detection(); /* Forward */
 
 /* ********************************** */
 
@@ -2016,110 +2016,6 @@ pcap_loop:
 }
 
 /* ***************************************************** */
-#ifndef DEPLOY_BUILD
-/**
- * @brief Begin, process, end test detection process
- */
-void run_test() {
-    u_int64_t processing_time_usec, setup_time_usec;
-#ifdef WIN64
-    long long int thread_id;
-#else
-    long thread_id;
-#endif
-    struct ndpi_global_context* g_ctx;
-
-    set_ndpi_malloc(ndpi_malloc_wrapper), set_ndpi_free(free_wrapper);
-    set_ndpi_flow_malloc(NULL), set_ndpi_flow_free(NULL);
-
-#ifndef USE_GLOBAL_CONTEXT
-  /* ndpiReader works even if libnDPI has been compiled without global context support,
-     but you can't configure any cache with global scope */
-    g_ctx = NULL;
-#else
-    g_ctx = ndpi_global_init();
-    if (!g_ctx) {
-        fprintf(stderr, "Error ndpi_global_init\n");
-        exit(-1);
-    }
-#endif
-
-#ifdef DEBUG_TRACE
-    if (trace_fp) fprintf(trace_fp, "Num threads: %d\n", num_threads);
-#endif
-
-    for (thread_id = 0; thread_id < num_threads; thread_id++) {
-        pcap_t* cap;
-
-#ifdef DEBUG_TRACE
-        if (trace_fp) fprintf(trace_fp, "Opening %s\n", (const u_char*)_pcap_file[thread_id]);
-#endif
-
-        cap = openPcapFileOrDevice(thread_id, (const u_char*)_pcap_file[thread_id]);
-        setupDetection(thread_id, cap, g_ctx);
-    }
-
-    gettimeofday(&begin, NULL);
-
-    int status;
-    void* thd_res;
-
-    /* Running processing threads */
-    for (thread_id = 0; thread_id < num_threads; thread_id++) {
-        status = pthread_create(&ndpi_thread_info[thread_id].pthread, NULL, processing_thread, (void*)thread_id);
-        /* check pthreade_create return value */
-        if (status != 0) {
-#ifdef WIN64
-            fprintf(stderr, "error on create %lld thread\n", thread_id);
-#else
-            fprintf(stderr, "error on create %ld thread\n", thread_id);
-#endif
-            exit(-1);
-        }
-    }
-    /* Waiting for completion */
-    for (thread_id = 0; thread_id < num_threads; thread_id++) {
-        status = pthread_join(ndpi_thread_info[thread_id].pthread, &thd_res);
-        /* check pthreade_join return value */
-        if (status != 0) {
-#ifdef WIN64
-            fprintf(stderr, "error on join %lld thread\n", thread_id);
-#else
-            fprintf(stderr, "error on join %ld thread\n", thread_id);
-#endif
-            exit(-1);
-        }
-        if (thd_res != NULL) {
-#ifdef WIN64
-            fprintf(stderr, "error on returned value of %lld joined thread\n", thread_id);
-#else
-            fprintf(stderr, "error on returned value of %ld joined thread\n", thread_id);
-#endif
-            exit(-1);
-        }
-    }
-
-#ifdef USE_DPDK
-    dpdk_port_deinit(dpdk_port_id);
-#endif
-
-    gettimeofday(&end, NULL);
-    processing_time_usec = (u_int64_t)end.tv_sec * 1000000 + end.tv_usec - ((u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec);
-    setup_time_usec = (u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec - ((u_int64_t)startup_time.tv_sec * 1000000 + startup_time.tv_usec);
-
-    /* Printing cumulative results */
-    printResults(processing_time_usec, setup_time_usec);
-
-    for (thread_id = 0; thread_id < num_threads; thread_id++) {
-        if (ndpi_thread_info[thread_id].workflow->pcap_handle != NULL)
-            pcap_close(ndpi_thread_info[thread_id].workflow->pcap_handle);
-
-        terminateDetection(thread_id);
-    }
-
-    ndpi_global_deinit(g_ctx);
-}
-#else
 /**
  * @brief Begin, process, end detection process
  */
@@ -2167,12 +2063,10 @@ void run_detection() {
     int status;
     void* thd_res;
 
+#ifdef DEPLOY_BUILD
     ILOG(TAG_GENERAL, "Program execution starting with %d threads...", num_threads);
-
-    // pthread_t display_thread;
-    // pthread_create(&display_thread, NULL, ldis_print, NULL);
-
     thread_pool_assign(&global_thread_pool, THREAD_DISPLAY, ldis_print, NULL, NULL);
+#endif
 
     /* Running processing threads */
     for (thread_id = 0; thread_id < num_threads; thread_id++) {
@@ -2208,18 +2102,19 @@ void run_detection() {
             exit(-1);
         }
     }
+
+#ifdef DEPLOY_BUILD
     ldis_do_loop = 0;
-
     DLOG(TAG_GENERAL, "Execution completed...");
-
-#ifdef USE_DPDK
-    dpdk_port_deinit(dpdk_port_id);
-#endif
-
     // _TODO: Execution completion event instead of busy waiting
     while (global_thread_pool.handler[THREAD_DISPLAY].thread_queue_len > 0) {
         zmq_sleep(1);
     }
+#endif
+
+#ifdef USE_DPDK
+    dpdk_port_deinit(dpdk_port_id);
+#endif
 
     gettimeofday(&end, NULL);
     processing_time_usec = (u_int64_t)end.tv_sec * 1000000 + end.tv_usec - ((u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec);
@@ -2238,7 +2133,6 @@ void run_detection() {
 
     ndpi_global_deinit(g_ctx);
 }
-#endif
 
 /* *********************************************** */
 
@@ -2322,11 +2216,7 @@ void run() {
     signal(SIGINT, sigproc);
 
     for (int i = 0; i < num_loops; i++) {
-#ifndef DEPLOY_BUILD
-        run_test();
-#else
         run_detection();
-#endif
     }
 
     if (results_path)  ndpi_free(results_path);

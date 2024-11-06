@@ -70,7 +70,7 @@ struct data_protocol {
     string_t name;
     uint64_t packet_count;
     uint64_t byte_count;
-    uint64_t flow_count;
+    uint32_t flow_count;
 };
 
 struct data_classification {

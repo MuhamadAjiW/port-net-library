@@ -251,13 +251,18 @@ void global_data_generate(
 ) {
     global_data_clean();
     global_data_init();
-    global_data_reset_counters();
     global_data_generate_memory();
     global_data_generate_traffic(processing_time_usec);
     global_data_generate_time(processing_time_usec, setup_time_usec);
+    global_data_generate_detail();
     global_data_generate_protocol();
     global_data_generate_risk();
     global_data_generate_flow();
+
+// _TODO: Fix flow generation then remove these flags 
+#ifdef DEPLOY_BUILD
+    global_data_reset_counters();
+#endif
 }
 
 void global_data_reset_counters() {
@@ -486,29 +491,29 @@ void global_data_generate_protocol() {
             breed_stats_pkts[breed] += (long long unsigned int)protocol_counter[i];
             breed_stats_flows[breed] += (long long unsigned int)protocol_flows[i];
 
-            data_classification_get(
-                &temp_classification,
+            data_protocol_get(
+                &temp_protocol,
                 ndpi_get_proto_name(ndpi_thread_info[0].workflow->ndpi_struct, user_proto_id),
                 (long long unsigned int)protocol_counter[i],
                 (long long unsigned int)protocol_counter_bytes[i],
                 protocol_flows[i]
             );
 
-            dynarray_push_back(&global_data.classification, (void*)&temp_classification);
+            dynarray_push_back(&global_data.protocol, (void*)&temp_protocol);
         }
     }
 
     for (uint32_t i = 0; i < NUM_BREEDS; i++) {
         if (breed_stats_pkts[i] > 0) {
-            data_protocol_get(
-                &temp_protocol,
+            data_classification_get(
+                &temp_classification,
                 ndpi_get_proto_breed_name(i),
                 breed_stats_pkts[i],
                 breed_stats_bytes[i],
                 breed_stats_flows[i]
             );
 
-            dynarray_push_back(&global_data.protocol, (void*)&temp_protocol);
+            dynarray_push_back(&global_data.classification, (void*)&temp_classification);
         }
     }
 }

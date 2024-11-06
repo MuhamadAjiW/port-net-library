@@ -27,7 +27,6 @@ void* ncurses_printResults(__attribute__((unused)) void* processing_time_usec_ar
         printw("\tIP packets:            %-13llu of %llu packets total\n",
             (long long unsigned int)global_data.traffic.ip_packet_count,
             (long long unsigned int)global_data.traffic.raw_packet_count);
-     /* In order to prevent Floating point exception in case of no traffic*/
         printw("\tIP bytes:              %-13llu (avg pkt size %u bytes)\n",
             (long long unsigned int)global_data.traffic.total_ip_bytes,
             global_data.traffic.avg_pkt_size);
@@ -82,21 +81,25 @@ void* ncurses_printResults(__attribute__((unused)) void* processing_time_usec_ar
             printw("\tTraffic duration:      %.3f sec\n", global_data.traffic.traffic_duration / 1000000);
         }
 
-        if (global_data.traffic.guessed_flow_protocols)
+        if (global_data.traffic.guessed_flow_protocols) {
             printw("\tGuessed flow protos:   %-13u\n", global_data.traffic.guessed_flow_protocols);
+        }
 
-        if (global_data.traffic.dpi_packet_count[FLOW_TCP])
+        if (global_data.traffic.dpi_flow_count[FLOW_TCP]) {
             printw("\tDPI Packets (TCP):     %-13llu (%.2f pkts/flow)\n",
                 (long long unsigned int)global_data.traffic.dpi_packet_count[FLOW_TCP],
                 global_data.traffic.dpi_packet_count[FLOW_TCP] / (float)global_data.traffic.dpi_flow_count[FLOW_TCP]);
-        if (global_data.traffic.dpi_packet_count[FLOW_UDP])
+        }
+        if (global_data.traffic.dpi_flow_count[FLOW_UDP]) {
             printw("\tDPI Packets (UDP):     %-13llu (%.2f pkts/flow)\n",
                 (long long unsigned int)global_data.traffic.dpi_packet_count[FLOW_UDP],
                 global_data.traffic.dpi_packet_count[FLOW_UDP] / (float)global_data.traffic.dpi_flow_count[FLOW_UDP]);
-        if (global_data.traffic.dpi_packet_count[FLOW_OTHER])
+        }
+        if (global_data.traffic.dpi_flow_count[FLOW_OTHER]) {
             printw("\tDPI Packets (other):   %-13llu (%.2f pkts/flow)\n",
                 (long long unsigned int)global_data.traffic.dpi_packet_count[FLOW_OTHER],
                 global_data.traffic.dpi_packet_count[FLOW_OTHER] / (float)global_data.traffic.dpi_flow_count[FLOW_OTHER]);
+        }
 
         // _TODO: Port confidence
         for (i = 0; i < NDPI_CONFIDENCE_MAX; i++) {
