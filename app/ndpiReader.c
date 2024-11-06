@@ -1232,7 +1232,7 @@ static void parseOptions(int argc, char** argv) {
     if (extcap_exit)
         exit(0);
 
-    printCSVHeader(csv_fp, enable_flow_stats);
+    csv_print_header(csv_fp, enable_flow_stats);
 
 #ifndef USE_DPDK
     if (do_extcap_capture) {
@@ -1281,13 +1281,13 @@ static void parseOptions(int argc, char** argv) {
 #endif
 #endif
 #endif
-    }
+}
 
-    /* *********************************************** */
+/* *********************************************** */
 
-    /**
-     * @brief Idle Scan Walker
-     */
+/**
+ * @brief Idle Scan Walker
+ */
 static void node_idle_scan_walker(const void* node, ndpi_VISIT which, int depth, void* user_data) {
     struct ndpi_flow_info* flow = *(struct ndpi_flow_info**)node;
     u_int16_t thread_id = *((u_int16_t*)user_data);
@@ -2012,12 +2012,12 @@ pcap_loop:
     }
 
     return NULL;
-    }
+}
 
-    /* ***************************************************** */
-    /**
-     * @brief Begin, process, end detection process
-     */
+/* ***************************************************** */
+/**
+ * @brief Begin, process, end detection process
+ */
 void run_detection() {
     u_int64_t processing_time_usec, setup_time_usec;
 #ifdef WIN64

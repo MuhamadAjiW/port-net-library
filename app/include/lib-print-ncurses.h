@@ -1,7 +1,6 @@
 #ifndef _LIB_PRINT_NCURSES_H
 #define _LIB_PRINT_NCURSES_H
 
-#include "lib-analytics.h"
 #include "lib-print.h"
 #include <ncurses.h>
 
