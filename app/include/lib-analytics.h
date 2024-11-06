@@ -56,20 +56,26 @@ void node_print_unknown_proto_walker(const void* node,
 
 /* *********************************************** */
 
-void data_reset_counters();
-void data_aggregate();
-void data_aggregate_traffic();
-void data_aggregate_risk();
-void data_aggregate_flow();
+void global_data_init();
+void global_data_clean();
+void global_data_reset_counters();
+void global_data_generate_memory();
+void global_data_generate_traffic(uint64_t processing_time_usec);
+void global_data_generate_time(
+    uint64_t processing_time_usec,
+    uint64_t setup_time_usec
+);
+void global_data_generate_risk();
+void global_data_generate_detail();
+void global_data_generate_protocol();
+void global_data_generate_flow();
+void global_data_generate(
+    uint64_t processing_time_usec,
+    uint64_t setup_time_usec
+);
 
 /* *********************************************** */
 
-void global_data_clean();
-void global_data_generate(
-    uint64_t processing_time_usec,
-    uint64_t setup_time_usec,
-    struct ndpi_detection_module_struct* ndpi_dm_struct
-);
 void* global_data_send(__attribute__((unused)) void* args);
 void* global_flow_send(__attribute__((unused)) void* args);
 

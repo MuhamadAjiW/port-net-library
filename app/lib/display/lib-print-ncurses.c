@@ -39,12 +39,12 @@ void* ncurses_printResults(__attribute__((unused)) void* processing_time_usec_ar
         printw("\tPPPoE Packets:         %-13lu\n", global_data.traffic.pppoe_count);
         printw("\tFragmented Packets:    %-13lu\n", global_data.traffic.fragmented_count);
         printw("\tMax Packet size:       %-13u\n", global_data.traffic.max_packet_len);
-        printw("\tPacket Len < 64:       %-13lu\n", global_data.traffic.packet_less_64);
-        printw("\tPacket Len 64-128:     %-13lu\n", global_data.traffic.packet_range_64_to_128);
-        printw("\tPacket Len 128-256:    %-13lu\n", global_data.traffic.packet_range_128_to_256);
-        printw("\tPacket Len 256-1024:   %-13lu\n", global_data.traffic.packet_range_256_to_1024);
-        printw("\tPacket Len 1024-1500:  %-13lu\n", global_data.traffic.packet_range_1024_to_1500);
-        printw("\tPacket Len > 1500:     %-13lu\n", global_data.traffic.packet_larger_1500);
+        printw("\tPacket Len < 64:       %-13lu\n", global_data.traffic.packet_len[0]);
+        printw("\tPacket Len 64-128:     %-13lu\n", global_data.traffic.packet_len[1]);
+        printw("\tPacket Len 128-256:    %-13lu\n", global_data.traffic.packet_len[2]);
+        printw("\tPacket Len 256-1024:   %-13lu\n", global_data.traffic.packet_len[3]);
+        printw("\tPacket Len 1024-1500:  %-13lu\n", global_data.traffic.packet_len[4]);
+        printw("\tPacket Len > 1500:     %-13lu\n", global_data.traffic.packet_len[5]);
 
         if (processing_time_usec > 0) {
             char buf[32], buf1[32], when[64];
@@ -82,105 +82,106 @@ void* ncurses_printResults(__attribute__((unused)) void* processing_time_usec_ar
             printw("\tTraffic duration:      %.3f sec\n", global_data.traffic.traffic_duration / 1000000);
         }
 
-        if (cumulative_stats.guessed_flow_protocols)
-            printw("\tGuessed flow protos:   %-13u\n", cumulative_stats.guessed_flow_protocols);
+        if (global_data.traffic.guessed_flow_protocols)
+            printw("\tGuessed flow protos:   %-13u\n", global_data.traffic.guessed_flow_protocols);
 
-        if (global_data.traffic.dpi_tcp_count)
+        if (global_data.traffic.dpi_packet_count[FLOW_TCP])
             printw("\tDPI Packets (TCP):     %-13llu (%.2f pkts/flow)\n",
-                (long long unsigned int)global_data.traffic.dpi_tcp_count,
-                global_data.traffic.dpi_tcp_count / (float)global_data.traffic.dpi_tcp_flow);
-        if (global_data.traffic.dpi_udp_count)
+                (long long unsigned int)global_data.traffic.dpi_packet_count[FLOW_TCP],
+                global_data.traffic.dpi_packet_count[FLOW_TCP] / (float)global_data.traffic.dpi_flow_count[FLOW_TCP]);
+        if (global_data.traffic.dpi_packet_count[FLOW_UDP])
             printw("\tDPI Packets (UDP):     %-13llu (%.2f pkts/flow)\n",
-                (long long unsigned int)global_data.traffic.dpi_udp_count,
-                global_data.traffic.dpi_udp_count / (float)global_data.traffic.dpi_udp_flow);
-        if (global_data.traffic.dpi_other_count)
+                (long long unsigned int)global_data.traffic.dpi_packet_count[FLOW_UDP],
+                global_data.traffic.dpi_packet_count[FLOW_UDP] / (float)global_data.traffic.dpi_flow_count[FLOW_UDP]);
+        if (global_data.traffic.dpi_packet_count[FLOW_OTHER])
             printw("\tDPI Packets (other):   %-13llu (%.2f pkts/flow)\n",
-                (long long unsigned int)global_data.traffic.dpi_other_count,
-                global_data.traffic.dpi_other_count / (float)global_data.traffic.dpi_other_flow);
+                (long long unsigned int)global_data.traffic.dpi_packet_count[FLOW_OTHER],
+                global_data.traffic.dpi_packet_count[FLOW_OTHER] / (float)global_data.traffic.dpi_flow_count[FLOW_OTHER]);
 
         // _TODO: Port confidence
-        for (i = 0; i < sizeof(cumulative_stats.flow_confidence) / sizeof(cumulative_stats.flow_confidence[0]); i++) {
-            if (cumulative_stats.flow_confidence[i] != 0)
+        for (i = 0; i < NDPI_CONFIDENCE_MAX; i++) {
+            if (global_data.traffic.flow_confidence[i] != 0) {
                 printw("\tConfidence: %-10s %-13llu (flows)\n", ndpi_confidence_get_name(i),
-                    (long long unsigned int)cumulative_stats.flow_confidence[i]);
+                    (long long unsigned int)global_data.traffic.flow_confidence[i]);
+            }
         }
 
         if (dump_internal_stats) {
             char buf[1024];
 
-            if (cumulative_stats.ndpi_flow_count)
+            if (global_data.traffic.ndpi_flow_count)
                 printw("\tNum dissector calls:   %-13llu (%.2f diss/flow)\n",
-                    (long long unsigned int)cumulative_stats.num_dissector_calls,
-                    cumulative_stats.num_dissector_calls / (float)cumulative_stats.ndpi_flow_count);
+                    (long long unsigned int)global_data.traffic.num_dissector_calls,
+                    global_data.traffic.num_dissector_calls / (float)global_data.traffic.ndpi_flow_count);
 
             printw("\tLRU cache ookla:      %llu/%llu/%llu (insert/search/found)\n",
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_OOKLA].n_insert,
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_OOKLA].n_search,
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_OOKLA].n_found);
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_OOKLA].n_insert,
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_OOKLA].n_search,
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_OOKLA].n_found);
             printw("\tLRU cache bittorrent: %llu/%llu/%llu (insert/search/found)\n",
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_BITTORRENT].n_insert,
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_BITTORRENT].n_search,
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_BITTORRENT].n_found);
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_BITTORRENT].n_insert,
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_BITTORRENT].n_search,
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_BITTORRENT].n_found);
             printw("\tLRU cache stun:       %llu/%llu/%llu (insert/search/found)\n",
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_STUN].n_insert,
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_STUN].n_search,
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_STUN].n_found);
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_STUN].n_insert,
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_STUN].n_search,
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_STUN].n_found);
             printw("\tLRU cache tls_cert:   %llu/%llu/%llu (insert/search/found)\n",
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_TLS_CERT].n_insert,
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_TLS_CERT].n_search,
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_TLS_CERT].n_found);
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_TLS_CERT].n_insert,
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_TLS_CERT].n_search,
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_TLS_CERT].n_found);
             printw("\tLRU cache mining:     %llu/%llu/%llu (insert/search/found)\n",
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_MINING].n_insert,
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_MINING].n_search,
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_MINING].n_found);
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_MINING].n_insert,
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_MINING].n_search,
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_MINING].n_found);
             printw("\tLRU cache msteams:    %llu/%llu/%llu (insert/search/found)\n",
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_MSTEAMS].n_insert,
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_MSTEAMS].n_search,
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_MSTEAMS].n_found);
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_MSTEAMS].n_insert,
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_MSTEAMS].n_search,
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_MSTEAMS].n_found);
             printw("\tLRU cache fpc_dns:    %llu/%llu/%llu (insert/search/found)\n",
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_FPC_DNS].n_insert,
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_FPC_DNS].n_search,
-                (long long unsigned int)cumulative_stats.lru_stats[NDPI_LRUCACHE_FPC_DNS].n_found);
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_FPC_DNS].n_insert,
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_FPC_DNS].n_search,
+                (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_FPC_DNS].n_found);
 
             printw("\tAutoma host:          %llu/%llu (search/found)\n",
-                (long long unsigned int)cumulative_stats.automa_stats[NDPI_AUTOMA_HOST].n_search,
-                (long long unsigned int)cumulative_stats.automa_stats[NDPI_AUTOMA_HOST].n_found);
+                (long long unsigned int)global_data.detail.automa_stats[NDPI_AUTOMA_HOST].n_search,
+                (long long unsigned int)global_data.detail.automa_stats[NDPI_AUTOMA_HOST].n_found);
             printw("\tAutoma domain:        %llu/%llu (search/found)\n",
-                (long long unsigned int)cumulative_stats.automa_stats[NDPI_AUTOMA_DOMAIN].n_search,
-                (long long unsigned int)cumulative_stats.automa_stats[NDPI_AUTOMA_DOMAIN].n_found);
+                (long long unsigned int)global_data.detail.automa_stats[NDPI_AUTOMA_DOMAIN].n_search,
+                (long long unsigned int)global_data.detail.automa_stats[NDPI_AUTOMA_DOMAIN].n_found);
             printw("\tAutoma tls cert:      %llu/%llu (search/found)\n",
-                (long long unsigned int)cumulative_stats.automa_stats[NDPI_AUTOMA_TLS_CERT].n_search,
-                (long long unsigned int)cumulative_stats.automa_stats[NDPI_AUTOMA_TLS_CERT].n_found);
+                (long long unsigned int)global_data.detail.automa_stats[NDPI_AUTOMA_TLS_CERT].n_search,
+                (long long unsigned int)global_data.detail.automa_stats[NDPI_AUTOMA_TLS_CERT].n_found);
             printw("\tAutoma risk mask:     %llu/%llu (search/found)\n",
-                (long long unsigned int)cumulative_stats.automa_stats[NDPI_AUTOMA_RISK_MASK].n_search,
-                (long long unsigned int)cumulative_stats.automa_stats[NDPI_AUTOMA_RISK_MASK].n_found);
+                (long long unsigned int)global_data.detail.automa_stats[NDPI_AUTOMA_RISK_MASK].n_search,
+                (long long unsigned int)global_data.detail.automa_stats[NDPI_AUTOMA_RISK_MASK].n_found);
             printw("\tAutoma common alpns:  %llu/%llu (search/found)\n",
-                (long long unsigned int)cumulative_stats.automa_stats[NDPI_AUTOMA_COMMON_ALPNS].n_search,
-                (long long unsigned int)cumulative_stats.automa_stats[NDPI_AUTOMA_COMMON_ALPNS].n_found);
+                (long long unsigned int)global_data.detail.automa_stats[NDPI_AUTOMA_COMMON_ALPNS].n_search,
+                (long long unsigned int)global_data.detail.automa_stats[NDPI_AUTOMA_COMMON_ALPNS].n_found);
 
             printw("\tPatricia risk mask:   %llu/%llu (search/found)\n",
-                (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_RISK_MASK].n_search,
-                (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_RISK_MASK].n_found);
+                (long long unsigned int)global_data.detail.patricia_stats[NDPI_PTREE_RISK_MASK].n_search,
+                (long long unsigned int)global_data.detail.patricia_stats[NDPI_PTREE_RISK_MASK].n_found);
             printw("\tPatricia risk mask IPv6: %llu/%llu (search/found)\n",
-                (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_RISK_MASK6].n_search,
-                (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_RISK_MASK6].n_found);
+                (long long unsigned int)global_data.detail.patricia_stats[NDPI_PTREE_RISK_MASK6].n_search,
+                (long long unsigned int)global_data.detail.patricia_stats[NDPI_PTREE_RISK_MASK6].n_found);
             printw("\tPatricia risk:        %llu/%llu (search/found)\n",
-                (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_RISK].n_search,
-                (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_RISK].n_found);
+                (long long unsigned int)global_data.detail.patricia_stats[NDPI_PTREE_RISK].n_search,
+                (long long unsigned int)global_data.detail.patricia_stats[NDPI_PTREE_RISK].n_found);
             printw("\tPatricia risk IPv6:   %llu/%llu (search/found)\n",
-                (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_RISK6].n_search,
-                (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_RISK6].n_found);
+                (long long unsigned int)global_data.detail.patricia_stats[NDPI_PTREE_RISK6].n_search,
+                (long long unsigned int)global_data.detail.patricia_stats[NDPI_PTREE_RISK6].n_found);
             printw("\tPatricia protocols:   %llu/%llu (search/found)\n",
-                (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_PROTOCOLS].n_search,
-                (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_PROTOCOLS].n_found);
+                (long long unsigned int)global_data.detail.patricia_stats[NDPI_PTREE_PROTOCOLS].n_search,
+                (long long unsigned int)global_data.detail.patricia_stats[NDPI_PTREE_PROTOCOLS].n_found);
             printw("\tPatricia protocols IPv6: %llu/%llu (search/found)\n",
-                (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_PROTOCOLS6].n_search,
-                (long long unsigned int)cumulative_stats.patricia_stats[NDPI_PTREE_PROTOCOLS6].n_found);
+                (long long unsigned int)global_data.detail.patricia_stats[NDPI_PTREE_PROTOCOLS6].n_search,
+                (long long unsigned int)global_data.detail.patricia_stats[NDPI_PTREE_PROTOCOLS6].n_found);
 
             if (enable_malloc_bins)
                 printw("\tData-path malloc histogram: %s\n", ndpi_print_bin(&malloc_bins, 0, buf, sizeof(buf)));
         }
-        }
+    }
 
     printw("\n\nDetected protocols:\n");
     struct data_protocol* protocol_array = global_data.protocol.content;
@@ -251,7 +252,7 @@ free_stats:
     }
 
     return NULL;
-    }
+}
 
 void ncurses_printRiskStats() {
     if (!quiet_mode) {

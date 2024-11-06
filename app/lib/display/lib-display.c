@@ -29,7 +29,7 @@ void* ldis_print(__attribute__((unused)) void* arg) {
         u_int64_t processing_time_usec = (u_int64_t)end.tv_sec * 1000000 + end.tv_usec - ((u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec);
         u_int64_t setup_time_usec = (u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec - ((u_int64_t)startup_time.tv_sec * 1000000 + startup_time.tv_usec);
 
-        global_data_generate(processing_time_usec, setup_time_usec, ndpi_thread_info[0].workflow->ndpi_struct);
+        global_data_generate(processing_time_usec, setup_time_usec);
         thread_pool_assign(&global_thread_pool, THREAD_ZMQ_PRIMARY, global_data_send, NULL, NULL);
         thread_pool_assign(&global_thread_pool, THREAD_ZMQ_SECONDARY, global_flow_send, NULL, NULL);
         ncurses_printResults((void*)&processing_time_usec);
@@ -45,6 +45,7 @@ void* ldis_print(__attribute__((unused)) void* arg) {
     printf("Done, closing display\n");
     DLOG(TAG_DISPLAY, "Closing display...");
 
-    data_reset_counters();
+    global_data_reset_counters();
+    global_data_clean();
     return EXIT_SUCCESS;
 }

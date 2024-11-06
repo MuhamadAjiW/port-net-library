@@ -10,7 +10,22 @@
 #include "lib-string.h"
 #include "lib-array.h"
 
-// TODO: Document
+// Enums
+enum packet_len {
+    PACKET_LESS_64,
+    PACKET_RANGE_64_128,
+    PACKET_RANGE_128_256,
+    PACKET_RANGE_256_1024,
+    PACKET_RANGE_1024_1500,
+    PACKET_MORE_1500,
+};
+
+enum flow_type {
+    FLOW_TCP,
+    FLOW_UDP,
+    FLOW_OTHER
+};
+
 // Structs
 struct data_memory {
     uint32_t mem_once;
@@ -25,40 +40,30 @@ struct data_time {
 };
 
 struct data_traffic {
-    uint64_t total_wire_bytes;
-    uint64_t total_discarded_bytes;
+    int64_t start_time, end_time;
     uint64_t raw_packet_count;
     uint64_t ip_packet_count;
-    uint64_t total_ip_bytes;
+    uint64_t total_wire_bytes, total_ip_bytes, total_discarded_bytes;
+    uint64_t tcp_count, udp_count;
+    uint64_t mpls_count, pppoe_count, vlan_count, fragmented_count;
+    uint64_t packet_len[PACKET_LENGTH_CLASSIFICATION_COUNT];
+    uint64_t flow_confidence[NDPI_CONFIDENCE_MAX];
+    uint64_t num_dissector_calls;
+    float ndpi_packets_per_second, ndpi_bytes_per_second;
+    float traffic_duration;
+    float traffic_packets_per_second, traffic_bytes_per_second;
     uint32_t avg_pkt_size;
     uint32_t ndpi_flow_count;
-    uint64_t tcp_count;
-    uint64_t udp_count;
-    uint64_t vlan_count;
-    uint64_t mpls_count;
-    uint64_t pppoe_count;
-    uint64_t fragmented_count;
-    uint16_t max_packet_len;
-    uint64_t packet_less_64;
-    uint64_t packet_range_64_to_128;
-    uint64_t packet_range_128_to_256;
-    uint64_t packet_range_256_to_1024;
-    uint64_t packet_range_1024_to_1500;
-    uint64_t packet_larger_1500;
-    float ndpi_packets_per_second;
-    float ndpi_bytes_per_second;
-    int64_t start_time;
-    int64_t end_time;
-    float traffic_duration;
-    float traffic_packets_per_second;
-    float traffic_bytes_per_second;
+    uint32_t dpi_flow_count[FLOW_TYPE_CLASSIFICATION_COUNT];
+    uint32_t dpi_packet_count[FLOW_TYPE_CLASSIFICATION_COUNT];
     uint32_t guessed_flow_protocols;
-    uint64_t dpi_tcp_count;
-    uint64_t dpi_udp_count;
-    uint64_t dpi_other_count;
-    uint32_t dpi_tcp_flow;
-    uint32_t dpi_udp_flow;
-    uint32_t dpi_other_flow;
+    uint16_t max_packet_len;
+};
+
+struct data_detail {
+    struct ndpi_lru_cache_stats lru_stats[NDPI_LRUCACHE_MAX];
+    struct ndpi_automa_stats automa_stats[NDPI_AUTOMA_MAX];
+    struct ndpi_patricia_tree_stats patricia_stats[NDPI_PTREE_MAX];
 };
 
 struct data_protocol {
@@ -85,9 +90,11 @@ struct data_all {
     struct data_memory memory;
     struct data_time time;
     struct data_traffic traffic;
+    struct data_detail detail;
     dynarray_t protocol;
     dynarray_t classification;
     dynarray_t risk;
+    dynarray_t flow;
 };
 
 // _TODO: granular packet data
@@ -98,25 +105,14 @@ extern struct timeval pcap_start, pcap_end;
 extern u_int8_t live_capture;
 
 // Functions
-void data_memory_get(struct data_memory* data_memory);
 json_object* data_memory_to_json(struct data_memory* data);
 
 /* ********************************** */
 
-void data_time_get(
-    struct data_time* data_time,
-    uint64_t processing_time_usec,
-    uint64_t setup_time_usec
-);
 json_object* data_time_to_json(struct data_time* data);
 
 /* ********************************** */
 
-void data_traffic_get(
-    struct data_traffic* data_traffic,
-    ndpi_stats_t stats,
-    uint64_t processing_time_usec
-);
 json_object* data_traffic_to_json(struct data_traffic* data);
 
 /* ********************************** */
