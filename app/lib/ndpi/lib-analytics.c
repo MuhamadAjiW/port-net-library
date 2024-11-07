@@ -591,7 +591,33 @@ void* global_data_send(__attribute__((unused)) void* args) {
 }
 
 void* global_flow_send(__attribute__((unused)) void* args) {
-    // _TODO: Implement
+    struct flow_info* known_flow_array = global_data.known_flow.content;
+    struct flow_info* unknown_flow_array = global_data.unknown_flow.content;
+
+    json_object* json_known_flow = json_object_new_object();
+    json_object* json_known_flow_array = json_object_new_array();
+    for (size_t i = 0; i < global_data.known_flow.length; i++) {
+        json_object* json_known_flow_entry = data_flow_to_json(&known_flow_array[i]);
+        json_object_array_add(json_known_flow_array, json_known_flow_entry);
+    }
+
+    json_object* json_unknown_flow = json_object_new_object();
+    json_object* json_unknown_flow_array = json_object_new_array();
+    for (size_t i = 0; i < global_data.unknown_flow.length; i++) {
+        json_object* json_unknown_flow_entry = data_flow_to_json(&unknown_flow_array[i]);
+        json_object_array_add(json_unknown_flow_array, json_unknown_flow_entry);
+    }
+
+    lzmq_send_json(
+        &global_zmq_flow_conn,
+        json_known_flow,
+        0
+    );
+    lzmq_send_json(
+        &global_zmq_flow_conn,
+        json_unknown_flow,
+        0
+    );
 
     return NULL;
 }

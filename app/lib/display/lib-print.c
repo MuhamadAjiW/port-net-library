@@ -1085,6 +1085,7 @@ void print_flow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) 
         fprintf(out, "[score: %.4f]", flow->entropy->score);
     }
 
+    // _TODO: data_flow_to_json from here on
     fprintf(out, "[proto: ");
     if (flow->tunnel_type != ndpi_no_tunnel) {
         fprintf(out, "%s:", ndpi_tunnel2str(flow->tunnel_type));

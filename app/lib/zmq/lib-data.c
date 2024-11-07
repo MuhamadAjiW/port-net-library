@@ -166,7 +166,7 @@ json_object* data_flow_to_json(struct flow_info* data) {
     struct ndpi_flow_info* flow = data->flow;
     char l4_proto_name[32];
 
-    json_object_object_add(retval, "protocol_name", json_object_new_string(ndpi_get_ip_proto_name(flow->protocol, l4_proto_name, sizeof(l4_proto_name))));
+    json_object_object_add(retval, "transport_protocol", json_object_new_string(ndpi_get_ip_proto_name(flow->protocol, l4_proto_name, sizeof(l4_proto_name))));
     json_object_object_add(retval, "ip_version", json_object_new_uint64((unsigned long long) flow->ip_version));
     json_object_object_add(retval, "src_ip", json_object_new_string(flow->src_name));
     json_object_object_add(retval, "src_port", json_object_new_uint64((unsigned long long) flow->src_name));
@@ -175,6 +175,40 @@ json_object* data_flow_to_json(struct flow_info* data) {
     json_object_object_add(retval, "bidirectional", json_object_new_boolean(flow->bidirectional));
     json_object_object_add(retval, "vlan_id", json_object_new_uint64((unsigned long long) flow->vlan_id));
     json_object_object_add(retval, "tunnel", json_object_new_string(ndpi_tunnel2str(flow->tunnel_type)));
+    // json_object_object_add(retval, "application_protocol", json_object_new_string(ndpi_protocol2name(ndpi_thread_info[thread_id].workflow->ndpi_struct, flow->detected_protocol, buf1, sizeof(buf1))));
+    // json_object_object_add(retval, "ip_owner", json_object_new_string(ndpi_tunnel2str(flow->tunnel_type)));
+    // json_object_object_add(retval, "content_type", json_object_new_string(ndpi_tunnel2str(flow->tunnel_type)));
+    // json_object_object_add(retval, "encryption", json_object_new_string(ndpi_tunnel2str(flow->tunnel_type)));
+    // json_object_object_add(retval, "full_packet_capture", json_object_new_string(ndpi_tunnel2str(flow->tunnel_type)));
+    // json_object_object_add(retval, "dpi_packets", json_object_new_string(ndpi_tunnel2str(flow->tunnel_type)));
+    // json_object_object_add(retval, "category", json_object_new_string(ndpi_tunnel2str(flow->tunnel_type)));
+    // json_object_object_add(retval, "incoming_packet_count", json_object_new_string(ndpi_tunnel2str(flow->tunnel_type)));
+    // json_object_object_add(retval, "outgoing_packet_count", json_object_new_string(ndpi_tunnel2str(flow->tunnel_type)));
+    // json_object_object_add(retval, "goodput_ratio", json_object_new_string(ndpi_tunnel2str(flow->tunnel_type)));
+    // json_object_object_add(retval, "duration", json_object_new_string(ndpi_tunnel2str(flow->tunnel_type)));
+    // json_object_object_add(retval, "hostname", json_object_new_string(ndpi_tunnel2str(flow->tunnel_type)));
+    // json_object_object_add(retval, "details", );
+
+    switch (flow->info_type)
+    {
+    case INFO_INVALID:
+        break;
+    case INFO_GENERIC:
+        break;
+    case INFO_KERBEROS:
+        break;
+    case INFO_SOFTETHER:
+        break;
+    case INFO_TIVOCONNECT:
+        break;
+    case INFO_NATPMP:
+        break;
+    case INFO_FTP_IMAP_POP_SMTP:
+        break;
+    
+    default:
+        break;
+    }
 
     return NULL;
 }
