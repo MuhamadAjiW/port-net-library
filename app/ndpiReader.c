@@ -1708,7 +1708,7 @@ static pcap_t* openPcapFileOrDevice(u_int16_t thread_id, const u_char* pcap_file
  * @brief Check pcap packet
  */
 static void ndpi_process_packet(u_char* args,
-    // _TODO: Print on this function instead
+    // _NOTE: Here is where the packet is being processed
 
     const struct pcap_pkthdr* header,
     const u_char* packet) {

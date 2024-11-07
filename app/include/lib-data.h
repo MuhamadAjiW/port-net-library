@@ -7,6 +7,7 @@
 #include "stdint.h"
 #include "reader_util.h"
 
+#include "lib-analytics.h"
 #include "lib-flow.h"
 #include "lib-string.h"
 #include "lib-array.h"
