@@ -21,7 +21,7 @@ void* ldis_start(__attribute__((unused)) void* arg) {
         u_int64_t setup_time_usec = (u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec - ((u_int64_t)startup_time.tv_sec * 1000000 + startup_time.tv_usec);
 
         print_result(processing_time_usec, setup_time_usec);
-}
+    }
 
 #else
     initscr();

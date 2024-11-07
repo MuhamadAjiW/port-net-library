@@ -389,8 +389,8 @@ void print_risk_stats() {
     if (!quiet_mode) {
         if (global_data.risk.length > 0) {
             printf("\nRisk stats [found %u (%.1f %%) flows with risks]:\n",
-                flows_with_risks,
-                (100. * flows_with_risks) / (float)global_data.traffic.ndpi_flow_count);
+                global_data.risk_total_count,
+                (100. * global_data.risk_total_count) / (float)global_data.traffic.ndpi_flow_count);
 
             struct data_risk* risk_array = global_data.risk.content;
             for (size_t i = 0; i < global_data.risk.length; i++) {
@@ -1313,7 +1313,7 @@ void print_flow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) 
                 (unsigned long long int)ndpi_data_max(flow->pktlen_s_to_c),
                 ndpi_data_stddev(flow->pktlen_c_to_s), ndpi_data_stddev(flow->pktlen_s_to_c));
         }
-        }
+    }
 
     print_ndpi_address_port_file(out, "Mapped IP/Port", &flow->stun.mapped_address);
     print_ndpi_address_port_file(out, "Peer IP/Port", &flow->stun.peer_address);
@@ -1464,7 +1464,7 @@ void print_flow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) 
     }
 
     fprintf(out, "\n");
-    }
+}
 
 void print_flow_serialized(struct ndpi_flow_info* flow)
 {

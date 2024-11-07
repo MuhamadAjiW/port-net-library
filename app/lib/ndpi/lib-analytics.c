@@ -165,8 +165,6 @@ void node_flow_risk_walker(const void* node, ndpi_VISIT which, int depth, void* 
         if (f->risk) {
             u_int j;
 
-            flows_with_risks++;
-
             for (j = 0; j < NDPI_MAX_RISK; j++) {
                 ndpi_risk_enum r = (ndpi_risk_enum)j;
 
@@ -270,7 +268,6 @@ void global_data_reset_counters() {
 
     // Risk counters
     memset(risk_stats, 0, sizeof(risk_stats));
-    flows_with_risks = 0;
     risks_found = 0;
 
     // Flow counters
@@ -381,15 +378,16 @@ void global_data_generate_time(
 
 void global_data_generate_risk() {
     DLOG(TAG_DATA, "fetching risk to global data");
-    struct data_risk temp_risk;
 
     for (uint8_t thread_id = 0; thread_id < num_threads; thread_id++) {
-        for (int i = 0; i < NUM_ROOTS; i++)
+        for (int i = 0; i < NUM_ROOTS; i++) {
             ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
                 node_flow_risk_walker, &thread_id);
+        }
     }
 
     if (risks_found) {
+        struct data_risk temp_risk;
         for (int i = 0; i < NDPI_MAX_RISK; i++) {
             ndpi_risk_enum r = (ndpi_risk_enum)i;
 
@@ -405,6 +403,8 @@ void global_data_generate_risk() {
             }
         }
     }
+
+    global_data.risk_total_count = risks_found;
 }
 
 void global_data_generate_detail() {

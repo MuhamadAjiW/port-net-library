@@ -147,7 +147,7 @@ char* _disabled_protocols = NULL;
 u_int8_t stats_flag = 0;
 u_int8_t human_readeable_string_len = 5;
 u_int8_t max_num_udp_dissected_pkts = 24 /* 8 is enough for most protocols, Signal and SnapchatCall require more */, max_num_tcp_dissected_pkts = 80 /* due to telnet */;
-u_int32_t risk_stats[NDPI_MAX_RISK] = { 0 }, risks_found = 0, flows_with_risks = 0;
+u_int32_t risk_stats[NDPI_MAX_RISK] = { 0 }, risks_found = 0;
 
 u_int8_t shutdown_app = 0, quiet_mode = 0;
 u_int8_t num_threads = 1;

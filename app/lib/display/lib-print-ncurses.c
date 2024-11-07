@@ -257,8 +257,8 @@ void ncurses_print_risk_stats() {
     if (!quiet_mode) {
         if (global_data.risk.length > 0) {
             printw("\nRisk stats [found %u (%.1f %%) flows with risks]:\n",
-                flows_with_risks,
-                (100. * flows_with_risks) / (float)global_data.traffic.ndpi_flow_count);
+                global_data.risk_total_count,
+                (100. * global_data.risk_total_count) / (float)global_data.traffic.ndpi_flow_count);
 
             struct data_risk* risk_array = global_data.risk.content;
             for (size_t i = 0; i < global_data.risk.length; i++) {
