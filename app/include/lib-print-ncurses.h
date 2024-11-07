@@ -5,7 +5,7 @@
 #include <ncurses.h>
 
 // TODO: Document
-void* ncurses_print_result(void* processing_time_usec_arg);
+void* ncurses_print_result(uint64_t processing_time_usec);
 void ncurses_print_risk_stats();
 void ncurses_print_flows_stats();
 char* ncurses_print_cipher(ndpi_cipher_weakness c);

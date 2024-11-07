@@ -1313,7 +1313,7 @@ void print_flow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) 
                 (unsigned long long int)ndpi_data_max(flow->pktlen_s_to_c),
                 ndpi_data_stddev(flow->pktlen_c_to_s), ndpi_data_stddev(flow->pktlen_s_to_c));
         }
-    }
+        }
 
     print_ndpi_address_port_file(out, "Mapped IP/Port", &flow->stun.mapped_address);
     print_ndpi_address_port_file(out, "Peer IP/Port", &flow->stun.peer_address);
@@ -1464,7 +1464,7 @@ void print_flow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) 
     }
 
     fprintf(out, "\n");
-}
+    }
 
 void print_flow_serialized(struct ndpi_flow_info* flow)
 {

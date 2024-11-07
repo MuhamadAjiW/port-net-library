@@ -1278,13 +1278,13 @@ static void parseOptions(int argc, char** argv) {
 #endif
 #endif
 #endif
-    }
+}
 
-    /* *********************************************** */
+/* *********************************************** */
 
-    /**
-     * @brief Idle Scan Walker
-     */
+/**
+ * @brief Idle Scan Walker
+ */
 static void node_idle_scan_walker(const void* node, ndpi_VISIT which, int depth, void* user_data) {
     struct ndpi_flow_info* flow = *(struct ndpi_flow_info**)node;
     u_int16_t thread_id = *((u_int16_t*)user_data);
@@ -2009,12 +2009,12 @@ pcap_loop:
     }
 
     return NULL;
-    }
+}
 
-    /* ***************************************************** */
-    /**
-     * @brief Begin, process, end detection process
-     */
+/* ***************************************************** */
+/**
+ * @brief Begin, process, end detection process
+ */
 void run_detection() {
     u_int64_t processing_time_usec, setup_time_usec;
 #ifdef WIN64
@@ -2061,7 +2061,7 @@ void run_detection() {
 
 #ifdef DEPLOY_BUILD
     ILOG(TAG_GENERAL, "Program execution starting with %d threads...", num_threads);
-    thread_pool_assign(&global_thread_pool, THREAD_DISPLAY, ldis_print, NULL, NULL);
+    thread_pool_assign(&global_thread_pool, THREAD_MAIN_WORKER, ldis_start, NULL, NULL);
 #endif
 
     /* Running processing threads */
@@ -2103,7 +2103,7 @@ void run_detection() {
     ldis_do_loop = 0;
     DLOG(TAG_GENERAL, "Execution completed...");
     // _TODO: Execution completion event instead of busy waiting
-    while (global_thread_pool.handler[THREAD_DISPLAY].thread_queue_len > 0) {
+    while (global_thread_pool.handler[THREAD_MAIN_WORKER].thread_queue_len > 0) {
         zmq_sleep(1);
     }
 #endif

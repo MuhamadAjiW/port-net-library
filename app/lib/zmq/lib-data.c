@@ -67,8 +67,6 @@ json_object* data_traffic_to_json(struct data_traffic* data) {
     json_object_object_add(retval, "dpi_udp_flow", json_object_new_uint64(data->dpi_flow_count[FLOW_UDP]));
     json_object_object_add(retval, "dpi_other_flow", json_object_new_uint64(data->dpi_flow_count[FLOW_OTHER]));
 
-    // _TODO: Port confidence
-
     return retval;
 }
 

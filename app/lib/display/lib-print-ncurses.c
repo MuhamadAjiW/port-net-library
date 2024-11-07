@@ -2,8 +2,7 @@
 #include "../../include/lib-print-ncurses.h"
 
 // Print result to an ncurses window
-void* ncurses_print_result(__attribute__((unused)) void* processing_time_usec_arg) {
-    uint64_t processing_time_usec = *(uint64_t*)processing_time_usec_arg;
+void* ncurses_print_result(uint64_t processing_time_usec) {
     u_int32_t i;
     char buf[32];
 

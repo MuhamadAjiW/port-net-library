@@ -6,10 +6,11 @@
 #include "lib-zmq.h"
 #include "lib-log.h"
 
-#define THREAD_DISPLAY 0
-#define THREAD_ZMQ_PRIMARY 1
-#define THREAD_ZMQ_SECONDARY 2
-#define THREAD_LOG 3
+#define THREAD_MAIN_WORKER 0
+#define THREAD_DISPLAY 1
+#define THREAD_ZMQ_PRIMARY 2
+#define THREAD_ZMQ_SECONDARY 3
+#define THREAD_LOG 4
 
 #define DEFAULT_LOGGER_TYPE LOGGER_TYPE_FILE
 #define DEFAULT_LOGGER_PATH "./ndpiReader.log"
@@ -40,7 +41,6 @@
 #define TAG_ZMQ         "ZMQ"
 #define TAG_DATA        "DATA"
 
-// _TODO: Restructure other global variables here
 extern struct thread_pool global_thread_pool;
 
 extern struct data_all global_data;

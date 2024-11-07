@@ -252,7 +252,7 @@ void global_data_generate(
 
 // _TODO: Fix flow generation then remove these flags 
 #ifdef DEPLOY_BUILD
-    // global_data_reset_counters();
+    global_data_reset_counters();
 #endif
 }
 
@@ -456,7 +456,6 @@ void global_data_generate_protocol() {
     struct data_classification temp_classification;
     struct data_protocol temp_protocol;
 
-    // _TODO: refactor, this is very ugly
     long long unsigned int breed_stats_pkts[NUM_BREEDS] = { 0 };
     long long unsigned int breed_stats_bytes[NUM_BREEDS] = { 0 };
     long long unsigned int breed_stats_flows[NUM_BREEDS] = { 0 };
