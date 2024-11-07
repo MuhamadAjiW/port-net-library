@@ -199,7 +199,6 @@ json_object* data_flow_to_json(struct flow_info* data) {
         content = "???";
         break;
     }
-
     json_object_object_add(retval, "content_type", json_object_new_string(content));
 
     const char* fpc_info;
@@ -225,13 +224,7 @@ json_object* data_flow_to_json(struct flow_info* data) {
     json_object_object_add(retval, "incoming_goodput_ratio", json_object_new_double((double)100.0 * ((float)flow->dst2src_goodput_bytes / (float)(flow->dst2src_bytes + 1))));
     json_object_object_add(retval, "duration", json_object_new_double((double)((float)(flow->last_seen_ms - flow->first_seen_ms)) / (float)1000));
     json_object_object_add(retval, "hostname", json_object_new_string(flow->host_server_name));
-    json_object_object_add(retval, "advertised_alpns", json_object_new_string(flow->ssh_tls.advertised_alpns));
-    json_object_object_add(retval, "negotiated_alpn", json_object_new_string(flow->ssh_tls.negotiated_alpn));
-    json_object_object_add(retval, "tls_supported_versions", json_object_new_string(flow->ssh_tls.tls_supported_versions));
-    json_object_object_add(retval, "currency", json_object_new_string(flow->mining.currency));
-    json_object_object_add(retval, "geolocation", json_object_new_string(flow->dns.geolocation_iata_code));
 
-    // _TODO: Implement
     json_object* json_details = json_object_new_object();
     switch (flow->info_type)
     {
@@ -240,7 +233,7 @@ json_object* data_flow_to_json(struct flow_info* data) {
         break;
     case INFO_GENERIC:
         json_object_object_add(retval, "info_type", json_object_new_string("generic"));
-        json_object_object_add(retval, "info", json_object_new_string(flow->info));
+        json_object_object_add(json_details, "info", json_object_new_string(flow->info));
         break;
     case INFO_KERBEROS:
         json_object_object_add(retval, "info_type", json_object_new_string("kerberos"));
@@ -275,11 +268,20 @@ json_object* data_flow_to_json(struct flow_info* data) {
         json_object_object_add(json_details, "password", json_object_new_string(flow->ftp_imap_pop_smtp.password));
         json_object_object_add(json_details, "auth_failed", json_object_new_boolean(flow->ftp_imap_pop_smtp.auth_failed));
         break;
-
     default:
         break;
     }
     json_object_object_add(retval, "details", json_details);
 
+    json_object_object_add(retval, "advertised_alpns",
+        json_object_new_string(flow->ssh_tls.advertised_alpns ? flow->ssh_tls.advertised_alpns : ""));
+    json_object_object_add(retval, "negotiated_alpn",
+        json_object_new_string(flow->ssh_tls.negotiated_alpn ? flow->ssh_tls.negotiated_alpn : ""));
+    json_object_object_add(retval, "tls_supported_versions",
+        json_object_new_string(flow->ssh_tls.tls_supported_versions ? flow->ssh_tls.tls_supported_versions : ""));
+    json_object_object_add(retval, "currency", json_object_new_string(flow->mining.currency));
+    json_object_object_add(retval, "geolocation", json_object_new_string(flow->dns.geolocation_iata_code));
+
+    // _TODO: Implement the rest
     return NULL;
 }

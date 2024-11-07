@@ -71,7 +71,7 @@ uint8_t lzmq_receive_from_server(char* ip, int port, FILE* output_file) {
 int main() {
     char* ip = "127.0.0.1";
     // int port = 8888;
-    int port = 56;
+    int port = 57;
     FILE* output_file = fopen("out.ignore", "w+");
     if (output_file == NULL) {
         perror("Error: Failed opening output file");
