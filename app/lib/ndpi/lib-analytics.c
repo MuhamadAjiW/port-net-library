@@ -170,8 +170,9 @@ void node_flow_risk_walker(const void* node, ndpi_VISIT which, int depth, void* 
             for (j = 0; j < NDPI_MAX_RISK; j++) {
                 ndpi_risk_enum r = (ndpi_risk_enum)j;
 
-                if (NDPI_ISSET_BIT(f->risk, r))
+                if (NDPI_ISSET_BIT(f->risk, r)) {
                     risks_found++, risk_stats[r]++;
+                }
             }
         }
     }
@@ -251,7 +252,7 @@ void global_data_generate(
 
 // _TODO: Fix flow generation then remove these flags 
 #ifdef DEPLOY_BUILD
-    global_data_reset_counters();
+    // global_data_reset_counters();
 #endif
 }
 

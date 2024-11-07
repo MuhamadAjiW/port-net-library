@@ -162,6 +162,21 @@ json_object* data_risk_to_json(struct data_risk* data) {
 /* ********************************** */
 
 json_object* data_flow_to_json(struct flow_info* data) {
+    json_object* retval = json_object_new_object();
+
     // _TODO: Implement
+    struct ndpi_flow_info* flow = data->flow;
+    char l4_proto_name[32];
+
+    json_object_object_add(retval, "protocol_name", json_object_new_string(ndpi_get_ip_proto_name(flow->protocol, l4_proto_name, sizeof(l4_proto_name))));
+    json_object_object_add(retval, "ip_version", json_object_new_uint64((unsigned long long) flow->ip_version));
+    json_object_object_add(retval, "src_ip", json_object_new_string(flow->src_name));
+    json_object_object_add(retval, "src_port", json_object_new_uint64((unsigned long long) flow->src_name));
+    json_object_object_add(retval, "dst_ip", json_object_new_string(flow->dst_name));
+    json_object_object_add(retval, "dst_port", json_object_new_uint64((unsigned long long) flow->dst_name));
+    json_object_object_add(retval, "bidirectional", json_object_new_boolean(flow->bidirectional));
+    json_object_object_add(retval, "vlan_id", json_object_new_uint64((unsigned long long) flow->vlan_id));
+    json_object_object_add(retval, "tunnel", json_object_new_string(ndpi_tunnel2str(flow->tunnel_type)));
+
     return NULL;
 }

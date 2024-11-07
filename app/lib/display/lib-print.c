@@ -408,7 +408,6 @@ void print_risk_stats() {
     }
 }
 
-// _TODO: Use results from global data
 void print_flows_stats() {
     int thread_id;
     FILE* out = results_file ? results_file : stdout;
@@ -1031,6 +1030,7 @@ void print_flows_stats() {
             }
         }
 
+        DLOG("PRINTING", "Sorting unknowns");
         qsort(unknown_flow_array, unknown_flow_count, sizeof(struct flow_info), cmpFlows);
 
         for (i = 0; i < unknown_flow_count; i++) {
@@ -1039,6 +1039,7 @@ void print_flows_stats() {
     }
     else if (csv_fp != NULL) {
         unsigned int i;
+        DLOG("PRINTING", "Not verbose");
         for (i = 0; i < known_flow_count; i++) {
             print_flow(i + 1, known_flow_array[i].flow, known_flow_array[i].thread_id);
         }
@@ -1047,6 +1048,7 @@ void print_flows_stats() {
     if (serialization_fp != NULL &&
         serialization_format != ndpi_serialization_format_unknown)
     {
+        DLOG("PRINTING", "Serialized");
         unsigned int i;
         for (i = 0; i < known_flow_count; i++) {
             print_flow_serialized(known_flow_array[i].flow);
@@ -1058,6 +1060,8 @@ void print_flows_stats() {
 }
 
 void print_flow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) {
+    DLOG("PRINTING", "Printing Flow");
+
     FILE* out = results_file ? results_file : stdout;
     u_int8_t known_tls;
     char buf[32], buf1[64];
@@ -1069,398 +1073,397 @@ void print_flow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) 
         csv_print_flow(csv_fp, flow, thread_id);
     }
 
-    if (verbose > 1) {
-        fprintf(out, "\t%u", id);
+    fprintf(out, "\t%u", id);
 
-        fprintf(out, "\t%s ", ndpi_get_ip_proto_name(flow->protocol, l4_proto_name, sizeof(l4_proto_name)));
+    fprintf(out, "\t%s ", ndpi_get_ip_proto_name(flow->protocol, l4_proto_name, sizeof(l4_proto_name)));
 
-        fprintf(out, "%s%s%s:%u %s %s%s%s:%u ",
-            (flow->ip_version == 6) ? "[" : "",
-            flow->src_name, (flow->ip_version == 6) ? "]" : "", ntohs(flow->src_port),
-            flow->bidirectional ? "<->" : "->",
-            (flow->ip_version == 6) ? "[" : "",
-            flow->dst_name, (flow->ip_version == 6) ? "]" : "", ntohs(flow->dst_port)
-        );
+    fprintf(out, "%s%s%s:%u %s %s%s%s:%u ",
+        (flow->ip_version == 6) ? "[" : "",
+        flow->src_name, (flow->ip_version == 6) ? "]" : "", ntohs(flow->src_port),
+        flow->bidirectional ? "<->" : "->",
+        (flow->ip_version == 6) ? "[" : "",
+        flow->dst_name, (flow->ip_version == 6) ? "]" : "", ntohs(flow->dst_port)
+    );
 
-        if (flow->vlan_id > 0) fprintf(out, "[VLAN: %u]", flow->vlan_id);
-        if (enable_payload_analyzer) fprintf(out, "[flowId: %u]", flow->flow_id);
+    if (flow->vlan_id > 0) fprintf(out, "[VLAN: %u]", flow->vlan_id);
+    if (enable_payload_analyzer) fprintf(out, "[flowId: %u]", flow->flow_id);
 
-        if (enable_flow_stats) {
-          /* Print entropy values for monitored flows. */
-            flowGetBDMeanandVariance(flow);
-            fflush(out);
-            fprintf(out, "[score: %.4f]", flow->entropy->score);
+    if (enable_flow_stats) {
+      /* Print entropy values for monitored flows. */
+        flowGetBDMeanandVariance(flow);
+        fflush(out);
+        fprintf(out, "[score: %.4f]", flow->entropy->score);
+    }
+
+    fprintf(out, "[proto: ");
+    if (flow->tunnel_type != ndpi_no_tunnel) {
+        fprintf(out, "%s:", ndpi_tunnel2str(flow->tunnel_type));
+    }
+
+    fprintf(out, "%s/%s][IP: %u/%s]",
+        ndpi_protocol2id(flow->detected_protocol, buf, sizeof(buf)),
+        ndpi_protocol2name(ndpi_thread_info[thread_id].workflow->ndpi_struct,
+            flow->detected_protocol, buf1, sizeof(buf1)),
+        flow->detected_protocol.protocol_by_ip,
+        ndpi_get_proto_name(ndpi_thread_info[thread_id].workflow->ndpi_struct,
+            flow->detected_protocol.protocol_by_ip));
+
+    if (flow->multimedia_flow_type != ndpi_multimedia_unknown_flow) {
+        const char* content;
+
+        switch (flow->multimedia_flow_type) {
+        case ndpi_multimedia_audio_flow:
+            content = "Audio";
+            break;
+
+        case ndpi_multimedia_video_flow:
+            content = "Video";
+            break;
+
+        case ndpi_multimedia_screen_sharing_flow:
+            content = "Screen Sharing";
+            break;
+
+        default:
+            content = "???";
+            break;
         }
 
-        fprintf(out, "[proto: ");
-        if (flow->tunnel_type != ndpi_no_tunnel)
-            fprintf(out, "%s:", ndpi_tunnel2str(flow->tunnel_type));
+        fprintf(out, "[Stream Content: %s]", content);
+    }
 
-        fprintf(out, "%s/%s][IP: %u/%s]",
-            ndpi_protocol2id(flow->detected_protocol, buf, sizeof(buf)),
-            ndpi_protocol2name(ndpi_thread_info[thread_id].workflow->ndpi_struct,
-                flow->detected_protocol, buf1, sizeof(buf1)),
-            flow->detected_protocol.protocol_by_ip,
+    fprintf(out, "[%s]",
+        ndpi_is_encrypted_proto(ndpi_thread_info[thread_id].workflow->ndpi_struct,
+            flow->detected_protocol) ? "Encrypted" : "ClearText");
+
+    fprintf(out, "[Confidence: %s]", ndpi_confidence_get_name(flow->confidence));
+
+    if (flow->fpc.proto.master_protocol == NDPI_PROTOCOL_UNKNOWN) {
+        fprintf(out, "[FPC: %u/%s, ",
+            flow->fpc.proto.app_protocol,
             ndpi_get_proto_name(ndpi_thread_info[thread_id].workflow->ndpi_struct,
-                flow->detected_protocol.protocol_by_ip));
+                flow->fpc.proto.app_protocol));
+    }
+    else {
+        fprintf(out, "[FPC: %u.%u/%s.%s, ",
+            flow->fpc.proto.master_protocol,
+            flow->fpc.proto.app_protocol,
+            ndpi_get_proto_name(ndpi_thread_info[thread_id].workflow->ndpi_struct,
+                flow->fpc.proto.master_protocol),
+            ndpi_get_proto_name(ndpi_thread_info[thread_id].workflow->ndpi_struct,
+                flow->fpc.proto.app_protocol));
+    }
+    fprintf(out, "Confidence: %s]",
+        ndpi_fpc_confidence_get_name(flow->fpc.confidence));
 
-        if (flow->multimedia_flow_type != ndpi_multimedia_unknown_flow) {
-            const char* content;
-
-            switch (flow->multimedia_flow_type) {
-            case ndpi_multimedia_audio_flow:
-                content = "Audio";
-                break;
-
-            case ndpi_multimedia_video_flow:
-                content = "Video";
-                break;
-
-            case ndpi_multimedia_screen_sharing_flow:
-                content = "Screen Sharing";
-                break;
-
-            default:
-                content = "???";
-                break;
-            }
-
-            fprintf(out, "[Stream Content: %s]", content);
-        }
-
-        fprintf(out, "[%s]",
-            ndpi_is_encrypted_proto(ndpi_thread_info[thread_id].workflow->ndpi_struct,
-                flow->detected_protocol) ? "Encrypted" : "ClearText");
-
-        fprintf(out, "[Confidence: %s]", ndpi_confidence_get_name(flow->confidence));
-
-        if (flow->fpc.proto.master_protocol == NDPI_PROTOCOL_UNKNOWN) {
-            fprintf(out, "[FPC: %u/%s, ",
-                flow->fpc.proto.app_protocol,
-                ndpi_get_proto_name(ndpi_thread_info[thread_id].workflow->ndpi_struct,
-                    flow->fpc.proto.app_protocol));
-        }
-        else {
-            fprintf(out, "[FPC: %u.%u/%s.%s, ",
-                flow->fpc.proto.master_protocol,
-                flow->fpc.proto.app_protocol,
-                ndpi_get_proto_name(ndpi_thread_info[thread_id].workflow->ndpi_struct,
-                    flow->fpc.proto.master_protocol),
-                ndpi_get_proto_name(ndpi_thread_info[thread_id].workflow->ndpi_struct,
-                    flow->fpc.proto.app_protocol));
-        }
-        fprintf(out, "Confidence: %s]",
-            ndpi_fpc_confidence_get_name(flow->fpc.confidence));
-
-        /* If someone wants to have the num_dissector_calls variable per flow, he can print it here.
-           Disabled by default to avoid too many diffs in the unit tests...
-        */
+    /* If someone wants to have the num_dissector_calls variable per flow, he can print it here.
+       Disabled by default to avoid too many diffs in the unit tests...
+    */
 #if 0
-        fprintf(out, "[Num calls: %d]", flow->num_dissector_calls);
+    fprintf(out, "[Num calls: %d]", flow->num_dissector_calls);
 #endif
-        fprintf(out, "[DPI packets: %d]", flow->dpi_packets);
+    fprintf(out, "[DPI packets: %d]", flow->dpi_packets);
 
-        if (flow->detected_protocol.category != 0)
-            fprintf(out, "[cat: %s/%u]",
-                ndpi_category_get_name(ndpi_thread_info[thread_id].workflow->ndpi_struct,
-                    flow->detected_protocol.category),
-                (unsigned int)flow->detected_protocol.category);
+    if (flow->detected_protocol.category != 0)
+        fprintf(out, "[cat: %s/%u]",
+            ndpi_category_get_name(ndpi_thread_info[thread_id].workflow->ndpi_struct,
+                flow->detected_protocol.category),
+            (unsigned int)flow->detected_protocol.category);
 
-        fprintf(out, "[%u pkts/%llu bytes ", flow->src2dst_packets, (long long unsigned int) flow->src2dst_bytes);
-        fprintf(out, "%s %u pkts/%llu bytes]",
-            (flow->dst2src_packets > 0) ? "<->" : "->",
-            flow->dst2src_packets, (long long unsigned int) flow->dst2src_bytes);
+    fprintf(out, "[%u pkts/%llu bytes ", flow->src2dst_packets, (long long unsigned int) flow->src2dst_bytes);
+    fprintf(out, "%s %u pkts/%llu bytes]",
+        (flow->dst2src_packets > 0) ? "<->" : "->",
+        flow->dst2src_packets, (long long unsigned int) flow->dst2src_bytes);
 
-        fprintf(out, "[Goodput ratio: %.0f/%.0f]",
-            100.0 * ((float)flow->src2dst_goodput_bytes / (float)(flow->src2dst_bytes + 1)),
-            100.0 * ((float)flow->dst2src_goodput_bytes / (float)(flow->dst2src_bytes + 1)));
+    fprintf(out, "[Goodput ratio: %.0f/%.0f]",
+        100.0 * ((float)flow->src2dst_goodput_bytes / (float)(flow->src2dst_bytes + 1)),
+        100.0 * ((float)flow->dst2src_goodput_bytes / (float)(flow->dst2src_bytes + 1)));
 
-        if (flow->last_seen_ms > flow->first_seen_ms)
-            fprintf(out, "[%.2f sec]", ((float)(flow->last_seen_ms - flow->first_seen_ms)) / (float)1000);
-        else
-            fprintf(out, "[< 1 sec]");
+    if (flow->last_seen_ms > flow->first_seen_ms)
+        fprintf(out, "[%.2f sec]", ((float)(flow->last_seen_ms - flow->first_seen_ms)) / (float)1000);
+    else
+        fprintf(out, "[< 1 sec]");
 
-        if (flow->telnet.username)  fprintf(out, "[Username: %s]", flow->telnet.username);
-        if (flow->telnet.password)  fprintf(out, "[Password: %s]", flow->telnet.password);
+    if (flow->telnet.username)  fprintf(out, "[Username: %s]", flow->telnet.username);
+    if (flow->telnet.password)  fprintf(out, "[Password: %s]", flow->telnet.password);
 
-        if (flow->host_server_name[0] != '\0') fprintf(out, "[Hostname/SNI: %s]", flow->host_server_name);
+    if (flow->host_server_name[0] != '\0') fprintf(out, "[Hostname/SNI: %s]", flow->host_server_name);
 
-        switch (flow->info_type)
+    switch (flow->info_type)
+    {
+    case INFO_INVALID:
+        break;
+
+    case INFO_GENERIC:
+        if (flow->info[0] != '\0')
         {
-        case INFO_INVALID:
-            break;
-
-        case INFO_GENERIC:
-            if (flow->info[0] != '\0')
-            {
-                fprintf(out, "[%s]", flow->info);
-            }
-            break;
-
-        case INFO_KERBEROS:
-            if (flow->kerberos.domain[0] != '\0' ||
-                flow->kerberos.hostname[0] != '\0' ||
-                flow->kerberos.username[0] != '\0')
-            {
-                fprintf(out, "[%s%s%s%s]",
-                    flow->kerberos.domain,
-                    (flow->kerberos.hostname[0] != '\0' ||
-                        flow->kerberos.username[0] != '\0' ? "\\" : ""),
-                    flow->kerberos.hostname,
-                    flow->kerberos.username);
-            }
-            break;
-
-        case INFO_SOFTETHER:
-            if (flow->softether.ip[0] != '\0')
-            {
-                fprintf(out, "[Client IP: %s]", flow->softether.ip);
-            }
-            if (flow->softether.port[0] != '\0')
-            {
-                fprintf(out, "[Client Port: %s]", flow->softether.port);
-            }
-            if (flow->softether.hostname[0] != '\0')
-            {
-                fprintf(out, "[Hostname: %s]", flow->softether.hostname);
-            }
-            if (flow->softether.fqdn[0] != '\0')
-            {
-                fprintf(out, "[FQDN: %s]", flow->softether.fqdn);
-            }
-            break;
-
-        case INFO_TIVOCONNECT:
-            if (flow->tivoconnect.identity_uuid[0] != '\0')
-            {
-                fprintf(out, "[UUID: %s]", flow->tivoconnect.identity_uuid);
-            }
-            if (flow->tivoconnect.machine[0] != '\0')
-            {
-                fprintf(out, "[Machine: %s]", flow->tivoconnect.machine);
-            }
-            if (flow->tivoconnect.platform[0] != '\0')
-            {
-                fprintf(out, "[Platform: %s]", flow->tivoconnect.platform);
-            }
-            if (flow->tivoconnect.services[0] != '\0')
-            {
-                fprintf(out, "[Services: %s]", flow->tivoconnect.services);
-            }
-            break;
-
-        case INFO_NATPMP:
-            if (flow->natpmp.internal_port != 0 && flow->natpmp.ip[0] != '\0')
-            {
-                fprintf(out, "[Result: %u][Internal Port: %u][External Port: %u][External Address: %s]",
-                    flow->natpmp.result_code, flow->natpmp.internal_port, flow->natpmp.external_port,
-                    flow->natpmp.ip);
-            }
-            break;
-
-        case INFO_FTP_IMAP_POP_SMTP:
-            if (flow->ftp_imap_pop_smtp.username[0] != '\0')
-            {
-                fprintf(out, "[User: %s][Pwd: %s]",
-                    flow->ftp_imap_pop_smtp.username,
-                    flow->ftp_imap_pop_smtp.password);
-                if (flow->ftp_imap_pop_smtp.auth_failed != 0)
-                {
-                    fprintf(out, "[%s]", "Auth Failed");
-                }
-            }
-            break;
+            fprintf(out, "[%s]", flow->info);
         }
+        break;
 
-        if (flow->ssh_tls.advertised_alpns)
-            fprintf(out, "[(Advertised) ALPNs: %s]", flow->ssh_tls.advertised_alpns);
+    case INFO_KERBEROS:
+        if (flow->kerberos.domain[0] != '\0' ||
+            flow->kerberos.hostname[0] != '\0' ||
+            flow->kerberos.username[0] != '\0')
+        {
+            fprintf(out, "[%s%s%s%s]",
+                flow->kerberos.domain,
+                (flow->kerberos.hostname[0] != '\0' ||
+                    flow->kerberos.username[0] != '\0' ? "\\" : ""),
+                flow->kerberos.hostname,
+                flow->kerberos.username);
+        }
+        break;
 
-        if (flow->ssh_tls.negotiated_alpn)
-            fprintf(out, "[(Negotiated) ALPN: %s]", flow->ssh_tls.negotiated_alpn);
+    case INFO_SOFTETHER:
+        if (flow->softether.ip[0] != '\0')
+        {
+            fprintf(out, "[Client IP: %s]", flow->softether.ip);
+        }
+        if (flow->softether.port[0] != '\0')
+        {
+            fprintf(out, "[Client Port: %s]", flow->softether.port);
+        }
+        if (flow->softether.hostname[0] != '\0')
+        {
+            fprintf(out, "[Hostname: %s]", flow->softether.hostname);
+        }
+        if (flow->softether.fqdn[0] != '\0')
+        {
+            fprintf(out, "[FQDN: %s]", flow->softether.fqdn);
+        }
+        break;
 
-        if (flow->ssh_tls.tls_supported_versions)
-            fprintf(out, "[TLS Supported Versions: %s]", flow->ssh_tls.tls_supported_versions);
+    case INFO_TIVOCONNECT:
+        if (flow->tivoconnect.identity_uuid[0] != '\0')
+        {
+            fprintf(out, "[UUID: %s]", flow->tivoconnect.identity_uuid);
+        }
+        if (flow->tivoconnect.machine[0] != '\0')
+        {
+            fprintf(out, "[Machine: %s]", flow->tivoconnect.machine);
+        }
+        if (flow->tivoconnect.platform[0] != '\0')
+        {
+            fprintf(out, "[Platform: %s]", flow->tivoconnect.platform);
+        }
+        if (flow->tivoconnect.services[0] != '\0')
+        {
+            fprintf(out, "[Services: %s]", flow->tivoconnect.services);
+        }
+        break;
 
-        if (flow->mining.currency[0] != '\0') fprintf(out, "[currency: %s]", flow->mining.currency);
+    case INFO_NATPMP:
+        if (flow->natpmp.internal_port != 0 && flow->natpmp.ip[0] != '\0')
+        {
+            fprintf(out, "[Result: %u][Internal Port: %u][External Port: %u][External Address: %s]",
+                flow->natpmp.result_code, flow->natpmp.internal_port, flow->natpmp.external_port,
+                flow->natpmp.ip);
+        }
+        break;
 
-        if (flow->dns.geolocation_iata_code[0] != '\0') fprintf(out, "[GeoLocation: %s]", flow->dns.geolocation_iata_code);
-
-        if ((flow->src2dst_packets + flow->dst2src_packets) > 5) {
-            if (flow->iat_c_to_s && flow->iat_s_to_c) {
-                float data_ratio = ndpi_data_ratio(flow->src2dst_bytes, flow->dst2src_bytes);
-
-                fprintf(out, "[bytes ratio: %.3f (%s)]", data_ratio, ndpi_data_ratio2str(data_ratio));
-
-                /* IAT (Inter Arrival Time) */
-                fprintf(out, "[IAT c2s/s2c min/avg/max/stddev: %llu/%llu %.0f/%.0f %llu/%llu %.0f/%.0f]",
-                    (unsigned long long int)ndpi_data_min(flow->iat_c_to_s),
-                    (unsigned long long int)ndpi_data_min(flow->iat_s_to_c),
-                    (float)ndpi_data_average(flow->iat_c_to_s), (float)ndpi_data_average(flow->iat_s_to_c),
-                    (unsigned long long int)ndpi_data_max(flow->iat_c_to_s),
-                    (unsigned long long int)ndpi_data_max(flow->iat_s_to_c),
-                    (float)ndpi_data_stddev(flow->iat_c_to_s), (float)ndpi_data_stddev(flow->iat_s_to_c));
-
-                /* Packet Length */
-                fprintf(out, "[Pkt Len c2s/s2c min/avg/max/stddev: %llu/%llu %.0f/%.0f %llu/%llu %.0f/%.0f]",
-                    (unsigned long long int)ndpi_data_min(flow->pktlen_c_to_s),
-                    (unsigned long long int)ndpi_data_min(flow->pktlen_s_to_c),
-                    ndpi_data_average(flow->pktlen_c_to_s), ndpi_data_average(flow->pktlen_s_to_c),
-                    (unsigned long long int)ndpi_data_max(flow->pktlen_c_to_s),
-                    (unsigned long long int)ndpi_data_max(flow->pktlen_s_to_c),
-                    ndpi_data_stddev(flow->pktlen_c_to_s), ndpi_data_stddev(flow->pktlen_s_to_c));
+    case INFO_FTP_IMAP_POP_SMTP:
+        if (flow->ftp_imap_pop_smtp.username[0] != '\0')
+        {
+            fprintf(out, "[User: %s][Pwd: %s]",
+                flow->ftp_imap_pop_smtp.username,
+                flow->ftp_imap_pop_smtp.password);
+            if (flow->ftp_imap_pop_smtp.auth_failed != 0)
+            {
+                fprintf(out, "[%s]", "Auth Failed");
             }
         }
+        break;
+    }
 
-        print_ndpi_address_port_file(out, "Mapped IP/Port", &flow->stun.mapped_address);
-        print_ndpi_address_port_file(out, "Peer IP/Port", &flow->stun.peer_address);
-        print_ndpi_address_port_file(out, "Relayed IP/Port", &flow->stun.relayed_address);
-        print_ndpi_address_port_file(out, "Rsp Origin IP/Port", &flow->stun.response_origin);
-        print_ndpi_address_port_file(out, "Other IP/Port", &flow->stun.other_address);
+    if (flow->ssh_tls.advertised_alpns)
+        fprintf(out, "[(Advertised) ALPNs: %s]", flow->ssh_tls.advertised_alpns);
 
-        if (flow->http.url[0] != '\0') {
-            ndpi_risk_enum risk = ndpi_validate_url(flow->http.url);
+    if (flow->ssh_tls.negotiated_alpn)
+        fprintf(out, "[(Negotiated) ALPN: %s]", flow->ssh_tls.negotiated_alpn);
 
-            if (risk != NDPI_NO_RISK)
-                NDPI_SET_BIT(flow->risk, risk);
+    if (flow->ssh_tls.tls_supported_versions)
+        fprintf(out, "[TLS Supported Versions: %s]", flow->ssh_tls.tls_supported_versions);
 
-            fprintf(out, "[URL: %s]", flow->http.url);
+    if (flow->mining.currency[0] != '\0') fprintf(out, "[currency: %s]", flow->mining.currency);
+
+    if (flow->dns.geolocation_iata_code[0] != '\0') fprintf(out, "[GeoLocation: %s]", flow->dns.geolocation_iata_code);
+
+    if ((flow->src2dst_packets + flow->dst2src_packets) > 5) {
+        if (flow->iat_c_to_s && flow->iat_s_to_c) {
+            float data_ratio = ndpi_data_ratio(flow->src2dst_bytes, flow->dst2src_bytes);
+
+            fprintf(out, "[bytes ratio: %.3f (%s)]", data_ratio, ndpi_data_ratio2str(data_ratio));
+
+            /* IAT (Inter Arrival Time) */
+            fprintf(out, "[IAT c2s/s2c min/avg/max/stddev: %llu/%llu %.0f/%.0f %llu/%llu %.0f/%.0f]",
+                (unsigned long long int)ndpi_data_min(flow->iat_c_to_s),
+                (unsigned long long int)ndpi_data_min(flow->iat_s_to_c),
+                (float)ndpi_data_average(flow->iat_c_to_s), (float)ndpi_data_average(flow->iat_s_to_c),
+                (unsigned long long int)ndpi_data_max(flow->iat_c_to_s),
+                (unsigned long long int)ndpi_data_max(flow->iat_s_to_c),
+                (float)ndpi_data_stddev(flow->iat_c_to_s), (float)ndpi_data_stddev(flow->iat_s_to_c));
+
+            /* Packet Length */
+            fprintf(out, "[Pkt Len c2s/s2c min/avg/max/stddev: %llu/%llu %.0f/%.0f %llu/%llu %.0f/%.0f]",
+                (unsigned long long int)ndpi_data_min(flow->pktlen_c_to_s),
+                (unsigned long long int)ndpi_data_min(flow->pktlen_s_to_c),
+                ndpi_data_average(flow->pktlen_c_to_s), ndpi_data_average(flow->pktlen_s_to_c),
+                (unsigned long long int)ndpi_data_max(flow->pktlen_c_to_s),
+                (unsigned long long int)ndpi_data_max(flow->pktlen_s_to_c),
+                ndpi_data_stddev(flow->pktlen_c_to_s), ndpi_data_stddev(flow->pktlen_s_to_c));
         }
+    }
 
-        if (flow->http.response_status_code)
-            fprintf(out, "[StatusCode: %u]", flow->http.response_status_code);
+    print_ndpi_address_port_file(out, "Mapped IP/Port", &flow->stun.mapped_address);
+    print_ndpi_address_port_file(out, "Peer IP/Port", &flow->stun.peer_address);
+    print_ndpi_address_port_file(out, "Relayed IP/Port", &flow->stun.relayed_address);
+    print_ndpi_address_port_file(out, "Rsp Origin IP/Port", &flow->stun.response_origin);
+    print_ndpi_address_port_file(out, "Other IP/Port", &flow->stun.other_address);
 
-        if (flow->http.request_content_type[0] != '\0')
-            fprintf(out, "[Req Content-Type: %s]", flow->http.request_content_type);
+    if (flow->http.url[0] != '\0') {
+        ndpi_risk_enum risk = ndpi_validate_url(flow->http.url);
 
-        if (flow->http.content_type[0] != '\0')
-            fprintf(out, "[Content-Type: %s]", flow->http.content_type);
+        if (risk != NDPI_NO_RISK)
+            NDPI_SET_BIT(flow->risk, risk);
 
-        if (flow->http.nat_ip[0] != '\0')
-            fprintf(out, "[Nat-IP: %s]", flow->http.nat_ip);
+        fprintf(out, "[URL: %s]", flow->http.url);
+    }
 
-        if (flow->http.server[0] != '\0')
-            fprintf(out, "[Server: %s]", flow->http.server);
+    if (flow->http.response_status_code)
+        fprintf(out, "[StatusCode: %u]", flow->http.response_status_code);
 
-        if (flow->http.user_agent[0] != '\0')
-            fprintf(out, "[User-Agent: %s]", flow->http.user_agent);
+    if (flow->http.request_content_type[0] != '\0')
+        fprintf(out, "[Req Content-Type: %s]", flow->http.request_content_type);
 
-        if (flow->http.filename[0] != '\0')
-            fprintf(out, "[Filename: %s]", flow->http.filename);
+    if (flow->http.content_type[0] != '\0')
+        fprintf(out, "[Content-Type: %s]", flow->http.content_type);
 
-        if (flow->risk) {
-            u_int i;
-            u_int16_t cli_score, srv_score;
-            fprintf(out, "[Risk: ");
+    if (flow->http.nat_ip[0] != '\0')
+        fprintf(out, "[Nat-IP: %s]", flow->http.nat_ip);
 
-            for (i = 0; i < NDPI_MAX_RISK; i++)
-                if (NDPI_ISSET_BIT(flow->risk, i))
-                    fprintf(out, "** %s **", ndpi_risk2str(i));
+    if (flow->http.server[0] != '\0')
+        fprintf(out, "[Server: %s]", flow->http.server);
 
-            fprintf(out, "]");
+    if (flow->http.user_agent[0] != '\0')
+        fprintf(out, "[User-Agent: %s]", flow->http.user_agent);
 
-            fprintf(out, "[Risk Score: %u]", ndpi_risk2score(flow->risk, &cli_score, &srv_score));
+    if (flow->http.filename[0] != '\0')
+        fprintf(out, "[Filename: %s]", flow->http.filename);
 
-            if (flow->risk_str)
-                fprintf(out, "[Risk Info: %s]", flow->risk_str);
-        }
+    if (flow->risk) {
+        u_int i;
+        u_int16_t cli_score, srv_score;
+        fprintf(out, "[Risk: ");
 
-        if (flow->ssh_tls.ssl_version != 0) fprintf(out, "[%s]", ndpi_ssl_version2str(buf_ver, sizeof(buf_ver),
-            flow->ssh_tls.ssl_version, &known_tls));
+        for (i = 0; i < NDPI_MAX_RISK; i++)
+            if (NDPI_ISSET_BIT(flow->risk, i))
+                fprintf(out, "** %s **", ndpi_risk2str(i));
 
-        if (flow->ssh_tls.quic_version != 0) fprintf(out, "[QUIC ver: %s]", ndpi_quic_version2str(buf_ver, sizeof(buf_ver),
-            flow->ssh_tls.quic_version));
+        fprintf(out, "]");
 
-        if (flow->ssh_tls.client_hassh[0] != '\0') fprintf(out, "[HASSH-C: %s]", flow->ssh_tls.client_hassh);
+        fprintf(out, "[Risk Score: %u]", ndpi_risk2score(flow->risk, &cli_score, &srv_score));
 
-        if (flow->ssh_tls.ja3_client[0] != '\0') fprintf(out, "[JA3C: %s%s]", flow->ssh_tls.ja3_client,
-            print_cipher(flow->ssh_tls.client_unsafe_cipher));
+        if (flow->risk_str)
+            fprintf(out, "[Risk Info: %s]", flow->risk_str);
+    }
 
-        if (flow->ssh_tls.ja4_client[0] != '\0') fprintf(out, "[JA4: %s%s]", flow->ssh_tls.ja4_client,
-            print_cipher(flow->ssh_tls.client_unsafe_cipher));
+    if (flow->ssh_tls.ssl_version != 0) fprintf(out, "[%s]", ndpi_ssl_version2str(buf_ver, sizeof(buf_ver),
+        flow->ssh_tls.ssl_version, &known_tls));
 
-        if (flow->ssh_tls.ja4_client_raw != NULL) fprintf(out, "[JA4_r: %s]", flow->ssh_tls.ja4_client_raw);
+    if (flow->ssh_tls.quic_version != 0) fprintf(out, "[QUIC ver: %s]", ndpi_quic_version2str(buf_ver, sizeof(buf_ver),
+        flow->ssh_tls.quic_version));
 
-        if (flow->ssh_tls.server_info[0] != '\0') fprintf(out, "[Server: %s]", flow->ssh_tls.server_info);
+    if (flow->ssh_tls.client_hassh[0] != '\0') fprintf(out, "[HASSH-C: %s]", flow->ssh_tls.client_hassh);
 
-        if (flow->ssh_tls.server_names) fprintf(out, "[ServerNames: %s]", flow->ssh_tls.server_names);
-        if (flow->ssh_tls.server_hassh[0] != '\0') fprintf(out, "[HASSH-S: %s]", flow->ssh_tls.server_hassh);
+    if (flow->ssh_tls.ja3_client[0] != '\0') fprintf(out, "[JA3C: %s%s]", flow->ssh_tls.ja3_client,
+        print_cipher(flow->ssh_tls.client_unsafe_cipher));
 
-        if (flow->ssh_tls.ja3_server[0] != '\0') fprintf(out, "[JA3S: %s%s]", flow->ssh_tls.ja3_server,
-            print_cipher(flow->ssh_tls.server_unsafe_cipher));
+    if (flow->ssh_tls.ja4_client[0] != '\0') fprintf(out, "[JA4: %s%s]", flow->ssh_tls.ja4_client,
+        print_cipher(flow->ssh_tls.client_unsafe_cipher));
 
-        if (flow->ssh_tls.tls_issuerDN)  fprintf(out, "[Issuer: %s]", flow->ssh_tls.tls_issuerDN);
-        if (flow->ssh_tls.tls_subjectDN) fprintf(out, "[Subject: %s]", flow->ssh_tls.tls_subjectDN);
+    if (flow->ssh_tls.ja4_client_raw != NULL) fprintf(out, "[JA4_r: %s]", flow->ssh_tls.ja4_client_raw);
 
-        if (flow->ssh_tls.encrypted_sni.esni) {
-            char unknown_cipher[8];
-            fprintf(out, "[ESNI: %s]", flow->ssh_tls.encrypted_sni.esni);
-            fprintf(out, "[ESNI Cipher: %s]",
-                ndpi_cipher2str(flow->ssh_tls.encrypted_sni.cipher_suite, unknown_cipher));
-        }
+    if (flow->ssh_tls.server_info[0] != '\0') fprintf(out, "[Server: %s]", flow->ssh_tls.server_info);
 
-        if (flow->ssh_tls.encrypted_ch.version != 0) {
-            fprintf(out, "[ECH: version 0x%x]", flow->ssh_tls.encrypted_ch.version);
-        }
+    if (flow->ssh_tls.server_names) fprintf(out, "[ServerNames: %s]", flow->ssh_tls.server_names);
+    if (flow->ssh_tls.server_hassh[0] != '\0') fprintf(out, "[HASSH-S: %s]", flow->ssh_tls.server_hassh);
 
-        if (flow->ssh_tls.sha1_cert_fingerprint_set) {
-            fprintf(out, "[Certificate SHA-1: ");
-            for (i = 0; i < 20; i++)
-                fprintf(out, "%s%02X", (i > 0) ? ":" : "",
-                    flow->ssh_tls.sha1_cert_fingerprint[i] & 0xFF);
-            fprintf(out, "]");
-        }
+    if (flow->ssh_tls.ja3_server[0] != '\0') fprintf(out, "[JA3S: %s%s]", flow->ssh_tls.ja3_server,
+        print_cipher(flow->ssh_tls.server_unsafe_cipher));
+
+    if (flow->ssh_tls.tls_issuerDN)  fprintf(out, "[Issuer: %s]", flow->ssh_tls.tls_issuerDN);
+    if (flow->ssh_tls.tls_subjectDN) fprintf(out, "[Subject: %s]", flow->ssh_tls.tls_subjectDN);
+
+    if (flow->ssh_tls.encrypted_sni.esni) {
+        char unknown_cipher[8];
+        fprintf(out, "[ESNI: %s]", flow->ssh_tls.encrypted_sni.esni);
+        fprintf(out, "[ESNI Cipher: %s]",
+            ndpi_cipher2str(flow->ssh_tls.encrypted_sni.cipher_suite, unknown_cipher));
+    }
+
+    if (flow->ssh_tls.encrypted_ch.version != 0) {
+        fprintf(out, "[ECH: version 0x%x]", flow->ssh_tls.encrypted_ch.version);
+    }
+
+    if (flow->ssh_tls.sha1_cert_fingerprint_set) {
+        fprintf(out, "[Certificate SHA-1: ");
+        for (i = 0; i < 20; i++)
+            fprintf(out, "%s%02X", (i > 0) ? ":" : "",
+                flow->ssh_tls.sha1_cert_fingerprint[i] & 0xFF);
+        fprintf(out, "]");
+    }
 
 #ifdef HEURISTICS_CODE
-        if (flow->ssh_tls.browser_heuristics.is_safari_tls)  fprintf(out, "[Safari]");
-        if (flow->ssh_tls.browser_heuristics.is_firefox_tls) fprintf(out, "[Firefox]");
-        if (flow->ssh_tls.browser_heuristics.is_chrome_tls)  fprintf(out, "[Chrome]");
+    if (flow->ssh_tls.browser_heuristics.is_safari_tls)  fprintf(out, "[Safari]");
+    if (flow->ssh_tls.browser_heuristics.is_firefox_tls) fprintf(out, "[Firefox]");
+    if (flow->ssh_tls.browser_heuristics.is_chrome_tls)  fprintf(out, "[Chrome]");
 #endif
 
-        if (flow->ssh_tls.notBefore && flow->ssh_tls.notAfter) {
-            char notBefore[32], notAfter[32];
-            struct tm a, b;
-            struct tm* before = ndpi_gmtime_r(&flow->ssh_tls.notBefore, &a);
-            struct tm* after = ndpi_gmtime_r(&flow->ssh_tls.notAfter, &b);
+    if (flow->ssh_tls.notBefore && flow->ssh_tls.notAfter) {
+        char notBefore[32], notAfter[32];
+        struct tm a, b;
+        struct tm* before = ndpi_gmtime_r(&flow->ssh_tls.notBefore, &a);
+        struct tm* after = ndpi_gmtime_r(&flow->ssh_tls.notAfter, &b);
 
-            strftime(notBefore, sizeof(notBefore), "%Y-%m-%d %H:%M:%S", before);
-            strftime(notAfter, sizeof(notAfter), "%Y-%m-%d %H:%M:%S", after);
+        strftime(notBefore, sizeof(notBefore), "%Y-%m-%d %H:%M:%S", before);
+        strftime(notAfter, sizeof(notAfter), "%Y-%m-%d %H:%M:%S", after);
 
-            fprintf(out, "[Validity: %s - %s]", notBefore, notAfter);
-        }
+        fprintf(out, "[Validity: %s - %s]", notBefore, notAfter);
+    }
 
-        char unknown_cipher[8];
-        if (flow->ssh_tls.server_cipher != '\0')
-        {
-            fprintf(out, "[Cipher: %s]", ndpi_cipher2str(flow->ssh_tls.server_cipher, unknown_cipher));
-        }
-        if (flow->bittorent_hash != NULL) fprintf(out, "[BT Hash: %s]", flow->bittorent_hash);
-        if (flow->dhcp_fingerprint != NULL) fprintf(out, "[DHCP Fingerprint: %s]", flow->dhcp_fingerprint);
-        if (flow->dhcp_class_ident) fprintf(out, "[DHCP Class Ident: %s]",
-            flow->dhcp_class_ident);
+    char unknown_cipher[8];
+    if (flow->ssh_tls.server_cipher != '\0')
+    {
+        fprintf(out, "[Cipher: %s]", ndpi_cipher2str(flow->ssh_tls.server_cipher, unknown_cipher));
+    }
+    if (flow->bittorent_hash != NULL) fprintf(out, "[BT Hash: %s]", flow->bittorent_hash);
+    if (flow->dhcp_fingerprint != NULL) fprintf(out, "[DHCP Fingerprint: %s]", flow->dhcp_fingerprint);
+    if (flow->dhcp_class_ident) fprintf(out, "[DHCP Class Ident: %s]",
+        flow->dhcp_class_ident);
 
-        if (flow->has_human_readeable_strings) fprintf(out, "[PLAIN TEXT (%s)]",
-            flow->human_readeable_string_buffer);
+    if (flow->has_human_readeable_strings) fprintf(out, "[PLAIN TEXT (%s)]",
+        flow->human_readeable_string_buffer);
 
 #ifdef DIRECTION_BINS
-        print_bin(out, "Plen c2s", &flow->payload_len_bin_src2dst);
-        print_bin(out, "Plen s2c", &flow->payload_len_bin_dst2src);
+    print_bin(out, "Plen c2s", &flow->payload_len_bin_src2dst);
+    print_bin(out, "Plen s2c", &flow->payload_len_bin_dst2src);
 #else
-        print_bin(out, "Plen Bins", &flow->payload_len_bin);
+    print_bin(out, "Plen Bins", &flow->payload_len_bin);
 #endif
 
-        if (flow->flow_payload && (flow->flow_payload_len > 0)) {
-            u_int i;
+    if (flow->flow_payload && (flow->flow_payload_len > 0)) {
+        u_int i;
 
-            fprintf(out, "[Payload: ");
+        fprintf(out, "[Payload: ");
 
-            for (i = 0; i < flow->flow_payload_len; i++)
-                fprintf(out, "%c", ndpi_isspace(flow->flow_payload[i]) ? '.' : flow->flow_payload[i]);
+        for (i = 0; i < flow->flow_payload_len; i++)
+            fprintf(out, "%c", ndpi_isspace(flow->flow_payload[i]) ? '.' : flow->flow_payload[i]);
 
-            fprintf(out, "]");
-        }
-
-        fprintf(out, "\n");
+        fprintf(out, "]");
     }
+
+    fprintf(out, "\n");
 }
 
 void print_flow_serialized(struct ndpi_flow_info* flow)
