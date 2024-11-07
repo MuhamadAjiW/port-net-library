@@ -86,6 +86,10 @@ struct data_risk {
     float ratio;
 };
 
+struct data_flow {
+    struct ndpi_flow_info* info;
+};
+
 struct data_all {
     struct data_memory memory;
     struct data_time time;
@@ -96,8 +100,6 @@ struct data_all {
     dynarray_t risk;
     dynarray_t flow;
 };
-
-// _TODO: granular packet data
 
 // Externs
 extern u_int32_t current_ndpi_memory, max_ndpi_memory;
@@ -152,6 +154,6 @@ json_object* data_risk_to_json(struct data_risk* data);
 
 /* ********************************** */
 
-json_object* data_flow_to_json(struct ndpi_flow_info* data);
+json_object* data_flow_to_json(struct data_flow* data);
 
 #endif

@@ -154,7 +154,7 @@ u_int8_t num_threads = 1;
 
 struct timeval pcap_start = { 0, 0 }, pcap_end = { 0, 0 };
 
-u_int32_t num_flows;
+u_int32_t num_flows, num_known_flows;
 u_int8_t dump_internal_stats;
 
 struct ndpi_bin malloc_bins;

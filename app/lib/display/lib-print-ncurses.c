@@ -279,19 +279,10 @@ void ncurses_print_risk_stats() {
 
 void ncurses_print_flows_stats() {
     int thread_id;
-    u_int32_t total_flows = 0;
 
     // _TODO: Refactor ndpi_report_payload_stats to allow more detailed printing
     // if (enable_payload_analyzer)
     //     ndpi_report_payload_stats(out);
-
-    for (thread_id = 0; thread_id < num_threads; thread_id++)
-        total_flows += ndpi_thread_info[thread_id].workflow->num_allocated_flows;
-
-    if ((all_flows = (struct flow_info*)ndpi_malloc(sizeof(struct flow_info) * total_flows)) == NULL) {
-        printw("Fatal error: not enough memory\n");
-        exit(-1);
-    }
 
     if (verbose) {
         ndpi_host_ja3_fingerprints* ja3ByHostsHashT = NULL; // outer hash table
@@ -307,17 +298,8 @@ void ncurses_print_flows_stats() {
 
         printw("\n");
 
-        num_flows = 0;
-
-        // _TODO: Move to aggregate
-        for (thread_id = 0; thread_id < num_threads; thread_id++) {
-            for (i = 0; i < NUM_ROOTS; i++)
-                ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
-                    node_print_known_proto_walker, &thread_id);
-        }
-
         if ((verbose == 2) || (verbose == 3)) {
-            for (i = 0; i < num_flows; i++) {
+            for (i = 0; i < num_known_flows; i++) {
                 ndpi_host_ja3_fingerprints* ja3ByHostFound = NULL;
                 ndpi_ja3_fingerprints_host* hostByJA3Found = NULL;
 
@@ -650,7 +632,7 @@ void ncurses_print_flows_stats() {
             struct hash_stats* tmp = NULL;
             int len_max = 0;
 
-            for (i = 0; i < num_flows; i++) {
+            for (i = 0; i < num_known_flows; i++) {
 
                 if (all_flows[i].flow->host_server_name[0] != '\0') {
 
@@ -748,16 +730,16 @@ void ncurses_print_flows_stats() {
 
           /* Print all flows stats */
 
-        qsort(all_flows, num_flows, sizeof(struct flow_info), cmpFlows);
+        qsort(all_flows, num_known_flows, sizeof(struct flow_info), cmpFlows);
 
         if (verbose > 1) {
 #ifndef DIRECTION_BINS
-            struct ndpi_bin* bins = (struct ndpi_bin*)ndpi_malloc(sizeof(struct ndpi_bin) * num_flows);
-            u_int16_t* cluster_ids = (u_int16_t*)ndpi_malloc(sizeof(u_int16_t) * num_flows);
+            struct ndpi_bin* bins = (struct ndpi_bin*)ndpi_malloc(sizeof(struct ndpi_bin) * num_known_flows);
+            u_int16_t* cluster_ids = (u_int16_t*)ndpi_malloc(sizeof(u_int16_t) * num_known_flows);
             u_int32_t num_flow_bins = 0;
 #endif
 
-            for (i = 0; i < num_flows; i++) {
+            for (i = 0; i < num_known_flows; i++) {
 #ifndef DIRECTION_BINS
                 if (enable_doh_dot_detection) {
                   /* Discard flows with few packets per direction */
@@ -906,35 +888,16 @@ void ncurses_print_flows_stats() {
             }
         }
 
-        // _TODO: Move to aggregate
-        num_flows = 0;
-        for (thread_id = 0; thread_id < num_threads; thread_id++) {
-            if (ndpi_thread_info[thread_id].workflow->stats.protocol_counter[0] > 0) {
-                for (i = 0; i < NUM_ROOTS; i++)
-                    ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
-                        node_print_unknown_proto_walker, &thread_id);
-            }
-        }
+        uint32_t num_unknown_flows = num_flows - num_known_flows;
+        qsort(&(all_flows[num_known_flows]), num_unknown_flows, sizeof(struct flow_info), cmpFlows);
 
-        qsort(all_flows, num_flows, sizeof(struct flow_info), cmpFlows);
-
-        for (i = 0; i < num_flows; i++) {
-            ncurses_print_flow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
+        for (i = 0; i < num_unknown_flows; i++) {
+            ncurses_print_flow(i + 1, all_flows[num_known_flows + i].flow, all_flows[num_known_flows + i].thread_id);
         }
     }
     else {
         unsigned int i;
-
-        // _TODO: Move to aggregate
-        num_flows = 0;
-        for (thread_id = 0; thread_id < num_threads; thread_id++) {
-            for (i = 0; i < NUM_ROOTS; i++) {
-                ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
-                    node_print_known_proto_walker, &thread_id);
-            }
-        }
-
-        for (i = 0; i < num_flows; i++) {
+        for (i = 0; i < num_known_flows; i++) {
             ncurses_print_flow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
         }
     }
@@ -943,18 +906,6 @@ void ncurses_print_flows_stats() {
         serialization_format != ndpi_serialization_format_unknown)
     {
         unsigned int i;
-
-        // _TODO: Move to aggregate
-        num_flows = 0;
-        for (thread_id = 0; thread_id < num_threads; thread_id++) {
-            for (i = 0; i < NUM_ROOTS; i++) {
-                ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
-                    node_print_known_proto_walker, &thread_id);
-                ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
-                    node_print_unknown_proto_walker, &thread_id);
-            }
-        }
-
         for (i = 0; i < num_flows; i++) {
             ncurses_print_flow_serialized(all_flows[i].flow);
         }

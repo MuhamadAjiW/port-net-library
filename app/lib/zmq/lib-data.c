@@ -161,7 +161,7 @@ json_object* data_risk_to_json(struct data_risk* data) {
 
 /* ********************************** */
 
-json_object* data_flow_to_json(struct ndpi_flow_info* data) {
+json_object* data_flow_to_json(struct data_flow* data) {
     // _TODO: Implement
     return NULL;
 }

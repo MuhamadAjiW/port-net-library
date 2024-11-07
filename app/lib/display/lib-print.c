@@ -108,10 +108,11 @@ void print_result(uint64_t processing_time_usec, uint64_t setup_time_usec) {
         if (dump_internal_stats) {
             char buf[1024];
 
-            if (global_data.traffic.ndpi_flow_count)
+            if (global_data.traffic.ndpi_flow_count) {
                 printf("\tNum dissector calls:   %-13llu (%.2f diss/flow)\n",
                     (long long unsigned int)global_data.traffic.num_dissector_calls,
                     global_data.traffic.num_dissector_calls / (float)global_data.traffic.ndpi_flow_count);
+            }
 
             printf("\tLRU cache ookla:      %llu/%llu/%llu (insert/search/found)\n",
                 (long long unsigned int)global_data.detail.lru_stats[NDPI_LRUCACHE_OOKLA].n_insert,
@@ -183,27 +184,32 @@ void print_result(uint64_t processing_time_usec, uint64_t setup_time_usec) {
     }
 
     if (results_file) {
-        if (global_data.traffic.guessed_flow_protocols)
+        if (global_data.traffic.guessed_flow_protocols) {
             fprintf(results_file, "Guessed flow protos:\t%u\n\n", global_data.traffic.guessed_flow_protocols);
+        }
 
-        if (global_data.traffic.dpi_flow_count[FLOW_TCP])
+        if (global_data.traffic.dpi_flow_count[FLOW_TCP]) {
             fprintf(results_file, "DPI Packets (TCP):\t%llu\t(%.2f pkts/flow)\n",
                 (long long unsigned int)global_data.traffic.dpi_packet_count[FLOW_TCP],
                 global_data.traffic.dpi_packet_count[FLOW_TCP] / (float)global_data.traffic.dpi_flow_count[FLOW_TCP]);
-        if (global_data.traffic.dpi_flow_count[FLOW_UDP])
+        }
+        if (global_data.traffic.dpi_flow_count[FLOW_UDP]) {
             fprintf(results_file, "DPI Packets (UDP):\t%llu\t(%.2f pkts/flow)\n",
                 (long long unsigned int)global_data.traffic.dpi_packet_count[FLOW_UDP],
                 global_data.traffic.dpi_packet_count[FLOW_UDP] / (float)global_data.traffic.dpi_flow_count[FLOW_UDP]);
-        if (global_data.traffic.dpi_flow_count[FLOW_OTHER])
+        }
+        if (global_data.traffic.dpi_flow_count[FLOW_OTHER]) {
             fprintf(results_file, "DPI Packets (other):\t%llu\t(%.2f pkts/flow)\n",
                 (long long unsigned int)global_data.traffic.dpi_packet_count[FLOW_OTHER],
                 global_data.traffic.dpi_packet_count[FLOW_OTHER] / (float)global_data.traffic.dpi_flow_count[FLOW_OTHER]);
+        }
 
         for (i = 0; i < sizeof(global_data.traffic.flow_confidence) / sizeof(global_data.traffic.flow_confidence[0]); i++) {
-            if (global_data.traffic.flow_confidence[i] != 0)
+            if (global_data.traffic.flow_confidence[i] != 0) {
                 fprintf(results_file, "Confidence %-17s: %llu (flows)\n",
                     ndpi_confidence_get_name(i),
                     (long long unsigned int)global_data.traffic.flow_confidence[i]);
+            }
         }
 
         if (dump_internal_stats) {
@@ -381,25 +387,18 @@ free_stats:
 
 void print_risk_stats() {
     if (!quiet_mode) {
-        u_int thread_id, i;
-
-        for (thread_id = 0; thread_id < num_threads; thread_id++) {
-            for (i = 0; i < NUM_ROOTS; i++)
-                ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
-                    node_flow_risk_walker, &thread_id);
-        }
-
-        if (risks_found) {
+        if (global_data.risk.length > 0) {
             printf("\nRisk stats [found %u (%.1f %%) flows with risks]:\n",
                 flows_with_risks,
                 (100. * flows_with_risks) / (float)global_data.traffic.ndpi_flow_count);
 
-            for (i = 0; i < NDPI_MAX_RISK; i++) {
-                ndpi_risk_enum r = (ndpi_risk_enum)i;
-
-                if (risk_stats[r] != 0)
-                    printf("\t%-40s %5u [%4.01f %%]\n", ndpi_risk2str(r), risk_stats[r],
-                        (float)(risk_stats[r] * 100) / (float)risks_found);
+            struct data_risk* risk_array = global_data.risk.content;
+            for (size_t i = 0; i < global_data.risk.length; i++) {
+                printf("\t%-40s %5u [%4.01f %%]\n",
+                    risk_array[i].name.content,
+                    risk_array[i].flow_count,
+                    risk_array[i].ratio
+                );
             }
 
             printf("\n\tNOTE: as one flow can have multiple risks set, the sum of the\n"
@@ -411,18 +410,10 @@ void print_risk_stats() {
 
 void print_flows_stats() {
     int thread_id;
-    u_int32_t total_flows = 0;
     FILE* out = results_file ? results_file : stdout;
 
-    if (enable_payload_analyzer)
+    if (enable_payload_analyzer) {
         ndpi_report_payload_stats(out);
-
-    for (thread_id = 0; thread_id < num_threads; thread_id++)
-        total_flows += ndpi_thread_info[thread_id].workflow->num_allocated_flows;
-
-    if ((all_flows = (struct flow_info*)ndpi_malloc(sizeof(struct flow_info) * total_flows)) == NULL) {
-        fprintf(out, "Fatal error: not enough memory\n");
-        exit(-1);
     }
 
     if (verbose) {
@@ -439,15 +430,8 @@ void print_flows_stats() {
 
         fprintf(out, "\n");
 
-        num_flows = 0;
-        for (thread_id = 0; thread_id < num_threads; thread_id++) {
-            for (i = 0; i < NUM_ROOTS; i++)
-                ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
-                    node_print_known_proto_walker, &thread_id);
-        }
-
         if ((verbose == 2) || (verbose == 3)) {
-            for (i = 0; i < num_flows; i++) {
+            for (i = 0; i < num_known_flows; i++) {
                 ndpi_host_ja3_fingerprints* ja3ByHostFound = NULL;
                 ndpi_ja3_fingerprints_host* hostByJA3Found = NULL;
 
@@ -780,7 +764,7 @@ void print_flows_stats() {
             struct hash_stats* tmp = NULL;
             int len_max = 0;
 
-            for (i = 0; i < num_flows; i++) {
+            for (i = 0; i < num_known_flows; i++) {
 
                 if (all_flows[i].flow->host_server_name[0] != '\0') {
 
@@ -878,16 +862,16 @@ void print_flows_stats() {
 
           /* Print all flows stats */
 
-        qsort(all_flows, num_flows, sizeof(struct flow_info), cmpFlows);
+        qsort(all_flows, num_known_flows, sizeof(struct flow_info), cmpFlows);
 
         if (verbose > 1) {
 #ifndef DIRECTION_BINS
-            struct ndpi_bin* bins = (struct ndpi_bin*)ndpi_malloc(sizeof(struct ndpi_bin) * num_flows);
-            u_int16_t* cluster_ids = (u_int16_t*)ndpi_malloc(sizeof(u_int16_t) * num_flows);
+            struct ndpi_bin* bins = (struct ndpi_bin*)ndpi_malloc(sizeof(struct ndpi_bin) * num_known_flows);
+            u_int16_t* cluster_ids = (u_int16_t*)ndpi_malloc(sizeof(u_int16_t) * num_known_flows);
             u_int32_t num_flow_bins = 0;
 #endif
 
-            for (i = 0; i < num_flows; i++) {
+            for (i = 0; i < num_known_flows; i++) {
 #ifndef DIRECTION_BINS
                 if (enable_doh_dot_detection) {
                   /* Discard flows with few packets per direction */
@@ -1036,51 +1020,25 @@ void print_flows_stats() {
             }
         }
 
-        num_flows = 0;
-        for (thread_id = 0; thread_id < num_threads; thread_id++) {
-            if (ndpi_thread_info[thread_id].workflow->stats.protocol_counter[0] > 0) {
-                for (i = 0; i < NUM_ROOTS; i++)
-                    ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
-                        node_print_unknown_proto_walker, &thread_id);
-            }
+        uint32_t num_unknown_flows = num_flows - num_known_flows;
+        qsort(&(all_flows[num_known_flows]), num_unknown_flows, sizeof(struct flow_info), cmpFlows);
+
+        for (i = 0; i < num_unknown_flows; i++) {
+            print_flow(i + 1, all_flows[num_known_flows + i].flow, all_flows[num_known_flows + i].thread_id);
         }
-
-        qsort(all_flows, num_flows, sizeof(struct flow_info), cmpFlows);
-
-        for (i = 0; i < num_flows; i++)
-            print_flow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
     }
     else if (csv_fp != NULL) {
         unsigned int i;
-
-        num_flows = 0;
-        for (thread_id = 0; thread_id < num_threads; thread_id++) {
-            for (i = 0; i < NUM_ROOTS; i++)
-                ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
-                    node_print_known_proto_walker, &thread_id);
-        }
-
-        for (i = 0; i < num_flows; i++)
+        for (i = 0; i < num_known_flows; i++) {
             print_flow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
+        }
     }
 
     if (serialization_fp != NULL &&
         serialization_format != ndpi_serialization_format_unknown)
     {
         unsigned int i;
-
-        num_flows = 0;
-        for (thread_id = 0; thread_id < num_threads; thread_id++) {
-            for (i = 0; i < NUM_ROOTS; i++) {
-                ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
-                    node_print_known_proto_walker, &thread_id);
-                ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
-                    node_print_unknown_proto_walker, &thread_id);
-            }
-        }
-
-        for (i = 0; i < num_flows; i++)
-        {
+        for (i = 0; i < num_flows; i++) {
             print_flow_serialized(all_flows[i].flow);
         }
     }

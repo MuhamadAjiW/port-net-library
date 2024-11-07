@@ -520,6 +520,33 @@ void global_data_generate_protocol() {
 
 void global_data_generate_flow() {
     // _TODO: Implement
+    u_int32_t total_flows = 0;
+    num_flows = 0;
+    num_known_flows = 0;
+
+    for (int thread_id = 0; thread_id < num_threads; thread_id++) {
+        total_flows += ndpi_thread_info[thread_id].workflow->num_allocated_flows;
+    }
+
+    if ((all_flows = (struct flow_info*)ndpi_malloc(sizeof(struct flow_info) * total_flows)) == NULL) {
+        fprintf(results_file ? results_file : stdout, "Fatal error: not enough memory\n");
+        exit(-1);
+    }
+
+    for (int thread_id = 0; thread_id < num_threads; thread_id++) {
+        for (int i = 0; i < NUM_ROOTS; i++) {
+            ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
+                node_print_known_proto_walker, &thread_id);
+        }
+    }
+    num_known_flows = num_flows;
+
+    for (int thread_id = 0; thread_id < num_threads; thread_id++) {
+        for (int i = 0; i < NUM_ROOTS; i++) {
+            ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
+                node_print_unknown_proto_walker, &thread_id);
+        }
+    }
 }
 
 /* *********************************************** */

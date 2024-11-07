@@ -28,7 +28,7 @@ struct flow_info {
 };
 
 // Externs
-extern u_int32_t num_flows;
+extern u_int32_t num_flows, num_known_flows;
 
 // Functions
 int cmpFlows(const void* _a, const void* _b);
