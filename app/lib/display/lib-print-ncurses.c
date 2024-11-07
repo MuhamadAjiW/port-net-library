@@ -277,7 +277,6 @@ void ncurses_print_risk_stats() {
 }
 
 void ncurses_print_flows_stats() {
-    int thread_id;
     FILE* out = results_file ? results_file : stdout;
     struct flow_info* known_flow_array = global_data.known_flow.content;
     uint32_t known_flow_count = global_data.known_flow.length;
@@ -890,18 +889,14 @@ void ncurses_print_flows_stats() {
 #endif
         }
 
-        for (thread_id = 0; thread_id < num_threads; thread_id++) {
-            if (ndpi_thread_info[thread_id].workflow->stats.protocol_counter[0 /* 0 = Unknown */] > 0) {
-                printw("\n\nUndetected flows:%s\n",
-                    undetected_flows_deleted ? " (expired flows are not listed below)" : "");
-                break;
+        if (unknown_flow_count > 0) {
+            printw("\n\nUndetected flows:%s\n",
+                undetected_flows_deleted ? " (expired flows are not listed below)" : "");
+            qsort(unknown_flow_array, unknown_flow_count, sizeof(struct flow_info), cmpFlows);
+
+            for (i = 0; i < unknown_flow_count; i++) {
+                ncurses_print_flow(i + 1, unknown_flow_array[i].flow, unknown_flow_array[i].thread_id);
             }
-        }
-
-        qsort(unknown_flow_array, unknown_flow_count, sizeof(struct flow_info), cmpFlows);
-
-        for (i = 0; i < unknown_flow_count; i++) {
-            ncurses_print_flow(i + 1, unknown_flow_array[i].flow, unknown_flow_array[i].thread_id);
         }
     }
     else if (csv_fp != NULL) {

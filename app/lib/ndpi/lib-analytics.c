@@ -247,11 +247,7 @@ void global_data_generate(
     global_data_generate_protocol();
     global_data_generate_risk();
     global_data_generate_flow();
-
-// _TODO: Fix flow generation then remove these flags 
-#ifdef DEPLOY_BUILD
     global_data_reset_counters();
-#endif
 }
 
 void global_data_reset_counters() {
