@@ -98,7 +98,7 @@ struct data_all {
     dynarray_t risk;
     dynarray_t known_flow;
     dynarray_t unknown_flow;
-    uint32_t risk_total_count;
+    uint32_t risky_flow_count;
 };
 
 // Externs

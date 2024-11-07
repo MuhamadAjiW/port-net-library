@@ -283,5 +283,5 @@ json_object* data_flow_to_json(struct flow_info* data) {
     json_object_object_add(retval, "geolocation", json_object_new_string(flow->dns.geolocation_iata_code));
 
     // _TODO: Implement the rest
-    return NULL;
+    return retval;
 }

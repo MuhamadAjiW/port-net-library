@@ -31,7 +31,7 @@ extern u_int8_t dump_internal_stats;
 extern int enable_malloc_bins;
 extern FILE* results_file;
 extern struct ndpi_bin malloc_bins;
-extern u_int32_t risk_stats[NDPI_MAX_RISK], risks_found;
+extern u_int32_t risk_stats[NDPI_MAX_RISK], risks_found, flows_with_risks;
 extern u_int8_t enable_realtime_output, enable_protocol_guess, enable_payload_analyzer, num_bin_clusters, extcap_exit;
 extern u_int8_t enable_doh_dot_detection;
 extern u_int8_t undetected_flows_deleted;

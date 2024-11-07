@@ -165,6 +165,8 @@ void node_flow_risk_walker(const void* node, ndpi_VISIT which, int depth, void* 
         if (f->risk) {
             u_int j;
 
+            flows_with_risks++;
+
             for (j = 0; j < NDPI_MAX_RISK; j++) {
                 ndpi_risk_enum r = (ndpi_risk_enum)j;
 
@@ -264,9 +266,8 @@ void global_data_reset_counters() {
 
     // Risk counters
     memset(risk_stats, 0, sizeof(risk_stats));
+    flows_with_risks = 0;
     risks_found = 0;
-
-    // Flow counters
 }
 
 void global_data_generate_memory() {
@@ -400,7 +401,7 @@ void global_data_generate_risk() {
         }
     }
 
-    global_data.risk_total_count = risks_found;
+    global_data.risky_flow_count = flows_with_risks;
 }
 
 void global_data_generate_detail() {
@@ -593,31 +594,29 @@ void* global_data_send(__attribute__((unused)) void* args) {
 void* global_flow_send(__attribute__((unused)) void* args) {
     struct flow_info* known_flow_array = global_data.known_flow.content;
     struct flow_info* unknown_flow_array = global_data.unknown_flow.content;
+    json_object* json_flow = json_object_new_object();
 
-    json_object* json_known_flow = json_object_new_object();
     json_object* json_known_flow_array = json_object_new_array();
     for (size_t i = 0; i < global_data.known_flow.length; i++) {
         json_object* json_known_flow_entry = data_flow_to_json(&known_flow_array[i]);
         json_object_array_add(json_known_flow_array, json_known_flow_entry);
     }
 
-    json_object* json_unknown_flow = json_object_new_object();
     json_object* json_unknown_flow_array = json_object_new_array();
     for (size_t i = 0; i < global_data.unknown_flow.length; i++) {
         json_object* json_unknown_flow_entry = data_flow_to_json(&unknown_flow_array[i]);
         json_object_array_add(json_unknown_flow_array, json_unknown_flow_entry);
     }
+    json_object_object_add(json_flow, "known_flows", json_known_flow_array);
+    json_object_object_add(json_flow, "unknown_flows", json_unknown_flow_array);
 
     lzmq_send_json(
         &global_zmq_flow_conn,
-        json_known_flow,
+        json_flow,
         0
     );
-    lzmq_send_json(
-        &global_zmq_flow_conn,
-        json_unknown_flow,
-        0
-    );
+
+    json_object_put(json_flow);
 
     return NULL;
 }
