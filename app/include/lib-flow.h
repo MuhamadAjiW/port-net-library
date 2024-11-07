@@ -27,9 +27,6 @@ struct flow_info {
     u_int16_t thread_id;
 };
 
-// Externs
-extern u_int32_t num_flows, num_known_flows;
-
 // Functions
 int cmpFlows(const void* _a, const void* _b);
 

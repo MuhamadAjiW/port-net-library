@@ -154,15 +154,12 @@ u_int8_t num_threads = 1;
 
 struct timeval pcap_start = { 0, 0 }, pcap_end = { 0, 0 };
 
-u_int32_t num_flows, num_known_flows;
 u_int8_t dump_internal_stats;
 
 struct ndpi_bin malloc_bins;
 int enable_malloc_bins = 0;
 int max_malloc_bins = 14;
 int malloc_size_stats = 0;
-
-struct flow_info* all_flows;
 
 struct port_stats* srcStats = NULL, * dstStats = NULL;
 struct single_flow_info* scannerHosts = NULL;
@@ -1281,13 +1278,13 @@ static void parseOptions(int argc, char** argv) {
 #endif
 #endif
 #endif
-}
+    }
 
-/* *********************************************** */
+    /* *********************************************** */
 
-/**
- * @brief Idle Scan Walker
- */
+    /**
+     * @brief Idle Scan Walker
+     */
 static void node_idle_scan_walker(const void* node, ndpi_VISIT which, int depth, void* user_data) {
     struct ndpi_flow_info* flow = *(struct ndpi_flow_info**)node;
     u_int16_t thread_id = *((u_int16_t*)user_data);
@@ -2012,12 +2009,12 @@ pcap_loop:
     }
 
     return NULL;
-}
+    }
 
-/* ***************************************************** */
-/**
- * @brief Begin, process, end detection process
- */
+    /* ***************************************************** */
+    /**
+     * @brief Begin, process, end detection process
+     */
 void run_detection() {
     u_int64_t processing_time_usec, setup_time_usec;
 #ifdef WIN64

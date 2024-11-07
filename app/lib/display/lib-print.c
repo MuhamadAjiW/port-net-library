@@ -408,9 +408,14 @@ void print_risk_stats() {
     }
 }
 
+// _TODO: Use results from global data
 void print_flows_stats() {
     int thread_id;
     FILE* out = results_file ? results_file : stdout;
+    struct flow_info* known_flow_array = global_data.known_flow.content;
+    uint32_t known_flow_count = global_data.known_flow.length;
+    struct flow_info* unknown_flow_array = global_data.unknown_flow.content;
+    uint32_t unknown_flow_count = global_data.unknown_flow.length;
 
     if (enable_payload_analyzer) {
         ndpi_report_payload_stats(out);
@@ -431,14 +436,14 @@ void print_flows_stats() {
         fprintf(out, "\n");
 
         if ((verbose == 2) || (verbose == 3)) {
-            for (i = 0; i < num_known_flows; i++) {
+            for (i = 0; i < known_flow_count; i++) {
                 ndpi_host_ja3_fingerprints* ja3ByHostFound = NULL;
                 ndpi_ja3_fingerprints_host* hostByJA3Found = NULL;
 
                 //check if this is a ssh-ssl flow
-                if (all_flows[i].flow->ssh_tls.ja3_client[0] != '\0') {
+                if (known_flow_array[i].flow->ssh_tls.ja3_client[0] != '\0') {
                   //looking if the host is already in the hash table
-                    HASH_FIND_INT(ja3ByHostsHashT, &(all_flows[i].flow->src_ip), ja3ByHostFound);
+                    HASH_FIND_INT(ja3ByHostsHashT, &(known_flow_array[i].flow->src_ip), ja3ByHostFound);
 
                     //host ip -> ja3
                     if (ja3ByHostFound == NULL) {
@@ -446,13 +451,13 @@ void print_flows_stats() {
                         ndpi_host_ja3_fingerprints* newHost = ndpi_malloc(sizeof(ndpi_host_ja3_fingerprints));
                         newHost->host_client_info_hasht = NULL;
                         newHost->host_server_info_hasht = NULL;
-                        newHost->ip_string = all_flows[i].flow->src_name;
-                        newHost->ip = all_flows[i].flow->src_ip;
-                        newHost->dns_name = all_flows[i].flow->host_server_name;
+                        newHost->ip_string = known_flow_array[i].flow->src_name;
+                        newHost->ip = known_flow_array[i].flow->src_ip;
+                        newHost->dns_name = known_flow_array[i].flow->host_server_name;
 
                         ndpi_ja3_info* newJA3 = ndpi_malloc(sizeof(ndpi_ja3_info));
-                        newJA3->ja3 = all_flows[i].flow->ssh_tls.ja3_client;
-                        newJA3->unsafe_cipher = all_flows[i].flow->ssh_tls.client_unsafe_cipher;
+                        newJA3->ja3 = known_flow_array[i].flow->ssh_tls.ja3_client;
+                        newJA3->unsafe_cipher = known_flow_array[i].flow->ssh_tls.client_unsafe_cipher;
                         //adding the new ja3 fingerprint
                         HASH_ADD_KEYPTR(hh, newHost->host_client_info_hasht,
                             newJA3->ja3, strlen(newJA3->ja3), newJA3);
@@ -464,29 +469,29 @@ void print_flows_stats() {
                         ndpi_ja3_info* infoFound = NULL;
 
                         HASH_FIND_STR(ja3ByHostFound->host_client_info_hasht,
-                            all_flows[i].flow->ssh_tls.ja3_client, infoFound);
+                            known_flow_array[i].flow->ssh_tls.ja3_client, infoFound);
 
                         if (infoFound == NULL) {
                             ndpi_ja3_info* newJA3 = ndpi_malloc(sizeof(ndpi_ja3_info));
-                            newJA3->ja3 = all_flows[i].flow->ssh_tls.ja3_client;
-                            newJA3->unsafe_cipher = all_flows[i].flow->ssh_tls.client_unsafe_cipher;
+                            newJA3->ja3 = known_flow_array[i].flow->ssh_tls.ja3_client;
+                            newJA3->unsafe_cipher = known_flow_array[i].flow->ssh_tls.client_unsafe_cipher;
                             HASH_ADD_KEYPTR(hh, ja3ByHostFound->host_client_info_hasht,
                                 newJA3->ja3, strlen(newJA3->ja3), newJA3);
                         }
                     }
 
                     //ja3 -> host ip
-                    HASH_FIND_STR(hostByJA3C_ht, all_flows[i].flow->ssh_tls.ja3_client, hostByJA3Found);
+                    HASH_FIND_STR(hostByJA3C_ht, known_flow_array[i].flow->ssh_tls.ja3_client, hostByJA3Found);
                     if (hostByJA3Found == NULL) {
                         ndpi_ip_dns* newHost = ndpi_malloc(sizeof(ndpi_ip_dns));
 
-                        newHost->ip = all_flows[i].flow->src_ip;
-                        newHost->ip_string = all_flows[i].flow->src_name;
-                        newHost->dns_name = all_flows[i].flow->host_server_name;
+                        newHost->ip = known_flow_array[i].flow->src_ip;
+                        newHost->ip_string = known_flow_array[i].flow->src_name;
+                        newHost->dns_name = known_flow_array[i].flow->host_server_name;
 
                         ndpi_ja3_fingerprints_host* newElement = ndpi_malloc(sizeof(ndpi_ja3_fingerprints_host));
-                        newElement->ja3 = all_flows[i].flow->ssh_tls.ja3_client;
-                        newElement->unsafe_cipher = all_flows[i].flow->ssh_tls.client_unsafe_cipher;
+                        newElement->ja3 = known_flow_array[i].flow->ssh_tls.ja3_client;
+                        newElement->unsafe_cipher = known_flow_array[i].flow->ssh_tls.client_unsafe_cipher;
                         newElement->ipToDNS_ht = NULL;
 
                         HASH_ADD_INT(newElement->ipToDNS_ht, ip, newHost);
@@ -495,32 +500,32 @@ void print_flows_stats() {
                     }
                     else {
                         ndpi_ip_dns* innerElement = NULL;
-                        HASH_FIND_INT(hostByJA3Found->ipToDNS_ht, &(all_flows[i].flow->src_ip), innerElement);
+                        HASH_FIND_INT(hostByJA3Found->ipToDNS_ht, &(known_flow_array[i].flow->src_ip), innerElement);
                         if (innerElement == NULL) {
                             ndpi_ip_dns* newInnerElement = ndpi_malloc(sizeof(ndpi_ip_dns));
-                            newInnerElement->ip = all_flows[i].flow->src_ip;
-                            newInnerElement->ip_string = all_flows[i].flow->src_name;
-                            newInnerElement->dns_name = all_flows[i].flow->host_server_name;
+                            newInnerElement->ip = known_flow_array[i].flow->src_ip;
+                            newInnerElement->ip_string = known_flow_array[i].flow->src_name;
+                            newInnerElement->dns_name = known_flow_array[i].flow->host_server_name;
                             HASH_ADD_INT(hostByJA3Found->ipToDNS_ht, ip, newInnerElement);
                         }
                     }
                 }
 
-                if (all_flows[i].flow->ssh_tls.ja3_server[0] != '\0') {
+                if (known_flow_array[i].flow->ssh_tls.ja3_server[0] != '\0') {
                   //looking if the host is already in the hash table
-                    HASH_FIND_INT(ja3ByHostsHashT, &(all_flows[i].flow->dst_ip), ja3ByHostFound);
+                    HASH_FIND_INT(ja3ByHostsHashT, &(known_flow_array[i].flow->dst_ip), ja3ByHostFound);
                     if (ja3ByHostFound == NULL) {
                       //adding the new host in the hash table
                         ndpi_host_ja3_fingerprints* newHost = ndpi_malloc(sizeof(ndpi_host_ja3_fingerprints));
                         newHost->host_client_info_hasht = NULL;
                         newHost->host_server_info_hasht = NULL;
-                        newHost->ip_string = all_flows[i].flow->dst_name;
-                        newHost->ip = all_flows[i].flow->dst_ip;
-                        newHost->dns_name = all_flows[i].flow->ssh_tls.server_info;
+                        newHost->ip_string = known_flow_array[i].flow->dst_name;
+                        newHost->ip = known_flow_array[i].flow->dst_ip;
+                        newHost->dns_name = known_flow_array[i].flow->ssh_tls.server_info;
 
                         ndpi_ja3_info* newJA3 = ndpi_malloc(sizeof(ndpi_ja3_info));
-                        newJA3->ja3 = all_flows[i].flow->ssh_tls.ja3_server;
-                        newJA3->unsafe_cipher = all_flows[i].flow->ssh_tls.server_unsafe_cipher;
+                        newJA3->ja3 = known_flow_array[i].flow->ssh_tls.ja3_server;
+                        newJA3->unsafe_cipher = known_flow_array[i].flow->ssh_tls.server_unsafe_cipher;
                         //adding the new ja3 fingerprint
                         HASH_ADD_KEYPTR(hh, newHost->host_server_info_hasht, newJA3->ja3,
                             strlen(newJA3->ja3), newJA3);
@@ -531,27 +536,27 @@ void print_flows_stats() {
                    //host already in the hashtable
                         ndpi_ja3_info* infoFound = NULL;
                         HASH_FIND_STR(ja3ByHostFound->host_server_info_hasht,
-                            all_flows[i].flow->ssh_tls.ja3_server, infoFound);
+                            known_flow_array[i].flow->ssh_tls.ja3_server, infoFound);
                         if (infoFound == NULL) {
                             ndpi_ja3_info* newJA3 = ndpi_malloc(sizeof(ndpi_ja3_info));
-                            newJA3->ja3 = all_flows[i].flow->ssh_tls.ja3_server;
-                            newJA3->unsafe_cipher = all_flows[i].flow->ssh_tls.server_unsafe_cipher;
+                            newJA3->ja3 = known_flow_array[i].flow->ssh_tls.ja3_server;
+                            newJA3->unsafe_cipher = known_flow_array[i].flow->ssh_tls.server_unsafe_cipher;
                             HASH_ADD_KEYPTR(hh, ja3ByHostFound->host_server_info_hasht,
                                 newJA3->ja3, strlen(newJA3->ja3), newJA3);
                         }
                     }
 
-                    HASH_FIND_STR(hostByJA3S_ht, all_flows[i].flow->ssh_tls.ja3_server, hostByJA3Found);
+                    HASH_FIND_STR(hostByJA3S_ht, known_flow_array[i].flow->ssh_tls.ja3_server, hostByJA3Found);
                     if (hostByJA3Found == NULL) {
                         ndpi_ip_dns* newHost = ndpi_malloc(sizeof(ndpi_ip_dns));
 
-                        newHost->ip = all_flows[i].flow->dst_ip;
-                        newHost->ip_string = all_flows[i].flow->dst_name;
-                        newHost->dns_name = all_flows[i].flow->ssh_tls.server_info;;
+                        newHost->ip = known_flow_array[i].flow->dst_ip;
+                        newHost->ip_string = known_flow_array[i].flow->dst_name;
+                        newHost->dns_name = known_flow_array[i].flow->ssh_tls.server_info;;
 
                         ndpi_ja3_fingerprints_host* newElement = ndpi_malloc(sizeof(ndpi_ja3_fingerprints_host));
-                        newElement->ja3 = all_flows[i].flow->ssh_tls.ja3_server;
-                        newElement->unsafe_cipher = all_flows[i].flow->ssh_tls.server_unsafe_cipher;
+                        newElement->ja3 = known_flow_array[i].flow->ssh_tls.ja3_server;
+                        newElement->unsafe_cipher = known_flow_array[i].flow->ssh_tls.server_unsafe_cipher;
                         newElement->ipToDNS_ht = NULL;
 
                         HASH_ADD_INT(newElement->ipToDNS_ht, ip, newHost);
@@ -561,12 +566,12 @@ void print_flows_stats() {
                     else {
                         ndpi_ip_dns* innerElement = NULL;
 
-                        HASH_FIND_INT(hostByJA3Found->ipToDNS_ht, &(all_flows[i].flow->dst_ip), innerElement);
+                        HASH_FIND_INT(hostByJA3Found->ipToDNS_ht, &(known_flow_array[i].flow->dst_ip), innerElement);
                         if (innerElement == NULL) {
                             ndpi_ip_dns* newInnerElement = ndpi_malloc(sizeof(ndpi_ip_dns));
-                            newInnerElement->ip = all_flows[i].flow->dst_ip;
-                            newInnerElement->ip_string = all_flows[i].flow->dst_name;
-                            newInnerElement->dns_name = all_flows[i].flow->ssh_tls.server_info;
+                            newInnerElement->ip = known_flow_array[i].flow->dst_ip;
+                            newInnerElement->ip_string = known_flow_array[i].flow->dst_name;
+                            newInnerElement->dns_name = known_flow_array[i].flow->ssh_tls.server_info;
                             HASH_ADD_INT(hostByJA3Found->ipToDNS_ht, ip, newInnerElement);
                         }
                     }
@@ -764,19 +769,19 @@ void print_flows_stats() {
             struct hash_stats* tmp = NULL;
             int len_max = 0;
 
-            for (i = 0; i < num_known_flows; i++) {
+            for (i = 0; i < known_flow_count; i++) {
 
-                if (all_flows[i].flow->host_server_name[0] != '\0') {
+                if (known_flow_array[i].flow->host_server_name[0] != '\0') {
 
-                    int len = strlen(all_flows[i].flow->host_server_name);
+                    int len = strlen(known_flow_array[i].flow->host_server_name);
                     len_max = ndpi_max(len, len_max);
 
                     struct hash_stats* hostFound;
-                    HASH_FIND_STR(hostsHashT, all_flows[i].flow->host_server_name, hostFound);
+                    HASH_FIND_STR(hostsHashT, known_flow_array[i].flow->host_server_name, hostFound);
 
                     if (hostFound == NULL) {
                         struct hash_stats* newHost = (struct hash_stats*)ndpi_malloc(sizeof(hash_stats));
-                        newHost->domain_name = all_flows[i].flow->host_server_name;
+                        newHost->domain_name = known_flow_array[i].flow->host_server_name;
                         newHost->occurency = 1;
                         if (HASH_COUNT(hostsHashT) == len_table_max) {
                             int i = 0;
@@ -798,17 +803,17 @@ void print_flows_stats() {
 
                 }
 
-                if (all_flows[i].flow->ssh_tls.server_info[0] != '\0') {
+                if (known_flow_array[i].flow->ssh_tls.server_info[0] != '\0') {
 
-                    int len = strlen(all_flows[i].flow->host_server_name);
+                    int len = strlen(known_flow_array[i].flow->host_server_name);
                     len_max = ndpi_max(len, len_max);
 
                     struct hash_stats* hostFound;
-                    HASH_FIND_STR(hostsHashT, all_flows[i].flow->ssh_tls.server_info, hostFound);
+                    HASH_FIND_STR(hostsHashT, known_flow_array[i].flow->ssh_tls.server_info, hostFound);
 
                     if (hostFound == NULL) {
                         struct hash_stats* newHost = (struct hash_stats*)ndpi_malloc(sizeof(hash_stats));
-                        newHost->domain_name = all_flows[i].flow->ssh_tls.server_info;
+                        newHost->domain_name = known_flow_array[i].flow->ssh_tls.server_info;
                         newHost->occurency = 1;
 
                         if ((HASH_COUNT(hostsHashT)) == len_table_max) {
@@ -862,33 +867,36 @@ void print_flows_stats() {
 
           /* Print all flows stats */
 
-        qsort(all_flows, num_known_flows, sizeof(struct flow_info), cmpFlows);
+        qsort(known_flow_array, known_flow_count, sizeof(struct flow_info), cmpFlows);
 
         if (verbose > 1) {
 #ifndef DIRECTION_BINS
-            struct ndpi_bin* bins = (struct ndpi_bin*)ndpi_malloc(sizeof(struct ndpi_bin) * num_known_flows);
-            u_int16_t* cluster_ids = (u_int16_t*)ndpi_malloc(sizeof(u_int16_t) * num_known_flows);
+            struct ndpi_bin* bins = (struct ndpi_bin*)ndpi_malloc(sizeof(struct ndpi_bin) * known_flow_count);
+            u_int16_t* cluster_ids = (u_int16_t*)ndpi_malloc(sizeof(u_int16_t) * known_flow_count);
             u_int32_t num_flow_bins = 0;
 #endif
 
-            for (i = 0; i < num_known_flows; i++) {
+            for (i = 0; i < known_flow_count; i++) {
 #ifndef DIRECTION_BINS
                 if (enable_doh_dot_detection) {
                   /* Discard flows with few packets per direction */
-                    if ((all_flows[i].flow->src2dst_packets < 10)
-                        || (all_flows[i].flow->dst2src_packets < 10)
+                    if ((known_flow_array[i].flow->src2dst_packets < 10)
+                        || (known_flow_array[i].flow->dst2src_packets < 10)
                         /* Ignore flows for which we have not seen the beginning */
-                        )
+                        ) {
                         goto print_flow;
+                    }
 
-                    if (all_flows[i].flow->protocol == 6 /* TCP */) {
+                    if (known_flow_array[i].flow->protocol == 6 /* TCP */) {
                       /* Discard flows with no SYN as we need to check ALPN */
-                        if ((all_flows[i].flow->src2dst_syn_count == 0) || (all_flows[i].flow->dst2src_syn_count == 0))
+                        if ((known_flow_array[i].flow->src2dst_syn_count == 0) || (known_flow_array[i].flow->dst2src_syn_count == 0)) {
                             goto print_flow;
+                        }
 
-                        if (all_flows[i].flow->detected_protocol.proto.master_protocol == NDPI_PROTOCOL_TLS) {
-                            if ((all_flows[i].flow->src2dst_packets + all_flows[i].flow->dst2src_packets) < 40)
+                        if (known_flow_array[i].flow->detected_protocol.proto.master_protocol == NDPI_PROTOCOL_TLS) {
+                            if ((known_flow_array[i].flow->src2dst_packets + known_flow_array[i].flow->dst2src_packets) < 40) {
                                 goto print_flow; /* Too few packets for TLS negotiation etc */
+                            }
                         }
                     }
                 }
@@ -901,8 +909,8 @@ void print_flows_stats() {
                         not_empty = 0;
 
                         /* Check if bins are empty (and in this case discard it) */
-                        for (j = 0; j < all_flows[i].flow->payload_len_bin.num_bins; j++)
-                            if (all_flows[i].flow->payload_len_bin.u.bins8[j] != 0) {
+                        for (j = 0; j < known_flow_array[i].flow->payload_len_bin.num_bins; j++)
+                            if (known_flow_array[i].flow->payload_len_bin.u.bins8[j] != 0) {
                                 not_empty = 1;
                                 break;
                             }
@@ -911,7 +919,7 @@ void print_flows_stats() {
                         not_empty = 1;
 
                     if (not_empty) {
-                        memcpy(&bins[num_flow_bins], &all_flows[i].flow->payload_len_bin, sizeof(struct ndpi_bin));
+                        memcpy(&bins[num_flow_bins], &known_flow_array[i].flow->payload_len_bin, sizeof(struct ndpi_bin));
                         ndpi_normalize_bin(&bins[num_flow_bins]);
                         num_flow_bins++;
                     }
@@ -919,7 +927,7 @@ void print_flows_stats() {
 #endif
 
             print_flow:
-                print_flow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
+                print_flow(i + 1, known_flow_array[i].flow, known_flow_array[i].thread_id);
             }
 
 #ifndef DIRECTION_BINS
@@ -929,9 +937,10 @@ void print_flows_stats() {
                 struct ndpi_bin* centroids;
 
                 if ((centroids = (struct ndpi_bin*)ndpi_malloc(sizeof(struct ndpi_bin) * num_bin_clusters)) != NULL) {
-                    for (i = 0; i < num_bin_clusters; i++)
+                    for (i = 0; i < num_bin_clusters; i++) {
                         ndpi_init_bin(&centroids[i], ndpi_bin_family32 /* Use 32 bit to avoid overlaps */,
                             bins[0].num_bins);
+                    }
 
                     ndpi_cluster_bins(bins, num_flow_bins, num_bin_clusters, cluster_ids, centroids);
 
@@ -957,25 +966,26 @@ void print_flows_stats() {
                             fprintf(out, "\t%u\t%-10s\t%s:%u <-> %s:%u\t[",
                                 i,
                                 ndpi_protocol2name(ndpi_thread_info[0].workflow->ndpi_struct,
-                                    all_flows[i].flow->detected_protocol, buf, sizeof(buf)),
-                                all_flows[i].flow->src_name,
-                                ntohs(all_flows[i].flow->src_port),
-                                all_flows[i].flow->dst_name,
-                                ntohs(all_flows[i].flow->dst_port));
+                                    known_flow_array[i].flow->detected_protocol, buf, sizeof(buf)),
+                                known_flow_array[i].flow->src_name,
+                                ntohs(known_flow_array[i].flow->src_port),
+                                known_flow_array[i].flow->dst_name,
+                                ntohs(known_flow_array[i].flow->dst_port));
 
                             print_bin(out, NULL, &bins[i]);
                             fprintf(out, "][similarity: %f]",
                                 (similarity = ndpi_bin_similarity(&centroids[j], &bins[i], 0, 0)));
 
-                            if (all_flows[i].flow->host_server_name[0] != '\0')
-                                fprintf(out, "[%s]", all_flows[i].flow->host_server_name);
+                            if (known_flow_array[i].flow->host_server_name[0] != '\0') {
+                                fprintf(out, "[%s]", known_flow_array[i].flow->host_server_name);
+                            }
 
                             if (enable_doh_dot_detection) {
-                                if (((all_flows[i].flow->detected_protocol.proto.master_protocol == NDPI_PROTOCOL_TLS)
-                                    || (all_flows[i].flow->detected_protocol.proto.app_protocol == NDPI_PROTOCOL_TLS)
-                                    || (all_flows[i].flow->detected_protocol.proto.app_protocol == NDPI_PROTOCOL_DOH_DOT)
+                                if (((known_flow_array[i].flow->detected_protocol.proto.master_protocol == NDPI_PROTOCOL_TLS)
+                                    || (known_flow_array[i].flow->detected_protocol.proto.app_protocol == NDPI_PROTOCOL_TLS)
+                                    || (known_flow_array[i].flow->detected_protocol.proto.app_protocol == NDPI_PROTOCOL_DOH_DOT)
                                     )
-                                    && all_flows[i].flow->ssh_tls.advertised_alpns /* ALPN */
+                                    && known_flow_array[i].flow->ssh_tls.advertised_alpns /* ALPN */
                                     ) {
                                     if (check_bin_doh_similarity(&bins[i], &s))
                                         fprintf(out, "[DoH (%f distance)]", s);
@@ -983,7 +993,7 @@ void print_flows_stats() {
                                         fprintf(out, "[NO DoH (%f distance)]", s);
                                 }
                                 else {
-                                    if (all_flows[i].flow->ssh_tls.advertised_alpns == NULL)
+                                    if (known_flow_array[i].flow->ssh_tls.advertised_alpns == NULL)
                                         fprintf(out, "[NO DoH check: missing ALPN]");
                                 }
                             }
@@ -999,8 +1009,9 @@ void print_flows_stats() {
                         }
                     }
 
-                    for (i = 0; i < num_bin_clusters; i++)
+                    for (i = 0; i < num_bin_clusters; i++) {
                         ndpi_free_bin(&centroids[i]);
+                    }
 
                     ndpi_free(centroids);
                 }
@@ -1020,17 +1031,16 @@ void print_flows_stats() {
             }
         }
 
-        uint32_t num_unknown_flows = num_flows - num_known_flows;
-        qsort(&(all_flows[num_known_flows]), num_unknown_flows, sizeof(struct flow_info), cmpFlows);
+        qsort(unknown_flow_array, unknown_flow_count, sizeof(struct flow_info), cmpFlows);
 
-        for (i = 0; i < num_unknown_flows; i++) {
-            print_flow(i + 1, all_flows[num_known_flows + i].flow, all_flows[num_known_flows + i].thread_id);
+        for (i = 0; i < unknown_flow_count; i++) {
+            print_flow(i + 1, unknown_flow_array[i].flow, unknown_flow_array[i].thread_id);
         }
     }
     else if (csv_fp != NULL) {
         unsigned int i;
-        for (i = 0; i < num_known_flows; i++) {
-            print_flow(i + 1, all_flows[i].flow, all_flows[i].thread_id);
+        for (i = 0; i < known_flow_count; i++) {
+            print_flow(i + 1, known_flow_array[i].flow, known_flow_array[i].thread_id);
         }
     }
 
@@ -1038,12 +1048,13 @@ void print_flows_stats() {
         serialization_format != ndpi_serialization_format_unknown)
     {
         unsigned int i;
-        for (i = 0; i < num_flows; i++) {
-            print_flow_serialized(all_flows[i].flow);
+        for (i = 0; i < known_flow_count; i++) {
+            print_flow_serialized(known_flow_array[i].flow);
+        }
+        for (i = 0; i < unknown_flow_count; i++) {
+            print_flow_serialized(unknown_flow_array[i].flow);
         }
     }
-
-    ndpi_free(all_flows);
 }
 
 void print_flow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) {

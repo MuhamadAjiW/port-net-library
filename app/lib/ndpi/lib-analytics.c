@@ -177,39 +177,25 @@ void node_flow_risk_walker(const void* node, ndpi_VISIT which, int depth, void* 
     }
 }
 
-void node_print_known_proto_walker(const void* node,
+void node_proto_print_walker(const void* node,
     ndpi_VISIT which, int depth, void* user_data) {
-    struct ndpi_flow_info* flow = *(struct ndpi_flow_info**)node;
-    u_int16_t thread_id = *((u_int16_t*)user_data);
+    struct flow_info info;
+    info.thread_id = *((u_int16_t*)user_data);
+    info.flow = *(struct ndpi_flow_info**)node;
 
     (void)depth;
 
-    if ((flow->detected_protocol.proto.master_protocol == NDPI_PROTOCOL_UNKNOWN)
-        && (flow->detected_protocol.proto.app_protocol == NDPI_PROTOCOL_UNKNOWN))
-        return;
-
     if ((which == ndpi_preorder) || (which == ndpi_leaf)) {
-      /* Avoid walking the same node multiple times */
-        all_flows[num_flows].thread_id = thread_id, all_flows[num_flows].flow = flow;
-        num_flows++;
-    }
-}
+        /* Avoid walking the same node multiple times */
 
-void node_print_unknown_proto_walker(const void* node,
-    ndpi_VISIT which, int depth, void* user_data) {
-    struct ndpi_flow_info* flow = *(struct ndpi_flow_info**)node;
-    u_int16_t thread_id = *((u_int16_t*)user_data);
-
-    (void)depth;
-
-    if ((flow->detected_protocol.proto.master_protocol != NDPI_PROTOCOL_UNKNOWN)
-        || (flow->detected_protocol.proto.app_protocol != NDPI_PROTOCOL_UNKNOWN))
-        return;
-
-    if ((which == ndpi_preorder) || (which == ndpi_leaf)) {
-      /* Avoid walking the same node multiple times */
-        all_flows[num_flows].thread_id = thread_id, all_flows[num_flows].flow = flow;
-        num_flows++;
+        if ((info.flow->detected_protocol.proto.master_protocol != NDPI_PROTOCOL_UNKNOWN)
+            || (info.flow->detected_protocol.proto.app_protocol != NDPI_PROTOCOL_UNKNOWN))
+        {
+            dynarray_push_back(&global_data.known_flow, &info);
+        }
+        else {
+            dynarray_push_back(&global_data.unknown_flow, &info);
+        }
     }
 }
 
@@ -219,6 +205,8 @@ void global_data_init() {
     dynarray_init(&global_data.protocol, sizeof(struct data_protocol));
     dynarray_init(&global_data.classification, sizeof(struct data_classification));
     dynarray_init(&global_data.risk, sizeof(struct data_risk));
+    dynarray_init(&global_data.known_flow, sizeof(struct flow_info));
+    dynarray_init(&global_data.unknown_flow, sizeof(struct flow_info));
 }
 
 void global_data_clean() {
@@ -242,6 +230,8 @@ void global_data_clean() {
     dynarray_delete(&global_data.protocol);
     dynarray_delete(&global_data.classification);
     dynarray_delete(&global_data.risk);
+    dynarray_delete(&global_data.known_flow);
+    dynarray_delete(&global_data.unknown_flow);
     memset(&global_data, 0, sizeof(global_data));
 }
 
@@ -519,32 +509,10 @@ void global_data_generate_protocol() {
 }
 
 void global_data_generate_flow() {
-    // _TODO: Implement
-    u_int32_t total_flows = 0;
-    num_flows = 0;
-    num_known_flows = 0;
-
-    for (int thread_id = 0; thread_id < num_threads; thread_id++) {
-        total_flows += ndpi_thread_info[thread_id].workflow->num_allocated_flows;
-    }
-
-    if ((all_flows = (struct flow_info*)ndpi_malloc(sizeof(struct flow_info) * total_flows)) == NULL) {
-        fprintf(results_file ? results_file : stdout, "Fatal error: not enough memory\n");
-        exit(-1);
-    }
-
     for (int thread_id = 0; thread_id < num_threads; thread_id++) {
         for (int i = 0; i < NUM_ROOTS; i++) {
             ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
-                node_print_known_proto_walker, &thread_id);
-        }
-    }
-    num_known_flows = num_flows;
-
-    for (int thread_id = 0; thread_id < num_threads; thread_id++) {
-        for (int i = 0; i < NUM_ROOTS; i++) {
-            ndpi_twalk(ndpi_thread_info[thread_id].workflow->ndpi_flows_root[i],
-                node_print_unknown_proto_walker, &thread_id);
+                node_proto_print_walker, &thread_id);
         }
     }
 }

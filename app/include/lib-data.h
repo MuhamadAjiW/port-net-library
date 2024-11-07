@@ -7,6 +7,7 @@
 #include "stdint.h"
 #include "reader_util.h"
 
+#include "lib-flow.h"
 #include "lib-string.h"
 #include "lib-array.h"
 
@@ -86,10 +87,6 @@ struct data_risk {
     float ratio;
 };
 
-struct data_flow {
-    struct ndpi_flow_info* info;
-};
-
 struct data_all {
     struct data_memory memory;
     struct data_time time;
@@ -98,7 +95,8 @@ struct data_all {
     dynarray_t protocol;
     dynarray_t classification;
     dynarray_t risk;
-    dynarray_t flow;
+    dynarray_t known_flow;
+    dynarray_t unknown_flow;
 };
 
 // Externs
@@ -154,6 +152,6 @@ json_object* data_risk_to_json(struct data_risk* data);
 
 /* ********************************** */
 
-json_object* data_flow_to_json(struct data_flow* data);
+json_object* data_flow_to_json(struct flow_info* data);
 
 #endif
