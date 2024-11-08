@@ -162,6 +162,11 @@ void node_flow_risk_walker(const void* node, ndpi_VISIT which, int depth, void* 
     (void)user_data;
 
     if ((which == ndpi_preorder) || (which == ndpi_leaf)) { /* Avoid walking the same node multiple times */
+        ndpi_risk_enum risk = ndpi_validate_url(f->http.url);
+
+        if (risk != NDPI_NO_RISK)
+            NDPI_SET_BIT(f->risk, risk);
+
         if (f->risk) {
             u_int j;
 

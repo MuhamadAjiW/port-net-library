@@ -1279,7 +1279,6 @@ void print_flow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) 
 
     if (flow->dns.geolocation_iata_code[0] != '\0') fprintf(out, "[GeoLocation: %s]", flow->dns.geolocation_iata_code);
 
-    // _TODO: data_flow_to_json from here on
     if ((flow->src2dst_packets + flow->dst2src_packets) > 5) {
         if (flow->iat_c_to_s && flow->iat_s_to_c) {
             float data_ratio = ndpi_data_ratio(flow->src2dst_bytes, flow->dst2src_bytes);
@@ -1313,75 +1312,96 @@ void print_flow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) 
     print_ndpi_address_port_file(out, "Other IP/Port", &flow->stun.other_address);
 
     if (flow->http.url[0] != '\0') {
-        ndpi_risk_enum risk = ndpi_validate_url(flow->http.url);
-
-        if (risk != NDPI_NO_RISK)
-            NDPI_SET_BIT(flow->risk, risk);
-
         fprintf(out, "[URL: %s]", flow->http.url);
     }
 
-    if (flow->http.response_status_code)
+    if (flow->http.response_status_code) {
         fprintf(out, "[StatusCode: %u]", flow->http.response_status_code);
+    }
 
-    if (flow->http.request_content_type[0] != '\0')
+    if (flow->http.request_content_type[0] != '\0') {
         fprintf(out, "[Req Content-Type: %s]", flow->http.request_content_type);
+    }
 
-    if (flow->http.content_type[0] != '\0')
+    if (flow->http.content_type[0] != '\0') {
         fprintf(out, "[Content-Type: %s]", flow->http.content_type);
+    }
 
-    if (flow->http.nat_ip[0] != '\0')
+    if (flow->http.nat_ip[0] != '\0') {
         fprintf(out, "[Nat-IP: %s]", flow->http.nat_ip);
+    }
 
-    if (flow->http.server[0] != '\0')
+    if (flow->http.server[0] != '\0') {
         fprintf(out, "[Server: %s]", flow->http.server);
+    }
 
-    if (flow->http.user_agent[0] != '\0')
+    if (flow->http.user_agent[0] != '\0') {
         fprintf(out, "[User-Agent: %s]", flow->http.user_agent);
+    }
 
-    if (flow->http.filename[0] != '\0')
+    if (flow->http.filename[0] != '\0') {
         fprintf(out, "[Filename: %s]", flow->http.filename);
+    }
 
     if (flow->risk) {
         u_int i;
         u_int16_t cli_score, srv_score;
         fprintf(out, "[Risk: ");
 
-        for (i = 0; i < NDPI_MAX_RISK; i++)
-            if (NDPI_ISSET_BIT(flow->risk, i))
+        for (i = 0; i < NDPI_MAX_RISK; i++) {
+            if (NDPI_ISSET_BIT(flow->risk, i)) {
                 fprintf(out, "** %s **", ndpi_risk2str(i));
+            }
+        }
 
         fprintf(out, "]");
 
         fprintf(out, "[Risk Score: %u]", ndpi_risk2score(flow->risk, &cli_score, &srv_score));
 
-        if (flow->risk_str)
+        if (flow->risk_str) {
             fprintf(out, "[Risk Info: %s]", flow->risk_str);
+        }
     }
 
-    if (flow->ssh_tls.ssl_version != 0) fprintf(out, "[%s]", ndpi_ssl_version2str(buf_ver, sizeof(buf_ver),
-        flow->ssh_tls.ssl_version, &known_tls));
+    if (flow->ssh_tls.ssl_version != 0) {
+        fprintf(out, "[%s]", ndpi_ssl_version2str(buf_ver, sizeof(buf_ver),
+            flow->ssh_tls.ssl_version, &known_tls));
+    }
 
-    if (flow->ssh_tls.quic_version != 0) fprintf(out, "[QUIC ver: %s]", ndpi_quic_version2str(buf_ver, sizeof(buf_ver),
-        flow->ssh_tls.quic_version));
+    if (flow->ssh_tls.quic_version != 0) {
+        fprintf(out, "[QUIC ver: %s]", ndpi_quic_version2str(buf_ver, sizeof(buf_ver),
+            flow->ssh_tls.quic_version));
+    }
 
-    if (flow->ssh_tls.client_hassh[0] != '\0') fprintf(out, "[HASSH-C: %s]", flow->ssh_tls.client_hassh);
+    if (flow->ssh_tls.client_hassh[0] != '\0') {
+        fprintf(out, "[HASSH-C: %s]", flow->ssh_tls.client_hassh);
+    }
 
-    if (flow->ssh_tls.ja3_client[0] != '\0') fprintf(out, "[JA3C: %s%s]", flow->ssh_tls.ja3_client,
-        print_cipher(flow->ssh_tls.client_unsafe_cipher));
+    if (flow->ssh_tls.ja3_client[0] != '\0') {
+        fprintf(out, "[JA3C: %s%s]", flow->ssh_tls.ja3_client,
+            print_cipher(flow->ssh_tls.client_unsafe_cipher));
+    }
 
-    if (flow->ssh_tls.ja4_client[0] != '\0') fprintf(out, "[JA4: %s%s]", flow->ssh_tls.ja4_client,
-        print_cipher(flow->ssh_tls.client_unsafe_cipher));
+    if (flow->ssh_tls.ja4_client[0] != '\0') {
+        fprintf(out, "[JA4: %s%s]", flow->ssh_tls.ja4_client,
+            print_cipher(flow->ssh_tls.client_unsafe_cipher));
+    }
 
-    if (flow->ssh_tls.ja4_client_raw != NULL) fprintf(out, "[JA4_r: %s]", flow->ssh_tls.ja4_client_raw);
+    if (flow->ssh_tls.ja4_client_raw != NULL) {
+        fprintf(out, "[JA4_r: %s]", flow->ssh_tls.ja4_client_raw);
+    }
 
-    if (flow->ssh_tls.server_info[0] != '\0') fprintf(out, "[Server: %s]", flow->ssh_tls.server_info);
+    if (flow->ssh_tls.server_info[0] != '\0') {
+        fprintf(out, "[Server: %s]", flow->ssh_tls.server_info);
+    }
 
     if (flow->ssh_tls.server_names) fprintf(out, "[ServerNames: %s]", flow->ssh_tls.server_names);
     if (flow->ssh_tls.server_hassh[0] != '\0') fprintf(out, "[HASSH-S: %s]", flow->ssh_tls.server_hassh);
 
-    if (flow->ssh_tls.ja3_server[0] != '\0') fprintf(out, "[JA3S: %s%s]", flow->ssh_tls.ja3_server,
-        print_cipher(flow->ssh_tls.server_unsafe_cipher));
+    if (flow->ssh_tls.ja3_server[0] != '\0') {
+        fprintf(out, "[JA3S: %s%s]", flow->ssh_tls.ja3_server,
+            print_cipher(flow->ssh_tls.server_unsafe_cipher));
+    }
 
     if (flow->ssh_tls.tls_issuerDN)  fprintf(out, "[Issuer: %s]", flow->ssh_tls.tls_issuerDN);
     if (flow->ssh_tls.tls_subjectDN) fprintf(out, "[Subject: %s]", flow->ssh_tls.tls_subjectDN);
@@ -1399,9 +1419,10 @@ void print_flow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) 
 
     if (flow->ssh_tls.sha1_cert_fingerprint_set) {
         fprintf(out, "[Certificate SHA-1: ");
-        for (i = 0; i < 20; i++)
+        for (i = 0; i < 20; i++) {
             fprintf(out, "%s%02X", (i > 0) ? ":" : "",
                 flow->ssh_tls.sha1_cert_fingerprint[i] & 0xFF);
+        }
         fprintf(out, "]");
     }
 
@@ -1424,17 +1445,24 @@ void print_flow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) 
     }
 
     char unknown_cipher[8];
-    if (flow->ssh_tls.server_cipher != '\0')
-    {
+    if (flow->ssh_tls.server_cipher != '\0') {
         fprintf(out, "[Cipher: %s]", ndpi_cipher2str(flow->ssh_tls.server_cipher, unknown_cipher));
     }
-    if (flow->bittorent_hash != NULL) fprintf(out, "[BT Hash: %s]", flow->bittorent_hash);
-    if (flow->dhcp_fingerprint != NULL) fprintf(out, "[DHCP Fingerprint: %s]", flow->dhcp_fingerprint);
-    if (flow->dhcp_class_ident) fprintf(out, "[DHCP Class Ident: %s]",
-        flow->dhcp_class_ident);
+    if (flow->bittorent_hash != NULL) {
+        fprintf(out, "[BT Hash: %s]", flow->bittorent_hash);
+    }
+    if (flow->dhcp_fingerprint != NULL) {
+        fprintf(out, "[DHCP Fingerprint: %s]", flow->dhcp_fingerprint);
+    }
+    if (flow->dhcp_class_ident) {
+        fprintf(out, "[DHCP Class Ident: %s]",
+            flow->dhcp_class_ident);
+    }
 
-    if (flow->has_human_readeable_strings) fprintf(out, "[PLAIN TEXT (%s)]",
-        flow->human_readeable_string_buffer);
+    if (flow->has_human_readeable_strings) {
+        fprintf(out, "[PLAIN TEXT (%s)]",
+            flow->human_readeable_string_buffer);
+    }
 
 #ifdef DIRECTION_BINS
     print_bin(out, "Plen c2s", &flow->payload_len_bin_src2dst);
@@ -1448,8 +1476,9 @@ void print_flow(u_int32_t id, struct ndpi_flow_info* flow, u_int16_t thread_id) 
 
         fprintf(out, "[Payload: ");
 
-        for (i = 0; i < flow->flow_payload_len; i++)
+        for (i = 0; i < flow->flow_payload_len; i++) {
             fprintf(out, "%c", ndpi_isspace(flow->flow_payload[i]) ? '.' : flow->flow_payload[i]);
+        }
 
         fprintf(out, "]");
     }

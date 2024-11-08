@@ -166,8 +166,12 @@ json_object* data_flow_to_json(struct flow_info* data) {
     struct ndpi_detection_module_struct* ndpi_dm_struct = ndpi_thread_info[0].workflow->ndpi_struct;
 
     struct ndpi_flow_info* flow = data->flow;
+    u_int8_t known_tls;
     char buf[256];
+    char buf_ver[16];
+    char unknown_cipher[8];
 
+    // Base Info
     json_object_object_add(retval, "transport_protocol", json_object_new_string(ndpi_get_ip_proto_name(flow->protocol, buf, sizeof(buf))));
     json_object_object_add(retval, "ip_version", json_object_new_uint64((unsigned long long) flow->ip_version));
     json_object_object_add(retval, "src_ip", json_object_new_string(flow->src_name));
@@ -214,18 +218,45 @@ json_object* data_flow_to_json(struct flow_info* data) {
     }
     json_object_object_add(retval, "full_packet_capture", json_object_new_string(fpc_info));
 
-    json_object_object_add(retval, "dpi_packets", json_object_new_uint64((unsigned long long)flow->dpi_packets));
-    json_object_object_add(retval, "category", json_object_new_string(ndpi_category_get_name(ndpi_dm_struct, flow->detected_protocol.category)));
-    json_object_object_add(retval, "outgoing_packet_count", json_object_new_uint64((unsigned long long)flow->src2dst_packets));
-    json_object_object_add(retval, "outgoing_packet_size", json_object_new_uint64((unsigned long long)flow->src2dst_bytes));
-    json_object_object_add(retval, "incoming_packet_count", json_object_new_uint64((unsigned long long)flow->dst2src_packets));
-    json_object_object_add(retval, "incoming_packet_size", json_object_new_uint64((unsigned long long)flow->dst2src_bytes));
-    json_object_object_add(retval, "outgoing_goodput_ratio", json_object_new_double((double)100.0 * ((float)flow->src2dst_goodput_bytes / (float)(flow->src2dst_bytes + 1))));
-    json_object_object_add(retval, "incoming_goodput_ratio", json_object_new_double((double)100.0 * ((float)flow->dst2src_goodput_bytes / (float)(flow->dst2src_bytes + 1))));
-    json_object_object_add(retval, "duration", json_object_new_double((double)((float)(flow->last_seen_ms - flow->first_seen_ms)) / (float)1000));
-    json_object_object_add(retval, "hostname", json_object_new_string(flow->host_server_name));
+    json_object_object_add(retval, "dpi_packets",
+        json_object_new_uint64((unsigned long long)flow->dpi_packets));
+    json_object_object_add(retval, "category",
+        json_object_new_string(ndpi_category_get_name(ndpi_dm_struct, flow->detected_protocol.category)));
+    json_object_object_add(retval, "outgoing_packet_count",
+        json_object_new_uint64((unsigned long long)flow->src2dst_packets));
+    json_object_object_add(retval, "outgoing_packet_size",
+        json_object_new_uint64((unsigned long long)flow->src2dst_bytes));
+    json_object_object_add(retval, "incoming_packet_count",
+        json_object_new_uint64((unsigned long long)flow->dst2src_packets));
+    json_object_object_add(retval, "incoming_packet_size",
+        json_object_new_uint64((unsigned long long)flow->dst2src_bytes));
+    json_object_object_add(retval, "outgoing_goodput_ratio",
+        json_object_new_double((double)100.0 * ((float)flow->src2dst_goodput_bytes / (float)(flow->src2dst_bytes + 1))));
+    json_object_object_add(retval, "incoming_goodput_ratio",
+        json_object_new_double((double)100.0 * ((float)flow->dst2src_goodput_bytes / (float)(flow->dst2src_bytes + 1))));
+    json_object_object_add(retval, "duration",
+        json_object_new_double((double)((float)(flow->last_seen_ms - flow->first_seen_ms)) / (float)1000));
+    json_object_object_add(retval, "hostname",
+        json_object_new_string(flow->host_server_name));
+    json_object_object_add(retval, "currency",
+        json_object_new_string(flow->mining.currency));
+    json_object_object_add(retval, "geolocation",
+        json_object_new_string(flow->dns.geolocation_iata_code));
+    json_object_object_add(retval, "bt_hash",
+        json_object_new_string(
+            flow->bittorent_hash != NULL ? flow->bittorent_hash : ""));
+    json_object_object_add(retval, "dhcp_fingerprint",
+        json_object_new_string(
+            flow->dhcp_fingerprint != NULL ? flow->dhcp_fingerprint : ""));
+    json_object_object_add(retval, "dhcp_class_id",
+        json_object_new_string(
+            flow->dhcp_class_ident ? flow->dhcp_class_ident : ""));
+    json_object_object_add(retval, "plain_text",
+        json_object_new_string(
+            flow->has_human_readeable_strings ? flow->human_readeable_string_buffer : ""));
 
-    json_object* json_details = json_object_new_object();
+    // Details
+    json_object* json_info_details = json_object_new_object();
     switch (flow->info_type)
     {
     case INFO_INVALID:
@@ -233,55 +264,275 @@ json_object* data_flow_to_json(struct flow_info* data) {
         break;
     case INFO_GENERIC:
         json_object_object_add(retval, "info_type", json_object_new_string("generic"));
-        json_object_object_add(json_details, "info", json_object_new_string(flow->info));
+        json_object_object_add(json_info_details, "info", json_object_new_string(flow->info));
         break;
     case INFO_KERBEROS:
         json_object_object_add(retval, "info_type", json_object_new_string("kerberos"));
-        json_object_object_add(json_details, "domain", json_object_new_string(flow->kerberos.domain));
-        json_object_object_add(json_details, "hostname", json_object_new_string(flow->kerberos.hostname));
-        json_object_object_add(json_details, "username", json_object_new_string(flow->kerberos.username));
+        json_object_object_add(json_info_details, "domain", json_object_new_string(flow->kerberos.domain));
+        json_object_object_add(json_info_details, "hostname", json_object_new_string(flow->kerberos.hostname));
+        json_object_object_add(json_info_details, "username", json_object_new_string(flow->kerberos.username));
         break;
     case INFO_SOFTETHER:
         json_object_object_add(retval, "info_type", json_object_new_string("softether"));
-        json_object_object_add(json_details, "client_ip", json_object_new_string(flow->softether.ip));
-        json_object_object_add(json_details, "client_port", json_object_new_string(flow->softether.port));
-        json_object_object_add(json_details, "hostname", json_object_new_string(flow->softether.hostname));
-        json_object_object_add(json_details, "fqdn", json_object_new_string(flow->softether.fqdn));
+        json_object_object_add(json_info_details, "client_ip", json_object_new_string(flow->softether.ip));
+        json_object_object_add(json_info_details, "client_port", json_object_new_string(flow->softether.port));
+        json_object_object_add(json_info_details, "hostname", json_object_new_string(flow->softether.hostname));
+        json_object_object_add(json_info_details, "fqdn", json_object_new_string(flow->softether.fqdn));
         break;
     case INFO_TIVOCONNECT:
         json_object_object_add(retval, "info_type", json_object_new_string("tivoconnect"));
-        json_object_object_add(json_details, "uuid", json_object_new_string(flow->tivoconnect.identity_uuid));
-        json_object_object_add(json_details, "machine", json_object_new_string(flow->tivoconnect.machine));
-        json_object_object_add(json_details, "platform", json_object_new_string(flow->tivoconnect.platform));
-        json_object_object_add(json_details, "services", json_object_new_string(flow->tivoconnect.services));
+        json_object_object_add(json_info_details, "uuid", json_object_new_string(flow->tivoconnect.identity_uuid));
+        json_object_object_add(json_info_details, "machine", json_object_new_string(flow->tivoconnect.machine));
+        json_object_object_add(json_info_details, "platform", json_object_new_string(flow->tivoconnect.platform));
+        json_object_object_add(json_info_details, "services", json_object_new_string(flow->tivoconnect.services));
         break;
     case INFO_NATPMP:
         json_object_object_add(retval, "info_type", json_object_new_string("natpmp"));
-        json_object_object_add(json_details, "result", json_object_new_uint64((unsigned long long)flow->natpmp.result_code));
-        json_object_object_add(json_details, "internal_port", json_object_new_uint64((unsigned long long)flow->natpmp.internal_port));
-        json_object_object_add(json_details, "external_port", json_object_new_uint64((unsigned long long)flow->natpmp.external_port));
-        json_object_object_add(json_details, "external_address", json_object_new_string(flow->natpmp.ip));
+        json_object_object_add(json_info_details, "result", json_object_new_uint64((unsigned long long)flow->natpmp.result_code));
+        json_object_object_add(json_info_details, "internal_port", json_object_new_uint64((unsigned long long)flow->natpmp.internal_port));
+        json_object_object_add(json_info_details, "external_port", json_object_new_uint64((unsigned long long)flow->natpmp.external_port));
+        json_object_object_add(json_info_details, "external_address", json_object_new_string(flow->natpmp.ip));
         break;
     case INFO_FTP_IMAP_POP_SMTP:
         json_object_object_add(retval, "info_type", json_object_new_string("ftp_imap_pop_smtp"));
-        json_object_object_add(json_details, "username", json_object_new_string(flow->ftp_imap_pop_smtp.username));
-        json_object_object_add(json_details, "password", json_object_new_string(flow->ftp_imap_pop_smtp.password));
-        json_object_object_add(json_details, "auth_failed", json_object_new_boolean(flow->ftp_imap_pop_smtp.auth_failed));
+        json_object_object_add(json_info_details, "username", json_object_new_string(flow->ftp_imap_pop_smtp.username));
+        json_object_object_add(json_info_details, "password", json_object_new_string(flow->ftp_imap_pop_smtp.password));
+        json_object_object_add(json_info_details, "auth_failed", json_object_new_boolean(flow->ftp_imap_pop_smtp.auth_failed));
         break;
     default:
         break;
     }
-    json_object_object_add(retval, "details", json_details);
+    json_object_object_add(retval, "info_details", json_info_details);
 
-    json_object_object_add(retval, "advertised_alpns",
+    // TLS
+    json_object* json_info_tls = json_object_new_object();
+    json_object_object_add(json_info_tls, "advertised_alpns",
         json_object_new_string(flow->ssh_tls.advertised_alpns ? flow->ssh_tls.advertised_alpns : ""));
-    json_object_object_add(retval, "negotiated_alpn",
+    json_object_object_add(json_info_tls, "negotiated_alpn",
         json_object_new_string(flow->ssh_tls.negotiated_alpn ? flow->ssh_tls.negotiated_alpn : ""));
-    json_object_object_add(retval, "tls_supported_versions",
+    json_object_object_add(json_info_tls, "tls_supported_versions",
         json_object_new_string(flow->ssh_tls.tls_supported_versions ? flow->ssh_tls.tls_supported_versions : ""));
-    json_object_object_add(retval, "currency", json_object_new_string(flow->mining.currency));
-    json_object_object_add(retval, "geolocation", json_object_new_string(flow->dns.geolocation_iata_code));
+    json_object_object_add(json_info_tls, "ssl_version",
+        json_object_new_string(
+            flow->ssh_tls.ssl_version != 0 ? ndpi_ssl_version2str(buf_ver, sizeof(buf_ver),
+                flow->ssh_tls.ssl_version, &known_tls) : ""));
+    json_object_object_add(json_info_tls, "quic_version",
+        json_object_new_string(
+            flow->ssh_tls.quic_version != 0 ? ndpi_quic_version2str(buf_ver, sizeof(buf_ver),
+                flow->ssh_tls.quic_version) : ""));
+    json_object_object_add(json_info_tls, "hassh-c",
+        json_object_new_string(flow->ssh_tls.client_hassh[0] != '\0' ? flow->ssh_tls.client_hassh : ""));
 
-    // _TODO: Implement the rest
+    json_object_object_add(json_info_tls, "ja3_client",
+        json_object_new_string(flow->ssh_tls.ja3_client[0] != '\0' ? flow->ssh_tls.ja3_client : ""));
+    json_object_object_add(json_info_tls, "ja3_client_category",
+        json_object_new_string(flow->ssh_tls.ja3_client[0] != '\0' ? is_unsafe_cipher(flow->ssh_tls.client_unsafe_cipher) : ""));
+
+    json_object_object_add(json_info_tls, "ja4_client",
+        json_object_new_string(flow->ssh_tls.ja4_client[0] != '\0' ? flow->ssh_tls.ja4_client : ""));
+    json_object_object_add(json_info_tls, "ja4_client_category",
+        json_object_new_string(flow->ssh_tls.ja4_client[0] != '\0' ? is_unsafe_cipher(flow->ssh_tls.client_unsafe_cipher) : ""));
+
+    json_object_object_add(json_info_tls, "ja4_r",
+        json_object_new_string(flow->ssh_tls.ja4_client_raw != NULL ? flow->ssh_tls.ja4_client_raw : ""));
+    json_object_object_add(json_info_tls, "server_info",
+        json_object_new_string(flow->ssh_tls.server_info[0] != '\0' ? flow->ssh_tls.server_info : ""));
+    json_object_object_add(json_info_tls, "server_names",
+        json_object_new_string(flow->ssh_tls.server_names ? flow->ssh_tls.server_names : ""));
+    json_object_object_add(json_info_tls, "server_hassh",
+        json_object_new_string(flow->ssh_tls.server_hassh[0] != '\0' ? flow->ssh_tls.server_hassh : ""));
+
+    json_object_object_add(json_info_tls, "ja3_server",
+        json_object_new_string(flow->ssh_tls.ja3_server[0] != '\0' ? flow->ssh_tls.ja3_server : ""));
+    json_object_object_add(json_info_tls, "ja3_server_category",
+        json_object_new_string(
+            flow->ssh_tls.ja3_server[0] != '\0' ? is_unsafe_cipher(flow->ssh_tls.server_unsafe_cipher) : ""));
+
+    json_object_object_add(json_info_tls, "tls_issuer_dn",
+        json_object_new_string(flow->ssh_tls.tls_issuerDN ? flow->ssh_tls.tls_issuerDN : ""));
+    json_object_object_add(json_info_tls, "tls_subject_dn",
+        json_object_new_string(flow->ssh_tls.tls_subjectDN ? flow->ssh_tls.tls_subjectDN : ""));
+
+    json_object_object_add(json_info_tls, "esni",
+        json_object_new_string(
+            flow->ssh_tls.encrypted_sni.esni ? flow->ssh_tls.encrypted_sni.esni : ""));
+    json_object_object_add(json_info_tls, "esni_cipher",
+        json_object_new_string(
+            flow->ssh_tls.encrypted_sni.esni ? ndpi_cipher2str(flow->ssh_tls.encrypted_sni.cipher_suite, unknown_cipher) : ""));
+
+    json_object_object_add(json_info_tls, "ech_version",
+        json_object_new_uint64(
+            flow->ssh_tls.encrypted_ch.version != 0 ? (unsigned long long)flow->ssh_tls.encrypted_ch.version : 0));
+
+    if (flow->ssh_tls.sha1_cert_fingerprint_set) {
+        string_t sha1_cert = str_new("");
+        string_t temp = str_new("");
+        for (int i = 0; i < 20; i++) {
+            sha1_cert = str_format("%s%s%02X",
+                temp.content,
+                (i > 0) ? ":" : "",
+                flow->ssh_tls.sha1_cert_fingerprint[i] & 0xFF
+            );
+            str_delete(&temp);
+
+            temp = sha1_cert;
+        }
+        json_object_object_add(json_info_tls, "sha1_cert",
+            json_object_new_string(
+                (const char*)sha1_cert.content));
+        str_delete(&sha1_cert);
+    }
+    else {
+        json_object_object_add(json_info_tls, "sha1_cert",
+            json_object_new_string(""));
+    }
+
+#ifdef HEURISTICS_CODE
+    json_object_object_add(json_info_tls, "is_safari_tls",
+        json_object_new_boolean(flow->ssh_tls.browser_heuristics.is_safari_tls));
+    json_object_object_add(json_info_tls, "is_firefox_tls",
+        json_object_new_boolean(flow->ssh_tls.browser_heuristics.is_firefox_tls));
+    json_object_object_add(json_info_tls, "is_chrome_tls",
+        json_object_new_boolean(flow->ssh_tls.browser_heuristics.is_chrome_tls));
+#endif
+    if (flow->ssh_tls.notBefore && flow->ssh_tls.notAfter) {
+        char notBefore[32], notAfter[32];
+        struct tm a, b;
+        struct tm* before = ndpi_gmtime_r(&flow->ssh_tls.notBefore, &a);
+        struct tm* after = ndpi_gmtime_r(&flow->ssh_tls.notAfter, &b);
+
+        strftime(notBefore, sizeof(notBefore), "%Y-%m-%d %H:%M:%S", before);
+        strftime(notAfter, sizeof(notAfter), "%Y-%m-%d %H:%M:%S", after);
+
+        json_object_object_add(json_info_tls, "validity_notbefore",
+            json_object_new_string(notBefore));
+        json_object_object_add(json_info_tls, "validity_notafter",
+            json_object_new_string(notAfter));
+    }
+    else {
+        json_object_object_add(json_info_tls, "validity_notbefore",
+            json_object_new_string(""));
+        json_object_object_add(json_info_tls, "validity_notafter",
+            json_object_new_string(""));
+    }
+
+    json_object_object_add(json_info_tls, "cipher",
+        json_object_new_string(
+            flow->ssh_tls.server_cipher != '\0' ? ndpi_cipher2str(flow->ssh_tls.server_cipher, unknown_cipher) : ""));
+
+    json_object_object_add(retval, "info_tls", json_info_tls);
+
+    // Analytics if big enough
+    json_object* json_info_analytics = json_object_new_object();
+    if ((flow->src2dst_packets + flow->dst2src_packets) > 5) {
+        if (flow->iat_c_to_s && flow->iat_s_to_c) {
+            //--Inter Arrival Time
+            json_object* json_info_inter_arrival_time = json_object_new_object();
+            json_object* json_info_inter_arrival_time_server_client = json_object_new_object();
+            json_object* json_info_inter_arrival_time_client_server = json_object_new_object();
+            json_object_object_add(json_info_inter_arrival_time_server_client, "min",
+                json_object_new_uint64((unsigned long long)ndpi_data_min(flow->iat_c_to_s)));
+            json_object_object_add(json_info_inter_arrival_time_server_client, "avg",
+                json_object_new_uint64((float)ndpi_data_average(flow->iat_c_to_s)));
+            json_object_object_add(json_info_inter_arrival_time_server_client, "stddev",
+                json_object_new_uint64((float)ndpi_data_stddev(flow->iat_c_to_s)));
+            json_object_object_add(json_info_inter_arrival_time_server_client, "max",
+                json_object_new_uint64((unsigned long long)ndpi_data_max(flow->iat_c_to_s)));
+            json_object_object_add(json_info_inter_arrival_time, "server_client", json_info_inter_arrival_time_server_client);
+
+            json_object_object_add(json_info_inter_arrival_time_client_server, "min",
+                json_object_new_uint64((unsigned long long)ndpi_data_min(flow->iat_s_to_c)));
+            json_object_object_add(json_info_inter_arrival_time_client_server, "avg",
+                json_object_new_uint64((float)ndpi_data_average(flow->iat_s_to_c)));
+            json_object_object_add(json_info_inter_arrival_time_client_server, "stddev",
+                json_object_new_uint64((float)ndpi_data_stddev(flow->iat_s_to_c)));
+            json_object_object_add(json_info_inter_arrival_time_client_server, "max",
+                json_object_new_uint64((unsigned long long)ndpi_data_max(flow->iat_s_to_c)));
+            json_object_object_add(json_info_inter_arrival_time, "client_server", json_info_inter_arrival_time_client_server);
+            json_object_object_add(json_info_analytics, "inter_arrival_time", json_info_inter_arrival_time);
+
+            //--Packet Length
+            json_object* json_info_packet_length = json_object_new_object();
+            json_object* json_info_packet_length_server_client = json_object_new_object();
+            json_object* json_info_packet_length_client_server = json_object_new_object();
+            json_object_object_add(json_info_packet_length_server_client, "min",
+                json_object_new_uint64((unsigned long long)ndpi_data_min(flow->pktlen_c_to_s)));
+            json_object_object_add(json_info_packet_length_server_client, "avg",
+                json_object_new_uint64((float)ndpi_data_average(flow->pktlen_c_to_s)));
+            json_object_object_add(json_info_packet_length_server_client, "stddev",
+                json_object_new_uint64((float)ndpi_data_stddev(flow->pktlen_c_to_s)));
+            json_object_object_add(json_info_packet_length_server_client, "max",
+                json_object_new_uint64((unsigned long long)ndpi_data_max(flow->pktlen_c_to_s)));
+            json_object_object_add(json_info_packet_length, "server_client", json_info_packet_length_server_client);
+
+            json_object_object_add(json_info_packet_length_client_server, "min",
+                json_object_new_uint64((unsigned long long)ndpi_data_min(flow->pktlen_s_to_c)));
+            json_object_object_add(json_info_packet_length_client_server, "avg",
+                json_object_new_uint64((float)ndpi_data_average(flow->pktlen_s_to_c)));
+            json_object_object_add(json_info_packet_length_client_server, "stddev",
+                json_object_new_uint64((float)ndpi_data_stddev(flow->pktlen_s_to_c)));
+            json_object_object_add(json_info_packet_length_client_server, "max",
+                json_object_new_uint64((unsigned long long)ndpi_data_max(flow->pktlen_s_to_c)));
+            json_object_object_add(json_info_packet_length, "client_server", json_info_packet_length_client_server);
+            json_object_object_add(json_info_analytics, "packet_length", json_info_packet_length);
+        }
+    }
+    json_object_object_add(retval, "info_analytics", json_info_analytics);
+
+    // HTTP
+    json_object* json_info_http = json_object_new_object();
+    json_object_object_add(json_info_http, "url",
+        json_object_new_string(flow->http.url[0] != '\0' ? flow->http.url : ""));
+    json_object_object_add(json_info_http, "response_status_code",
+        json_object_new_uint64(flow->http.response_status_code ? (unsigned long long)flow->http.response_status_code : 0));
+    json_object_object_add(json_info_http, "request_content_type",
+        json_object_new_string(flow->http.request_content_type[0] != '\0' ? flow->http.request_content_type : ""));
+    json_object_object_add(json_info_http, "content_type",
+        json_object_new_string(flow->http.content_type[0] != '\0' ? flow->http.content_type : ""));
+    json_object_object_add(json_info_http, "nat_ip",
+        json_object_new_string(flow->http.nat_ip[0] != '\0' ? flow->http.nat_ip : ""));
+    json_object_object_add(json_info_http, "server",
+        json_object_new_string(flow->http.server[0] != '\0' ? flow->http.server : ""));
+    json_object_object_add(json_info_http, "user_agent",
+        json_object_new_string(flow->http.user_agent[0] != '\0' ? flow->http.user_agent : ""));
+    json_object_object_add(json_info_http, "filename",
+        json_object_new_string(flow->http.filename[0] != '\0' ? flow->http.filename : ""));
+    json_object_object_add(retval, "info_http", json_info_http);
+
+    // risk
+    json_object* json_info_risk = json_object_new_object();
+    if (flow->risk) {
+        u_int i;
+        u_int16_t cli_score, srv_score;
+
+        json_object* json_risk_names = json_object_new_array();
+        for (i = 0; i < NDPI_MAX_RISK; i++) {
+            if (NDPI_ISSET_BIT(flow->risk, i)) {
+                json_object_array_add(json_risk_names, json_object_new_string(ndpi_risk2str(i)));
+            }
+        }
+        json_object_object_add(json_info_risk, "names", json_risk_names);
+        json_object_object_add(json_info_risk, "score", json_object_new_uint64(ndpi_risk2score(flow->risk, &cli_score, &srv_score)));
+        json_object_object_add(json_info_risk, "info",
+            json_object_new_string(flow->risk_str ? flow->risk_str : ""));
+    }
+    json_object_object_add(retval, "info_risk", json_info_risk);
+
+    // payload
+    if (flow->flow_payload && (flow->flow_payload_len > 0)) {
+        ILOG("Payload checking: %s; len: %d", flow->flow_payload, flow->flow_payload_len);
+        string_t payload = str_new("");
+        for (int i = 0; i < flow->flow_payload_len; i++) {
+            str_addc(&payload, ndpi_isspace(flow->flow_payload[i]) ? '.' : flow->flow_payload[i]);
+        }
+        json_object_object_add(retval, "payload",
+            json_object_new_string((const char*)payload.content));
+        str_delete(&payload);
+    }
+    else {
+        json_object_object_add(retval, "payload",
+            json_object_new_string(""));
+    }
+
     return retval;
 }
