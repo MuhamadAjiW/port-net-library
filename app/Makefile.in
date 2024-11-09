@@ -60,8 +60,12 @@ LIB_SRC := $(shell find lib -name '*.c')
 LIB_OBJ := $(patsubst lib/%.c, bin/lib/%.o, $(LIB_SRC))
 
 lib-clean:
-	@rm -rf bin/*
-
+	/bin/rm -rf bin/*
+	/bin/rm -rf build
+	/bin/rm -f *.o libndpiReader.a
+	/bin/rm -f .*.dpdk.cmd .*.o.cmd *.dpdk.map .*.o.d
+	/bin/rm -f _install _postbuild _postinstall _preinstall
+	
 lib-dir: 
 	@for dir in $(LIB_DIR); do \
 		if [ ! -d bin/$$dir ]; then mkdir -p bin/$$dir; fi \
@@ -75,7 +79,7 @@ libndpiReader.a: $(COMMON_SOURCES:%.c=%.o) $(LIBNDPI)
 
 ndpiReader$(EXE_SUFFIX): lib-dir $(LIB_OBJ) libndpiReader.a $(LIBNDPI) ndpiReader.o
 	$(CC) $(CFLAGS) $(LDFLAGS) ndpiReader.o libndpiReader.a $(LIB_OBJ) $(LIBS) -o $@
-	strip "ndpiReader$(EXE_SUFFIX)"
+	strip $@
 
 ndpiSimpleIntegration$(EXE_SUFFIX): ndpiSimpleIntegration.o
 	$(CC) $(CFLAGS) $(LDFLAGS) $< $(LIBS) -o $@
@@ -93,7 +97,7 @@ install: ndpiReader$(EXE_SUFFIX)
 	[ -f build/app/ndpiReader.dpdk ] && cp build/app/ndpiReader.dpdk $(DESTDIR)$(PREFIX)/bin/ || true
 	[ -f ndpiReader.dpdk ] && cp ndpiReader.dpdk $(DESTDIR)$(PREFIX)/bin/ || true
 
-dpdk:
+dpdk: lib-clean
 	$(MAKE) -f Makefile.dpdk
 
 check: CFLAGS=$(CHECK_CFLAGS)
@@ -104,10 +108,7 @@ cppcheck:
 	 cppcheck --template='{file}:{line}:{severity}:{message}' --quiet --enable=all --force -I$(SRCHOME)/include *.c
 
 clean: lib-clean
-	/bin/rm -f *.o ndpiReader ndpiSimpleIntegration ndpiReader$(EXE_SUFFIX) ndpiSimpleIntegration$(EXE_SUFFIX) ndpiReader.dpdk libndpiReader.a
-	/bin/rm -f .*.dpdk.cmd .*.o.cmd *.dpdk.map .*.o.d
-	/bin/rm -f _install _postbuild _postinstall _preinstall
-	/bin/rm -rf build
+	/bin/rm -f ndpiReader ndpiSimpleIntegration ndpiReader$(EXE_SUFFIX) ndpiSimpleIntegration$(EXE_SUFFIX) ndpiReader.dpdk libndpiReader.a
 
 distdir:
 	cp README.DPDK '$(distdir)/'
