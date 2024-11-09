@@ -66,7 +66,7 @@ CFLAGS += -Wno-strict-prototypes -Wno-missing-prototypes -Wno-missing-declaratio
 CFLAGS += $(shell pkg-config --cflags libdpdk)
 LIBS += $(shell pkg-config --libs libdpdk)
 
-all: ndpiReader.ndpi$(EXE_SUFFIX)
+all: ndpiReader.dpdk$(EXE_SUFFIX)
 
 EXECUTABLE_SOURCES := ndpiReader.c ndpiSimpleIntegration.c
 COMMON_SOURCES := $(filter-out $(EXECUTABLE_SOURCES),$(wildcard *.c ))
@@ -89,7 +89,7 @@ bin/%.o: %.c
 libndpiReader.a: $(COMMON_SOURCES:%.c=%.o) $(LIBNDPI)
 	$(AR) rsv libndpiReader.a $(COMMON_SOURCES:%.c=%.o)
 
-ndpiReader.ndpi$(EXE_SUFFIX): lib-dir $(LIB_OBJ) libndpiReader.a $(LIBNDPI) ndpiReader.o
+ndpiReader.dpdk$(EXE_SUFFIX): lib-dir $(LIB_OBJ) libndpiReader.a $(LIBNDPI) ndpiReader.o
 	$(CC) $(CFLAGS) $(LDFLAGS) ndpiReader.o libndpiReader.a $(LIB_OBJ) $(LIBS) -o $@
 	strip $@
 

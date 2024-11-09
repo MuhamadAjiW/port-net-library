@@ -4,7 +4,9 @@
 // #define DEBUG_TRACE
 // #define DISABLE_LOG
 // #define CHECK_BUILD
-// #define USE_DPDK
+#ifndef USE_DPDK
+#define USE_DPDK
+#endif
 
 #ifndef DEPLOY_BUILD
 #define DEPLOY_BUILD

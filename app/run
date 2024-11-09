@@ -8,27 +8,38 @@ fi
 
 if [ ! -z "$REBUILD" ]; then
     make clean
-    make
+    if [ ! -z "$DPDK" ]; then
+        make dpdk
+    else
+        make
+    fi
 fi
 
-EXEC_STR="sudo ./ndpiReader -i $INTERFACE"
 
-if [ ! -z "$CSV_ADDR" ]; then
-    EXEC_STR+=" -C $CSV_ADDR"
-fi
-if [ ! -z "$LOG_TYPE" ]; then
-    EXEC_STR+=" -O $LOG_TYPE"
-fi
-if [ ! -z "$LOG_ADDR" ]; then
-    EXEC_STR+=" -o $LOG_ADDR"
-fi
-if [ ! -z "$ZMQ_DATA_ADDR" ]; then
-    EXEC_STR+=" -Z $ZMQ_DATA_ADDR"
-fi
-if [ ! -z "$ZMQ_FLOW_ADDR" ]; then
-    EXEC_STR+=" -z $ZMQ_FLOW_ADDR"
+EXEC_STR="sudo ./ndpiReader"
+
+if [ ! -z "$DPDK" ]; then
+    EXEC_STR+=".dpdk"
+    EXEC_STR+=" --vdev=net_pcap0,iface=$INTERFACE"
+else
+    EXEC_STR+=" -i $INTERFACE"
+
+    if [ ! -z "$CSV_ADDR" ]; then
+        EXEC_STR+=" -C $CSV_ADDR"
+    fi
+    if [ ! -z "$LOG_TYPE" ]; then
+        EXEC_STR+=" -O $LOG_TYPE"
+    fi
+    if [ ! -z "$LOG_ADDR" ]; then
+        EXEC_STR+=" -o $LOG_ADDR"
+    fi
+    if [ ! -z "$ZMQ_DATA_ADDR" ]; then
+        EXEC_STR+=" -Z $ZMQ_DATA_ADDR"
+    fi
+    if [ ! -z "$ZMQ_FLOW_ADDR" ]; then
+        EXEC_STR+=" -z $ZMQ_FLOW_ADDR"
+    fi
 fi
 
 echo "$EXEC_STR"
 eval "$EXEC_STR"
-# sudo ./ndpiReader -i ens33 -C out.ignore/out.csv
