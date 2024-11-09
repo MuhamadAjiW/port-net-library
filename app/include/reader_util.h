@@ -29,6 +29,8 @@
 #ifndef __NDPI_UTIL_H__
 #define __NDPI_UTIL_H__
 
+#include "_build_config.h"
+
 #include "../../src/lib/third_party/include/uthash.h"
 #include <pcap.h>
 #include "ndpi_includes.h"
@@ -45,7 +47,7 @@
 
 #define RX_RING_SIZE     128
 #define TX_RING_SIZE     512
-#define NUM_MBUFS       8191
+#define NUM_MBUFS       8192
 #define MBUF_CACHE_SIZE  250
 #define BURST_SIZE        32
 #define PREFETCH_OFFSET    3

@@ -1434,14 +1434,11 @@ static void on_protocol_discovered(struct ndpi_workflow* workflow,
  */
 static void setupDetection(u_int16_t thread_id, pcap_t* pcap_handle,
     struct ndpi_global_context* g_ctx) {
-    printf("\nInit part marked setup start\n");
-
     NDPI_PROTOCOL_BITMASK enabled_bitmask;
     struct ndpi_workflow_prefs prefs;
     int i, ret;
     ndpi_cfg_error rc;
 
-    printf("\nInit part marked setup 2\n");
     memset(&prefs, 0, sizeof(prefs));
     prefs.decode_tunnels = decode_tunnels;
     prefs.num_roots = NUM_ROOTS;
@@ -1449,20 +1446,17 @@ static void setupDetection(u_int16_t thread_id, pcap_t* pcap_handle,
     prefs.quiet_mode = quiet_mode;
     prefs.ignore_vlanid = ignore_vlanid;
 
-    printf("\nInit part marked setup 3\n");
     memset(&ndpi_thread_info[thread_id], 0, sizeof(ndpi_thread_info[thread_id]));
     ndpi_thread_info[thread_id].workflow = ndpi_workflow_init(&prefs, pcap_handle, 1,
         serialization_format, g_ctx);
 
 /* Protocols to enable/disable. Default: everything is enabled */
-    printf("\nInit part marked setup 4\n");
     NDPI_BITMASK_SET_ALL(enabled_bitmask);
     if (_disabled_protocols != NULL) {
         if (parse_proto_name_list(_disabled_protocols, &enabled_bitmask, 1))
             exit(-1);
     }
 
-    printf("\nInit part marked setup 5\n");
     if (_categoriesDirPath) {
         int failed_files = ndpi_load_categories_dir(ndpi_thread_info[thread_id].workflow->ndpi_struct, _categoriesDirPath);
         if (failed_files < 0) {
@@ -1471,7 +1465,6 @@ static void setupDetection(u_int16_t thread_id, pcap_t* pcap_handle,
         }
     }
 
-    printf("\nInit part marked setup 6\n");
     if (_riskyDomainFilePath)
         ndpi_load_risk_domain_file(ndpi_thread_info[thread_id].workflow->ndpi_struct, _riskyDomainFilePath);
 
@@ -1481,7 +1474,6 @@ static void setupDetection(u_int16_t thread_id, pcap_t* pcap_handle,
     if (_maliciousSHA1Path)
         ndpi_load_malicious_sha1_file(ndpi_thread_info[thread_id].workflow->ndpi_struct, _maliciousSHA1Path);
 
-    printf("\nInit part marked setup 7\n");
     if (_customCategoryFilePath) {
         char* label = strrchr(_customCategoryFilePath, '/');
 
@@ -1497,21 +1489,17 @@ static void setupDetection(u_int16_t thread_id, pcap_t* pcap_handle,
         }
     }
 
-    printf("\nInit part marked setup 8\n");
     ndpi_thread_info[thread_id].workflow->g_ctx = g_ctx;
 
     ndpi_workflow_set_flow_callback(ndpi_thread_info[thread_id].workflow,
         on_protocol_discovered, NULL);
 
 /* Make sure to load lists before finalizing the initialization */
-    printf("\nInit part marked setup 9\n");
     ndpi_set_protocol_detection_bitmask2(ndpi_thread_info[thread_id].workflow->ndpi_struct, &enabled_bitmask);
 
-    printf("\nInit part marked setup 10\n");
     if (_protoFilePath != NULL)
         ndpi_load_protocols_file(ndpi_thread_info[thread_id].workflow->ndpi_struct, _protoFilePath);
 
-    printf("\nInit part marked setup 11\n");
     ndpi_set_config(ndpi_thread_info[thread_id].workflow->ndpi_struct, NULL, "tcp_ack_payload_heuristic", "enable");
 
     for (i = 0; i < num_cfgs; i++) {
@@ -1525,20 +1513,17 @@ static void setupDetection(u_int16_t thread_id, pcap_t* pcap_handle,
         }
     }
 
-    printf("\nInit part marked setup 12\n");
     if (enable_doh_dot_detection)
         ndpi_set_config(ndpi_thread_info[thread_id].workflow->ndpi_struct, "tls", "application_blocks_tracking", "enable");
 
     if (addr_dump_path != NULL)
         ndpi_cache_address_restore(ndpi_thread_info[thread_id].workflow->ndpi_struct, addr_dump_path, 0);
 
-    printf("\nInit part marked setup 13\n");
     ret = ndpi_finalize_initialization(ndpi_thread_info[thread_id].workflow->ndpi_struct);
     if (ret != 0) {
         fprintf(stderr, "Error ndpi_finalize_initialization: %d\n", ret);
         exit(-1);
     }
-    printf("\nInit part marked done\n");
 }
 
 /* *********************************************** */
@@ -1648,24 +1633,16 @@ static pcap_t* openPcapFileOrDevice(u_int16_t thread_id, const u_char* pcap_file
 
     /* trying to open a live interface */
 #ifdef USE_DPDK
-    printf("\nInit part marked 2\n");
-    struct rte_mempool* mbuf_pool = rte_pktmbuf_pool_create(
-        "MBUF_POOL",
-        NUM_MBUFS,
-        MBUF_CACHE_SIZE,
-        0,
+    struct rte_mempool* mbuf_pool = rte_pktmbuf_pool_create("MBUF_POOL", NUM_MBUFS,
+        MBUF_CACHE_SIZE, 0,
         RTE_MBUF_DEFAULT_BUF_SIZE,
-        rte_socket_id()
-    );
+        rte_socket_id());
 
-    printf("\nInit part marked 3\n");
-    if (mbuf_pool == NULL) {
+    if (mbuf_pool == NULL)
         rte_exit(EXIT_FAILURE, "Cannot create mbuf pool: are hugepages ok?\n");
-    }
 
-    if (dpdk_port_init(dpdk_port_id, mbuf_pool) != 0) {
+    if (dpdk_port_init(dpdk_port_id, mbuf_pool) != 0)
         rte_exit(EXIT_FAILURE, "DPDK: Cannot init port %u: please see README.dpdk\n", dpdk_port_id);
-    }
 #else
   /* Trying to open the interface */
     if ((pcap_handle = pcap_open_live((char*)pcap_file, snaplen,
@@ -1723,7 +1700,6 @@ static pcap_t* openPcapFileOrDevice(u_int16_t thread_id, const u_char* pcap_file
         signal(SIGALRM, sigproc);
 #endif
     }
-    printf("\nInit part marked final\n");
 
     return pcap_handle;
 }
@@ -2074,10 +2050,7 @@ void run_detection() {
         if (trace_fp) fprintf(trace_fp, "Opening %s\n", (const u_char*)_pcap_file[thread_id]);
 #endif
 
-        printf("\nInit part marked\n");
-        // _TODO: These causes error when using DPDK
         cap = openPcapFileOrDevice(thread_id, (const u_char*)_pcap_file[thread_id]);
-        printf("\nInit part marked setup\n");
         setupDetection(thread_id, cap, g_ctx);
     }
 
@@ -2086,15 +2059,10 @@ void run_detection() {
     int status;
     void* thd_res;
 
-    printf("\nInit part 9\n");
-
 #ifdef DEPLOY_BUILD
-    // _TODO: These causes error when using DPDK
-    // ILOG(TAG_GENERAL, "Program execution starting with %d threads...", num_threads);
-    // thread_pool_assign(&global_thread_pool, THREAD_MAIN_WORKER, ldis_start, NULL, NULL);
+    ILOG(TAG_GENERAL, "Program execution starting with %d threads...", num_threads);
+    thread_pool_assign(&global_thread_pool, THREAD_MAIN_WORKER, ldis_start, NULL, NULL);
 #endif
-
-    printf("\nInit part 10\n");
 
     /* Running processing threads */
     for (thread_id = 0; thread_id < num_threads; thread_id++) {
@@ -2109,14 +2077,9 @@ void run_detection() {
             exit(-1);
         }
     }
-
-    printf("\nInit part 11\n");
-
     /* Waiting for completion */
     for (thread_id = 0; thread_id < num_threads; thread_id++) {
-        // _TODO: These causes error when using DPDK
-        // status = pthread_join(ndpi_thread_info[thread_id].pthread, &thd_res);
-
+        status = pthread_join(ndpi_thread_info[thread_id].pthread, &thd_res);
         /* check pthreade_join return value */
         if (status != 0) {
 #ifdef WIN64
@@ -2136,53 +2099,42 @@ void run_detection() {
         }
     }
 
-    printf("\nInit part 12\n");
-
 #ifdef DEPLOY_BUILD
     ldis_do_loop = 0;
     DLOG(TAG_GENERAL, "Execution completed...");
     // _TODO: Execution completion event instead of busy waiting
-
-    // _TODO: These causes error when using DPDK
-    // while (global_thread_pool.handler[THREAD_MAIN_WORKER].thread_queue_len > 0) {
-    //     zmq_sleep(1);
-    // }
+    while (global_thread_pool.handler[THREAD_MAIN_WORKER].thread_queue_len > 0) {
+        zmq_sleep(1);
+    }
 #endif
 
 #ifdef USE_DPDK
-    // _TODO: These causes error when using DPDK
-    // dpdk_port_deinit(dpdk_port_id);
+    dpdk_port_deinit(dpdk_port_id);
 #endif
-
-    printf("\nInit part 13\n");
 
     gettimeofday(&end, NULL);
     processing_time_usec = (u_int64_t)end.tv_sec * 1000000 + end.tv_usec - ((u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec);
     setup_time_usec = (u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec - ((u_int64_t)startup_time.tv_sec * 1000000 + startup_time.tv_usec);
 
     /* Printing cumulative results */
-    // _TODO: These causes error when using DPDK
-    // print_result(processing_time_usec, setup_time_usec);
-    // ILOG(TAG_GENERAL, "Printing completed...");
+    print_result(processing_time_usec, setup_time_usec);
+    ILOG(TAG_GENERAL, "Printing completed...");
 
-    // for (thread_id = 0; thread_id < num_threads; thread_id++) {
-    //     if (ndpi_thread_info[thread_id].workflow->pcap_handle != NULL) {
-    //         pcap_close(ndpi_thread_info[thread_id].workflow->pcap_handle);
-    //     }
+    for (thread_id = 0; thread_id < num_threads; thread_id++) {
+        if (ndpi_thread_info[thread_id].workflow->pcap_handle != NULL)
+            pcap_close(ndpi_thread_info[thread_id].workflow->pcap_handle);
 
-    //     terminateDetection(thread_id);
-    // }
+        terminateDetection(thread_id);
+    }
 
     ndpi_global_deinit(g_ctx);
+    }
 
-    printf("\nInit part 14\n");
-}
+    /* *********************************************** */
 
-/* *********************************************** */
-
-/**
- * @brief Initialize port array
- */
+    /**
+     * @brief Initialize port array
+     */
 
 void bpf_filter_port_array_init(int array[], int size) {
     int i;
@@ -2253,44 +2205,39 @@ void run() {
         printf("Using nDPI (%s) [%d thread(s)]\n", ndpi_revision(), num_threads);
 
         const char* gcrypt_ver = ndpi_get_gcrypt_version();
-        if (gcrypt_ver) {
+        if (gcrypt_ver)
             printf("Using libgcrypt version %s\n", gcrypt_ver);
-        }
     }
-
-    printf("\nInit part start\n");
 
     signal(SIGINT, sigproc);
 
     for (int i = 0; i < num_loops; i++) {
         run_detection();
     }
-    printf("\nInit part final\n");
 
-    // _TODO: These causes error when using DPDK
-    // if (results_path)  ndpi_free(results_path);
-    // if (results_file)  fclose(results_file);
-    // if (extcap_dumper) pcap_dump_close(extcap_dumper);
-    // if (extcap_fifo_h) pcap_close(extcap_fifo_h);
-    // if (enable_malloc_bins) ndpi_free_bin(&malloc_bins);
-    // if (csv_fp)         fclose(csv_fp);
-    // if (fingerprint_fp) fclose(fingerprint_fp);
+    if (results_path)  ndpi_free(results_path);
+    if (results_file)  fclose(results_file);
+    if (extcap_dumper) pcap_dump_close(extcap_dumper);
+    if (extcap_fifo_h) pcap_close(extcap_fifo_h);
+    if (enable_malloc_bins) ndpi_free_bin(&malloc_bins);
+    if (csv_fp)         fclose(csv_fp);
+    if (fingerprint_fp) fclose(fingerprint_fp);
 
 
-    // ndpi_free(_disabled_protocols);
+    ndpi_free(_disabled_protocols);
 
-    // for (int i = 0; i < num_cfgs; i++) {
-    //     ndpi_free(cfgs[i].proto);
-    //     ndpi_free(cfgs[i].param);
-    //     ndpi_free(cfgs[i].value);
-    // }
+    for (int i = 0; i < num_cfgs; i++) {
+        ndpi_free(cfgs[i].proto);
+        ndpi_free(cfgs[i].param);
+        ndpi_free(cfgs[i].value);
+    }
 
 #ifdef DEBUG_TRACE
     if (trace_fp) fclose(trace_fp);
 #endif
 
-    // ILOG(TAG_GENERAL, "Program is stopping...");
-    // global_clean();
+    ILOG(TAG_GENERAL, "Program is stopping...");
+    global_clean();
 }
 
 /**
@@ -2310,7 +2257,6 @@ int main(int argc, char** argv) {
             fprintf(trace_fp, " #### [%d] [%s]\n", i, argv[i]);
     }
 #endif
-    printf("\nInit successful\n");
 
     if (ndpi_get_api_version() != NDPI_API_VERSION) {
         printf("nDPI Library version mismatch: please make sure this code and the nDPI library are in sync\n");
@@ -2417,7 +2363,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         freopen("CONIN$", "r", stdin);
         freopen("CONOUT$", "w", stdout);
         freopen("CONOUT$", "w", stderr);
-    }
+}
 
     return main(__argc, __argv);
 }
