@@ -52,7 +52,6 @@ json_object* data_traffic_to_json(struct data_traffic* data) {
     json_object_object_add(retval, "ndpi_packets_per_second", json_object_new_double((double)data->ndpi_packets_per_second));
     json_object_object_add(retval, "ndpi_bytes_per_second", json_object_new_double((double)data->ndpi_bytes_per_second));
 
-    // _TODO: format as string instead
     struct tm time_format;
     char time_string[64];
 #ifdef WIN32
@@ -184,7 +183,7 @@ json_object* data_risk_to_json(struct data_risk* data) {
 json_object* data_flow_to_json(struct flow_info* data) {
     json_object* retval = json_object_new_object();
 
-    // _TODO: Will better to fetch it during generation to avoid repetition
+    // _TODO: Optimize by fetching it during generation to avoid repetition
     struct ndpi_detection_module_struct* ndpi_dm_struct = ndpi_thread_info[0].workflow->ndpi_struct;
 
     struct ndpi_flow_info* flow = data->flow;
