@@ -628,7 +628,7 @@ void ncurses_print_flows_stats() {
         if (verbose == 4) {
             //how long the table could be
             unsigned int len_table_max = 1000;
-                //number of element to delete when the table is full
+            //number of element to delete when the table is full
             int toDelete = 10;
             struct hash_stats* hostsHashT = NULL;
             struct hash_stats* host_iter = NULL;
@@ -710,7 +710,7 @@ void ncurses_print_flows_stats() {
             //sort the table in decreasing order to print
             HASH_SORT(hostsHashT, hash_stats_sort_to_print);
 
-        //print the element of the hash table
+            //print the element of the hash table
             int j;
             HASH_ITER(hh, hostsHashT, host_iter, tmp) {
 
@@ -731,7 +731,7 @@ void ncurses_print_flows_stats() {
 
         }
 
-          /* Print all flows stats */
+        /* Print all flows stats */
 
         qsort(known_flow_array, known_flow_count, sizeof(struct flow_info), cmpFlows);
 
@@ -775,11 +775,12 @@ void ncurses_print_flows_stats() {
                         not_empty = 0;
 
                         /* Check if bins are empty (and in this case discard it) */
-                        for (j = 0; j < known_flow_array[i].flow->payload_len_bin.num_bins; j++)
+                        for (j = 0; j < known_flow_array[i].flow->payload_len_bin.num_bins; j++) {
                             if (known_flow_array[i].flow->payload_len_bin.u.bins8[j] != 0) {
                                 not_empty = 1;
                                 break;
                             }
+                        }
                     }
                     else
                         not_empty = 1;
@@ -899,7 +900,7 @@ void ncurses_print_flows_stats() {
             }
         }
     }
-    else if (csv_fp != NULL) {
+    else {
         unsigned int i;
         for (i = 0; i < known_flow_count; i++) {
             ncurses_print_flow(i + 1, known_flow_array[i].flow, known_flow_array[i].thread_id);

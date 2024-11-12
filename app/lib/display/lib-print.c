@@ -907,11 +907,12 @@ void print_flows_stats() {
                         not_empty = 0;
 
                         /* Check if bins are empty (and in this case discard it) */
-                        for (j = 0; j < known_flow_array[i].flow->payload_len_bin.num_bins; j++)
+                        for (j = 0; j < known_flow_array[i].flow->payload_len_bin.num_bins; j++){
                             if (known_flow_array[i].flow->payload_len_bin.u.bins8[j] != 0) {
                                 not_empty = 1;
                                 break;
                             }
+                        }
                     }
                     else
                         not_empty = 1;
@@ -1031,7 +1032,7 @@ void print_flows_stats() {
             }
         }
     }
-    else if (csv_fp != NULL) {
+    else {
         unsigned int i;
         for (i = 0; i < known_flow_count; i++) {
             print_flow(i + 1, known_flow_array[i].flow, known_flow_array[i].thread_id);
