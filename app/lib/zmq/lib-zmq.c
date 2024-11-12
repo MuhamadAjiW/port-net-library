@@ -45,7 +45,7 @@ int lzmq_int_init(struct lzmq_interface* lzmq_int, char* addr_cp, int type) {
     return 1;
 }
 
-bool lzmq_int_initialized(struct lzmq_interface* interface) {
+uint8_t lzmq_int_initialized(struct lzmq_interface* interface) {
     return (interface->socket != 0) && (interface->context != 0);
 }
 

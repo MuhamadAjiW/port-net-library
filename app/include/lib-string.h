@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include "ndpi_api.h"
 #include "lib-base.h"
 
 #define NULL_STRING (string_t){ NULL, 0 }

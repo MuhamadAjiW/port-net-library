@@ -3,6 +3,7 @@
 
 #include <time.h>
 #include <pthread.h>
+#include "ndpi_api.h"
 #include "stdarg.h"
 #include "stdio.h"
 
