@@ -523,76 +523,43 @@ void global_data_generate_flow() {
 /* *********************************************** */
 
 void* global_data_send(__attribute__((unused)) void* args) {
+    json_object* json_data = json_object_new_object();
+
+    json_object_object_add(json_data, "memory", data_memory_to_json(&global_data.memory));
+    json_object_object_add(json_data, "time", data_time_to_json(&global_data.time));
+    json_object_object_add(json_data, "traffic", data_traffic_to_json(&global_data.traffic));
+
     struct data_protocol* protocol_array = global_data.protocol.content;
-    struct data_classification* classification_array = global_data.classification.content;
-    struct data_risk* risk_array = global_data.risk.content;
-
-    json_object* json_memory = data_memory_to_json(&global_data.memory);
-    json_object* json_time = data_time_to_json(&global_data.time);
-    json_object* json_traffic = data_traffic_to_json(&global_data.traffic);
-
-    json_object* json_protocol = json_object_new_object();
     json_object* json_protocol_array = json_object_new_array();
     for (size_t i = 0; i < global_data.protocol.length; i++) {
         json_object* json_protocol_entry = data_protocol_to_json(&protocol_array[i]);
         json_object_array_add(json_protocol_array, json_protocol_entry);
     }
-    json_object_object_add(json_protocol, "protocols", json_protocol_array);
+    json_object_object_add(json_data, "protocols", json_protocol_array);
 
-    json_object* json_classification = json_object_new_object();
+    struct data_classification* classification_array = global_data.classification.content;
     json_object* json_classification_array = json_object_new_array();
     for (size_t i = 0; i < global_data.classification.length; i++) {
         json_object* json_classification_entry = data_classification_to_json(&classification_array[i]);
         json_object_array_add(json_classification_array, json_classification_entry);
     }
-    json_object_object_add(json_classification, "classifications", json_classification_array);
+    json_object_object_add(json_data, "classifications", json_classification_array);
 
-    json_object* json_risk = json_object_new_object();
+    struct data_risk* risk_array = global_data.risk.content;
     json_object* json_risk_array = json_object_new_array();
     for (size_t i = 0; i < global_data.risk.length; i++) {
         json_object* json_risk_entry = data_risk_to_json(&risk_array[i]);
         json_object_array_add(json_risk_array, json_risk_entry);
     }
-    json_object_object_add(json_risk, "risks", json_risk_array);
+    json_object_object_add(json_data, "risks", json_risk_array);
 
-
     lzmq_send_json(
         &global_zmq_data_conn,
-        json_memory,
-        0
-    );
-    lzmq_send_json(
-        &global_zmq_data_conn,
-        json_time,
-        0
-    );
-    lzmq_send_json(
-        &global_zmq_data_conn,
-        json_traffic,
-        0
-    );
-    lzmq_send_json(
-        &global_zmq_data_conn,
-        json_protocol,
-        0
-    );
-    lzmq_send_json(
-        &global_zmq_data_conn,
-        json_classification,
-        0
-    );
-    lzmq_send_json(
-        &global_zmq_data_conn,
-        json_risk,
+        json_data,
         0
     );
 
-    json_object_put(json_memory);
-    json_object_put(json_time);
-    json_object_put(json_traffic);
-    json_object_put(json_protocol);
-    json_object_put(json_classification);
-    json_object_put(json_risk);
+    json_object_put(json_data);
 
     return NULL;
 }
