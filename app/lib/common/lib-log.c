@@ -1,23 +1,34 @@
 #include "../../include/lib-log.h"
 
-uint8_t logger_init(struct logger* logger, int type, char* addr, int port) {
-    logger->type = type;
+uint8_t logger_init(struct logger* logger, int type, char* addr) {
     switch (type)
     {
     case LOGGER_TYPE_STDOUT:
-        return 1;
-    case LOGGER_TYPE_FILE:
-        logger->output_file = fopen(addr, "w+");
-        if (logger->output_file == NULL) return 0;
-        return 1;
-    case LOGGER_TYPE_ZMQ:
-        logger->zmq_int = malloc(sizeof(struct lzmq_interface));
-        lzmq_int_init(logger->zmq_int, addr, port, ZMQ_PUB);
+        logger->type = type;
         return 1;
 
-    default:
-        return 0;
+    case LOGGER_TYPE_FILE:
+        logger->output_file = fopen(addr, "w+");
+        if (logger->output_file != NULL) {
+            logger->type = type;
+            return 1;
+        }
+        break;
+
+    case LOGGER_TYPE_ZMQ:
+        logger->zmq_int = ndpi_malloc(sizeof(struct lzmq_interface));
+
+        if (lzmq_int_init(logger->zmq_int, addr, ZMQ_PUB)) {
+            logger->type = type;
+            return 1;
+        }
+
+        ndpi_free(logger->zmq_int);
+        break;
     }
+
+    logger->type = 0;
+    return 0;
 }
 
 void logger_delete(struct logger* logger) {
@@ -30,7 +41,7 @@ void logger_delete(struct logger* logger) {
         return;
     case LOGGER_TYPE_ZMQ:
         lzmq_int_cleanup(logger->zmq_int);
-        free(logger->zmq_int);
+        ndpi_free(logger->zmq_int);
         return;
 
     default:
@@ -69,20 +80,15 @@ uint8_t logger_log_zmq(struct logger* logger, log_t* log) {
 }
 
 uint8_t logger_log(struct logger* logger, log_t* log) {
-    // printf("logging something step 2\n");
     switch (logger->type) {
     case LOGGER_TYPE_FILE:
-        // printf("type 0\n");
         return logger_log_file(logger, log);
     case LOGGER_TYPE_STDOUT:
-        // printf("type 1\n");
         return logger_log_stdout(log);
     case LOGGER_TYPE_ZMQ:
-        // printf("type 2\n");
         return logger_log_zmq(logger, log);
 
     default:
-        // printf("type null\n");
         return 0;
     }
 }
@@ -93,14 +99,12 @@ uint8_t logger_log_raw(
     char* tag,
     char* __restrict__ pattern, ...
 ) {
-    // printf("logging something\n");
-
     va_list args;
     va_start(args, pattern);
     int len = vsnprintf(NULL, 0, pattern, args) + 1;
     va_end(args);
 
-    char* message = malloc(len);
+    char* message = ndpi_malloc(len);
     if (message == NULL) return 0;
 
     va_start(args, pattern);
@@ -111,7 +115,7 @@ uint8_t logger_log_raw(
     int retcode = logger_log(logger, &log);
 
     log_delete(&log);
-    free(message);
+    ndpi_free(message);
 
     return retcode;
 }

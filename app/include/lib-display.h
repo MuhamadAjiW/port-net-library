@@ -12,6 +12,6 @@
 extern int ldis_do_loop;
 extern struct timeval startup_time, begin, end;
 
-void* ldis_print(__attribute__((unused)) void* arg);
+void* ldis_start(__attribute__((unused)) void* arg);
 
 #endif

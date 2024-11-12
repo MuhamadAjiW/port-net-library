@@ -29,6 +29,8 @@
 #ifndef __NDPI_UTIL_H__
 #define __NDPI_UTIL_H__
 
+#include "_build_config.h"
+
 #include "../../src/lib/third_party/include/uthash.h"
 #include <pcap.h>
 #include "ndpi_includes.h"
@@ -45,7 +47,7 @@
 
 #define RX_RING_SIZE     128
 #define TX_RING_SIZE     512
-#define NUM_MBUFS       8191
+#define NUM_MBUFS       8192
 #define MBUF_CACHE_SIZE  250
 #define BURST_SIZE        32
 #define PREFETCH_OFFSET    3
@@ -92,6 +94,9 @@ extern int dpdk_port_deinit(int port);
 #define INIT_VAL                   -1
 #define SERIALIZATION_BUFSIZ     (8192 * 2)
 
+// _Note: Added in app
+#define PACKET_LENGTH_CLASSIFICATION_COUNT 6
+#define FLOW_TYPE_CLASSIFICATION_COUNT 3
 
 #ifdef __cplusplus
 extern "C" {
@@ -345,12 +350,12 @@ extern "C" {
     u_int64_t protocol_counter_bytes[NDPI_MAX_SUPPORTED_PROTOCOLS + NDPI_MAX_NUM_CUSTOM_PROTOCOLS + 1];
     u_int32_t protocol_flows[NDPI_MAX_SUPPORTED_PROTOCOLS + NDPI_MAX_NUM_CUSTOM_PROTOCOLS + 1];
     u_int32_t ndpi_flow_count;
-    u_int32_t flow_count[3];
+    u_int32_t flow_count[FLOW_TYPE_CLASSIFICATION_COUNT];
     u_int64_t tcp_count, udp_count;
     u_int64_t mpls_count, pppoe_count, vlan_count, fragmented_count;
-    u_int64_t packet_len[6];
+    u_int64_t packet_len[PACKET_LENGTH_CLASSIFICATION_COUNT];
     u_int16_t max_packet_len;
-    u_int64_t dpi_packet_count[3];
+    u_int64_t dpi_packet_count[FLOW_TYPE_CLASSIFICATION_COUNT];
     u_int64_t flow_confidence[NDPI_CONFIDENCE_MAX];
     u_int64_t num_dissector_calls;
 

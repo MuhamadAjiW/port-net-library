@@ -11,13 +11,13 @@
 #include "lib-format.h"
 #include "lib-ndpi.h"
 #include "_app_global.h"
+#include "_build_config.h"
 
 // TODO: Document
 // Macros
 #define NUM_DOH_BINS 2
 
 // Externs
-extern struct ndpi_stats cumulative_stats;
 extern struct reader_thread ndpi_thread_info[MAX_NUM_READER_THREADS];
 extern u_int8_t num_threads;
 extern u_int8_t verbose, enable_flow_stats;
@@ -33,7 +33,6 @@ extern FILE* results_file;
 extern struct ndpi_bin malloc_bins;
 extern u_int32_t risk_stats[NDPI_MAX_RISK], risks_found, flows_with_risks;
 extern u_int8_t enable_realtime_output, enable_protocol_guess, enable_payload_analyzer, num_bin_clusters, extcap_exit;
-extern struct flow_info* all_flows;
 extern u_int8_t enable_doh_dot_detection;
 extern u_int8_t undetected_flows_deleted;
 extern FILE* csv_fp; /**< for CSV export */
@@ -49,23 +48,32 @@ u_int check_bin_doh_similarity(struct ndpi_bin* bin, float* similarity);
 void flowGetBDMeanandVariance(struct ndpi_flow_info* flow);
 void node_proto_guess_walker(const void* node, ndpi_VISIT which, int depth, void* user_data);
 void node_flow_risk_walker(const void* node, ndpi_VISIT which, int depth, void* user_data);
-void node_print_known_proto_walker(const void* node,
-    ndpi_VISIT which, int depth, void* user_data);
-void node_print_unknown_proto_walker(const void* node,
+void node_proto_print_walker(const void* node,
     ndpi_VISIT which, int depth, void* user_data);
 
 /* *********************************************** */
 
-void data_aggregate();
-
-/* *********************************************** */
-
+void global_data_init();
 void global_data_clean();
+void global_data_reset_counters();
+void global_data_generate_memory();
+void global_data_generate_traffic(uint64_t processing_time_usec);
+void global_data_generate_time(
+    uint64_t processing_time_usec,
+    uint64_t setup_time_usec
+);
+void global_data_generate_risk();
+void global_data_generate_detail();
+void global_data_generate_protocol();
+void global_data_generate_flow();
 void global_data_generate(
     uint64_t processing_time_usec,
-    uint64_t setup_time_usec,
-    struct ndpi_detection_module_struct* ndpi_dm_struct
+    uint64_t setup_time_usec
 );
+
+/* *********************************************** */
+
 void* global_data_send(__attribute__((unused)) void* args);
+void* global_flow_send(__attribute__((unused)) void* args);
 
 #endif

@@ -1,0 +1,54 @@
+#!/bin/bash
+source "etc/run.config"
+
+if [ -z "$INTERFACE" ]; then
+    echo "Error: INTERFACE is not set or is empty in etc/run.config."
+    exit 1
+fi
+
+if [ ! -z "$REBUILD" ]; then
+    make clean
+    if [ ! -z "$DPDK" ]; then
+        make dpdk
+    else
+        make
+    fi
+fi
+
+
+EXEC_STR="sudo ./ndpiReader"
+ARG_STR=""
+
+if [ ! -z "$LOG_TYPE" ]; then
+    ARG_STR+=" -O $LOG_TYPE"
+fi
+if [ ! -z "$LOG_ADDR" ]; then
+    ARG_STR+=" -o $LOG_ADDR"
+fi
+if [ ! -z "$ZMQ_DATA_ADDR" ]; then
+    ARG_STR+=" -Z $ZMQ_DATA_ADDR"
+fi
+if [ ! -z "$ZMQ_FLOW_ADDR" ]; then
+    ARG_STR+=" -z $ZMQ_FLOW_ADDR"
+fi
+
+if [ ! -z "$DPDK" ]; then
+    EXEC_STR+=".dpdk"
+    EXEC_STR+=" --vdev=net_pcap0,iface=$INTERFACE"
+    
+    if [ ! -z "$ARG_STR" ]; then
+        EXEC_STR+=" -- $ARG_STR"
+    fi
+else
+    ARG_STR+=" -i $INTERFACE"
+
+    if [ ! -z "$CSV_ADDR" ]; then
+        ARG_STR+=" -C $CSV_ADDR"
+    fi
+    
+    EXEC_STR+="$ARG_STR"
+fi
+
+
+echo "$EXEC_STR"
+eval "$EXEC_STR"

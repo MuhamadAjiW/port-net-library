@@ -52,6 +52,8 @@
 /app/libndpiReader.a
 /app/ndpiReader
 /app/ndpiReader.exe
+/app/ndpiReader.dpdk
+/app/ndpiReader.dpdk.exe
 /app/ndpiSimpleIntegration
 /fuzz/.deps/
 /fuzz/Makefile

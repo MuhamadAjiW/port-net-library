@@ -20,11 +20,11 @@ struct thread_pool_task {
 struct thread_pool_handler {
     pthread_t thread;
     pthread_mutex_t thread_mutex;
-    int thread_queue_len;
-    int thread_queue_size;
-    struct thread_pool_task* thread_queue;
-    pthread_cond_t task_signal;
-    bool __runner_flag;
+    pthread_cond_t thread_signal;
+    struct thread_pool_task* task_queue;
+    int task_queue_len;
+    int task_queue_size;
+    uint8_t __runner_flag;
 };
 
 struct thread_pool {

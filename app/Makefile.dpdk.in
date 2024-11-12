@@ -12,16 +12,89 @@ endif
 # Default target, can be overridden by command line or environment
 RTE_TARGET ?= x86_64-native-linuxapp-gcc
 
-include $(RTE_SDK)/mk/rte.vars.mk
+AR=@AR@
+CC=@CC@
+CXX=@CXX@
+ifneq ($(OS),Windows_NT)
+OS := $(shell uname)
+endif
+ifeq ($(OS),Darwin)
+CC=clang -fno-color-diagnostics
+endif
+BUILD_MINGW=@BUILD_MINGW@
+BUILD_MINGW_X64=@BUILD_MINGW_X64@
+DISABLE_NPCAP=@DISABLE_NPCAP@
+EXE_SUFFIX=@EXE_SUFFIX@
+SRCHOME=../src
+ifneq ($(OS),Windows_NT)
+CFLAGS+=-fPIC -DPIC
+endif
+CFLAGS+=-I$(SRCHOME)/include @NDPI_CFLAGS@ @PCAP_INC@ @GPROF_CFLAGS@
+LDFLAGS+=@NDPI_LDFLAGS@
+LIBNDPI=$(SRCHOME)/lib/libndpi.a
+LIBS=$(LIBNDPI) @PCAP_LIB@ @ADDITIONAL_LIBS@ @LIBS@ @GPROF_LIBS@
+LIB_HEADERS := $(shell find lib -name '*.h')
+HEADERS=$(SRCHOME)/include/ndpi_api.h $(LIB_HEADERS) \
+        $(SRCHOME)/include/ndpi_typedefs.h $(SRCHOME)/include/ndpi_protocol_ids.h
+PREFIX?=@prefix@
 
-APP = ndpiReader.dpdk
-LIBNDPI = $(PWD)/../src/lib/libndpi.a
+ifneq ($(BUILD_MINGW),)
 
-SRCS-y := reader_util.c ndpiReader.c
+ifeq ($(DISABLE_NPCAP),0)
+CFLAGS+=-I@srcdir@/../windows/WpdPack/Include -I@srcdir@/../windows/WpdPack/Include/pcap
+else
+CFLAGS+=-DDISABLE_NPCAP
+endif
 
-CFLAGS += -g
-CFLAGS += -Wno-strict-prototypes -Wno-missing-prototypes -Wno-missing-declarations -Wno-unused-parameter -I $(PWD)/../src/include @CFLAGS@ -DUSE_DPDK
-LDLIBS = $(LIBNDPI) @PCAP_LIB@ @LIBS@ @ADDITIONAL_LIBS@ -lpthread @LDFLAGS@
+ifeq ($(DISABLE_NPCAP),0)
 
-include $(RTE_SDK)/mk/rte.extapp.mk
+ifneq ($(BUILD_MINGW_X64),)
+LIBS+=@srcdir@/../windows/WpdPack/Lib/x64/wpcap.lib
+else
+LIBS+=@srcdir@/../windows/WpdPack/Lib/wpcap.lib
+endif
 
+endif
+
+LIBS+=-Wl,-Bstatic -lpthread -Wl,-Bdynamic
+else
+LIBS+=-pthread
+endif
+
+CFLAGS += -pthread -g
+CFLAGS += -Wno-strict-prototypes -Wno-missing-prototypes -Wno-missing-declarations -Wno-unused-parameter -I $(PWD)/../src/include -g -O2 -DUSE_DPDK
+CFLAGS += $(shell pkg-config --cflags libdpdk)
+LIBS += $(shell pkg-config --libs libdpdk)
+
+all: ndpiReader.dpdk$(EXE_SUFFIX)
+
+EXECUTABLE_SOURCES := ndpiReader.c ndpiSimpleIntegration.c
+COMMON_SOURCES := $(filter-out $(EXECUTABLE_SOURCES),$(wildcard *.c ))
+INTERNAL_SOURCES := $(shell find $(lib) -name '*.c')
+LIB_DIR := $(shell find lib -type d)
+LIB_SRC := $(shell find lib -name '*.c')
+LIB_OBJ := $(patsubst lib/%.c, bin/lib/%.o, $(LIB_SRC))
+
+lib-clean:
+	@rm -rf bin/*
+
+lib-dir: 
+	@for dir in $(LIB_DIR); do \
+		if [ ! -d bin/$$dir ]; then mkdir -p bin/$$dir; fi \
+	done
+
+bin/%.o: %.c
+	@$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+
+libndpiReader.a: $(COMMON_SOURCES:%.c=%.o) $(LIBNDPI)
+	$(AR) rsv libndpiReader.a $(COMMON_SOURCES:%.c=%.o)
+
+ndpiReader.dpdk$(EXE_SUFFIX): lib-dir $(LIB_OBJ) libndpiReader.a $(LIBNDPI) ndpiReader.o
+	$(CC) $(CFLAGS) $(LDFLAGS) ndpiReader.o libndpiReader.a $(LIB_OBJ) $(LIBS) -o $@
+	strip $@
+
+ndpiSimpleIntegration$(EXE_SUFFIX): ndpiSimpleIntegration.o
+	$(CC) $(CFLAGS) $(LDFLAGS) $< $(LIBS) -o $@
+
+%.o: %.c $(HEADERS) Makefile
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@

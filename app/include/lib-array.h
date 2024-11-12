@@ -1,6 +1,7 @@
 #ifndef _LIB_ARRAY_H
 #define _LIB_ARRAY_H
 
+#include "ndpi_api.h"
 #include "stdint.h"
 #include "stdlib.h"
 #include "string.h"

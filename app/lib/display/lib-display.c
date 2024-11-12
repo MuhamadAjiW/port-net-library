@@ -2,8 +2,17 @@
 
 int ldis_do_loop = 1;
 
-void* ldis_print(__attribute__((unused)) void* arg) {
+void* ldis_refresh(void* processing_time_usec_arg) {
+    clear();
+    ncurses_print_result(*(u_int64_t*)processing_time_usec_arg);
+    refresh();
+
+    return NULL;
+}
+
+void* ldis_start(__attribute__((unused)) void* arg) {
     DLOG(TAG_DISPLAY, "Starting display...");
+
 #ifndef __NCURSES_H
 
     while (ldis_do_loop) {
@@ -11,7 +20,7 @@ void* ldis_print(__attribute__((unused)) void* arg) {
         u_int64_t processing_time_usec = (u_int64_t)end.tv_sec * 1000000 + end.tv_usec - ((u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec);
         u_int64_t setup_time_usec = (u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec - ((u_int64_t)startup_time.tv_sec * 1000000 + startup_time.tv_usec);
 
-        printResults(0, 0);
+        print_result(processing_time_usec, setup_time_usec);
     }
 
 #else
@@ -21,19 +30,16 @@ void* ldis_print(__attribute__((unused)) void* arg) {
     curs_set(false);
 
     while (ldis_do_loop) {
-        clear();
-        // printw("\n[DEV] Non printing test stats: %ld\n", ndpi_thread_info[0].workflow->stats.total_wire_bytes);
-
         gettimeofday(&end, NULL);
         u_int64_t processing_time_usec = (u_int64_t)end.tv_sec * 1000000 + end.tv_usec - ((u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec);
         u_int64_t setup_time_usec = (u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec - ((u_int64_t)startup_time.tv_sec * 1000000 + startup_time.tv_usec);
 
-        global_data_generate(processing_time_usec, setup_time_usec, ndpi_thread_info[0].workflow->ndpi_struct);
-        ncurses_printResults(processing_time_usec);
-        thread_pool_assign(&global_thread_pool, THREAD_ZMQ, global_data_send, NULL, NULL);
+        global_data_generate(processing_time_usec, setup_time_usec);
+        thread_pool_assign(&global_thread_pool, THREAD_DISPLAY, ldis_refresh, (void*)&processing_time_usec, NULL);
+        thread_pool_assign(&global_thread_pool, THREAD_ZMQ_PRIMARY, global_data_send, NULL, NULL);
+        thread_pool_assign(&global_thread_pool, THREAD_ZMQ_SECONDARY, global_flow_send, NULL, NULL);
 
-        refresh();
-        ncurses_clean_twalk();
+        // printw("[DEV] That's all");
         napms(1000);
     }
     endwin();
@@ -41,5 +47,8 @@ void* ldis_print(__attribute__((unused)) void* arg) {
 
     printf("Done, closing display\n");
     DLOG(TAG_DISPLAY, "Closing display...");
+
+    global_data_reset_counters();
+    global_data_clean();
     return EXIT_SUCCESS;
 }

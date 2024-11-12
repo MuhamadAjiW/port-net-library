@@ -1021,9 +1021,9 @@ static struct ndpi_flow_info* get_ndpi_flow_info(struct ndpi_workflow* workflow,
 
     return(rflow);
   }
-}
+  }
 
-/* ****************************************************** */
+  /* ****************************************************** */
 
 static struct ndpi_flow_info* get_ndpi_flow_info6(struct ndpi_workflow* workflow,
   u_int16_t vlan_id,
@@ -1862,9 +1862,9 @@ static struct ndpi_proto packet_processing(struct ndpi_workflow* workflow,
   *flow_ext = flow;
 
   return(flow->detected_protocol);
-}
+  }
 
-/* ****************************************************** */
+  /* ****************************************************** */
 
 int ndpi_is_datalink_supported(int datalink_type) {
   /* Keep in sync with the similar switch in ndpi_workflow_process_packet */
@@ -2568,9 +2568,9 @@ iph_check:
 
 static const struct rte_eth_conf port_conf_default = {
 #if(RTE_VERSION < RTE_VERSION_NUM(19, 8, 0, 0))
-                  .rxmode = {.max_rx_pkt_len = ETHER_MAX_LEN }
+                  .rxmode = {.max_lro_pkt_size = ETHER_MAX_LEN }
 #else
-                  .rxmode = {.max_rx_pkt_len = RTE_ETHER_MAX_LEN }
+                  .rxmode = {.max_lro_pkt_size = RTE_ETHER_MAX_LEN }
 #endif
 };
 

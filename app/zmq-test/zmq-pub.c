@@ -1,6 +1,8 @@
+#define NON_NDPI
+
 #include <zmq.h>
 #include <json-c/json.h>
-#include "../include/lib-string.h"
+#include "lib-string.h"
 
 uint8_t lzmq_send_to_server(char* ip, int port) {
     string_t address = str_format("tcp://%s:%d", ip, port);
