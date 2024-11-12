@@ -210,3 +210,8 @@ stamp-h1
 # Mark for ignore
 *.ignore
 **/a.out
+
+# Testing artifacts
+confdefs.h
+conftest.c
+conftest.err
