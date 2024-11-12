@@ -1,7 +1,7 @@
 #!/bin/bash
 
-gcc -c ../lib/common/lib-string.c -o ../bin/lib/common/lib-string.o
-gcc zmq-sub.c -lzmq -ljson-c ../bin/lib/common/lib-string.o -o sub.ignore
-gcc zmq-pub.c -lzmq -ljson-c ../bin/lib/common/lib-string.o -o pub.ignore
+gcc -c lib-string.c -o lib-string.o
+gcc zmq-sub.c -lzmq -ljson-c lib-string.o -o sub.ignore
+gcc zmq-pub.c -lzmq -ljson-c lib-string.o -o pub.ignore
 
 ./sub.ignore

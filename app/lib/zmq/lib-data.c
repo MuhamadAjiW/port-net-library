@@ -18,8 +18,8 @@ json_object* data_memory_to_json(struct data_memory* data) {
 json_object* data_time_to_json(struct data_time* data) {
     json_object* retval = json_object_new_object();
 
-    json_object_object_add(retval, "setup_time", json_object_new_uint64(data->setup_time));
-    json_object_object_add(retval, "processing_time", json_object_new_uint64(data->processing_time));
+    json_object_object_add(retval, "setup_time_ms", json_object_new_uint64(data->setup_time));
+    json_object_object_add(retval, "processing_time_ms", json_object_new_uint64(data->processing_time));
 
     return retval;
 }
@@ -53,9 +53,31 @@ json_object* data_traffic_to_json(struct data_traffic* data) {
     json_object_object_add(retval, "ndpi_bytes_per_second", json_object_new_double((double)data->ndpi_bytes_per_second));
 
     // _TODO: format as string instead
-    json_object_object_add(retval, "start_time", json_object_new_int64(data->start_time));
-    json_object_object_add(retval, "end_time", json_object_new_int64(data->end_time));
-    json_object_object_add(retval, "traffic_duration", json_object_new_double((double)data->traffic_duration));
+    struct tm time_format;
+    char time_string[64];
+#ifdef WIN32
+      /* localtime() on Windows is thread-safe */
+    time_t tv_sec = global_data.traffic.start_time;
+    struct tm* tm_ptr = localtime(&tv_sec);
+    time_format = *tm_ptr;
+#else
+    localtime_r(&global_data.traffic.start_time, &time_format);
+#endif
+    strftime(time_string, sizeof(time_string), "%d %b %Y %H:%M:%S", &time_format);
+    json_object_object_add(retval, "start_time", json_object_new_string(time_string));
+
+#ifdef WIN32
+      /* localtime() on Windows is thread-safe */
+    tv_sec = global_data.traffic.end_time;
+    tm* tm_ptr = localtime(&tv_sec);
+    time_format = *tm_ptr;
+#else
+    localtime_r(&global_data.traffic.end_time, &time_format);
+#endif
+    strftime(time_string, sizeof(time_string), "%d %b %Y %H:%M:%S", &time_format);
+    json_object_object_add(retval, "end_time", json_object_new_string(time_string));
+
+    json_object_object_add(retval, "traffic_duration_sec", json_object_new_double((double)data->traffic_duration));
 
     json_object_object_add(retval, "traffic_packets_per_second", json_object_new_double((double)data->traffic_packets_per_second));
     json_object_object_add(retval, "traffic_bytes_per_second", json_object_new_double((double)data->traffic_bytes_per_second));

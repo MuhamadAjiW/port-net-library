@@ -344,8 +344,8 @@ void global_data_generate_traffic(uint64_t processing_time_usec) {
 
         global_data.traffic.ndpi_packets_per_second = t;
         global_data.traffic.ndpi_bytes_per_second = b;
-        global_data.traffic.start_time = (long)pcap_start.tv_sec;
-        global_data.traffic.end_time = (long)pcap_end.tv_sec;
+        global_data.traffic.start_time = pcap_start.tv_sec;
+        global_data.traffic.end_time = pcap_end.tv_sec;
 
         if (live_capture) {
             global_data.traffic.traffic_duration = processing_time_usec;
@@ -354,10 +354,11 @@ void global_data_generate_traffic(uint64_t processing_time_usec) {
             global_data.traffic.traffic_duration =
                 ((u_int64_t)pcap_end.tv_sec * 1000000 + pcap_end.tv_usec) - ((u_int64_t)pcap_start.tv_sec * 1000000 + pcap_start.tv_usec);
         }
+        global_data.traffic.traffic_duration = processing_time_usec / 1000000;
 
         if (global_data.traffic.traffic_duration != 0) {
-            t = (float)(global_data.traffic.ip_packet_count * 1000000) / global_data.traffic.traffic_duration;
-            b = (float)(global_data.traffic.total_wire_bytes * 8 * 1000000) / global_data.traffic.traffic_duration;
+            t = (float)(global_data.traffic.ip_packet_count) / global_data.traffic.traffic_duration;
+            b = (float)(global_data.traffic.total_wire_bytes * 8) / global_data.traffic.traffic_duration;
         }
         else {
             t = 0;

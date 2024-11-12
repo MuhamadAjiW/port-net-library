@@ -42,7 +42,7 @@ struct data_time {
 };
 
 struct data_traffic {
-    int64_t start_time, end_time;
+    time_t start_time, end_time;
     uint64_t raw_packet_count;
     uint64_t ip_packet_count;
     uint64_t total_wire_bytes, total_ip_bytes, total_discarded_bytes;

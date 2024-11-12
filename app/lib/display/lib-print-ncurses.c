@@ -15,8 +15,8 @@ void* ncurses_print_result(uint64_t processing_time_usec) {
         printw("\tFlow Memory (per flow):  %-13s\n", formatBytes(global_data.memory.mem_per_flow, buf, sizeof(buf)));
         printw("\tActual Memory:           %-13s\n", formatBytes(global_data.memory.mem_actual, buf, sizeof(buf)));
         printw("\tPeak Memory:             %-13s\n", formatBytes(global_data.memory.mem_peak, buf, sizeof(buf)));
-        printw("\tSetup Time:              %lu msec\n", global_data.time.processing_time);
-        printw("\tPacket Processing Time:  %lu msec\n", global_data.time.setup_time);
+        printw("\tSetup Time:              %lu msec\n", global_data.time.setup_time);
+        printw("\tPacket Processing Time:  %lu msec\n", global_data.time.processing_time);
 
         printw("\nTraffic statistics:\n");
         printw("\tEthernet bytes:        %-13llu (includes ethernet CRC/IFC/trailer)\n",
@@ -54,22 +54,22 @@ void* ncurses_print_result(uint64_t processing_time_usec) {
             );
 
 #ifdef WIN32
-      /* localtime() on Windows is thread-safe */
-            time_t tv_sec = pcap_start.tv_sec;
+            /* localtime() on Windows is thread-safe */
+            time_t tv_sec = global_data.traffic.start_time;
             struct tm* tm_ptr = localtime(&tv_sec);
             result = *tm_ptr;
 #else
-            localtime_r(&pcap_start.tv_sec, &result);
+            localtime_r(&global_data.traffic.start_time, &result);
 #endif
             strftime(when, sizeof(when), "%d/%b/%Y %H:%M:%S", &result);
             printw("\tAnalysis begin:        %s\n", when);
 #ifdef WIN32
-      /* localtime() on Windows is thread-safe */
-            tv_sec = pcap_end.tv_sec;
+            /* localtime() on Windows is thread-safe */
+            tv_sec = global_data.traffic.end_time;
             tm_ptr = localtime(&tv_sec);
             result = *tm_ptr;
 #else
-            localtime_r(&pcap_end.tv_sec, &result);
+            localtime_r(&global_data.traffic.end_time, &result);
 #endif
             strftime(when, sizeof(when), "%d/%b/%Y %H:%M:%S", &result);
             printw("\tAnalysis end:          %s\n", when);
@@ -77,7 +77,7 @@ void* ncurses_print_result(uint64_t processing_time_usec) {
                 formatPackets(global_data.traffic.traffic_packets_per_second, buf),
                 formatTraffic(global_data.traffic.traffic_bytes_per_second, 1, buf1)
             );
-            printw("\tTraffic duration:      %.3f sec\n", global_data.traffic.traffic_duration / 1000000);
+            printw("\tTraffic duration:      %.3f sec\n", global_data.traffic.traffic_duration);
         }
 
         if (global_data.traffic.guessed_flow_protocols) {

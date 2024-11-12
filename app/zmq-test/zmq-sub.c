@@ -1,7 +1,9 @@
+#define NON_NDPI
+
 #include <zmq.h>
 #include <time.h>
 #include <json-c/json.h>
-#include "../include/lib-string.h"
+#include "lib-string.h"
 
 uint8_t lzmq_receive_from_server(char* ip, int port, FILE* output_file) {
     string_t address = str_format("tcp://%s:%d", ip, port);
@@ -71,7 +73,7 @@ uint8_t lzmq_receive_from_server(char* ip, int port, FILE* output_file) {
 int main() {
     char* ip = "127.0.0.1";
     // int port = 8888;
-    int port = 57;
+    int port = 56;
     FILE* output_file = fopen("out.ignore", "w+");
     if (output_file == NULL) {
         perror("Error: Failed opening output file");

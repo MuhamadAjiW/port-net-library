@@ -53,21 +53,21 @@ void print_result(uint64_t processing_time_usec, uint64_t setup_time_usec) {
             );
 #ifdef WIN32
       /* localtime() on Windows is thread-safe */
-            time_t tv_sec = pcap_start.tv_sec;
+            time_t tv_sec = global_data.traffic.start_time;
             struct tm* tm_ptr = localtime(&tv_sec);
             result = *tm_ptr;
 #else
-            localtime_r(&pcap_start.tv_sec, &result);
+            localtime_r(&global_data.traffic.start_time, &result);
 #endif
             strftime(when, sizeof(when), "%d/%b/%Y %H:%M:%S", &result);
             printf("\tAnalysis begin:        %s\n", when);
 #ifdef WIN32
       /* localtime() on Windows is thread-safe */
-            tv_sec = pcap_end.tv_sec;
+            tv_sec = global_data.traffic.end_time;
             tm_ptr = localtime(&tv_sec);
             result = *tm_ptr;
 #else
-            localtime_r(&pcap_end.tv_sec, &result);
+            localtime_r(&global_data.traffic.end_time, &result);
 #endif
             strftime(when, sizeof(when), "%d/%b/%Y %H:%M:%S", &result);
             printf("\tAnalysis end:          %s\n", when);
@@ -75,7 +75,7 @@ void print_result(uint64_t processing_time_usec, uint64_t setup_time_usec) {
                 formatPackets(global_data.traffic.traffic_packets_per_second, buf),
                 formatTraffic(global_data.traffic.traffic_bytes_per_second, 1, buf1)
             );
-            printf("\tTraffic duration:      %.3f sec\n", global_data.traffic.traffic_duration / 1000000);
+            printf("\tTraffic duration:      %.3f sec\n", global_data.traffic.traffic_duration);
         }
 
         if (global_data.traffic.guessed_flow_protocols) {
@@ -907,7 +907,7 @@ void print_flows_stats() {
                         not_empty = 0;
 
                         /* Check if bins are empty (and in this case discard it) */
-                        for (j = 0; j < known_flow_array[i].flow->payload_len_bin.num_bins; j++){
+                        for (j = 0; j < known_flow_array[i].flow->payload_len_bin.num_bins; j++) {
                             if (known_flow_array[i].flow->payload_len_bin.u.bins8[j] != 0) {
                                 not_empty = 1;
                                 break;
