@@ -12,9 +12,16 @@ if [ ! -z "$REBUILD" ]; then
         make dpdk
         
         echo "Setting hugepages..."
-        sudo chmod o+w /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages
-        sudo echo 64 > /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages
-        sudo chmod o-w /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages
+        current_hugepages=$(cat /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages)
+        if [ "$current_hugepages" -eq 0 ]; then
+            echo "Setting nr_hugepages to 64..."
+            sudo chmod o+w /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages
+            sudo echo 128 > /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages
+            sudo chmod o-w /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages
+        else
+            echo "nr_hugepages is already set to $current_hugepages. No changes made."
+        fi
+
     else
         echo "Cleaning previous build..."
         make clean
