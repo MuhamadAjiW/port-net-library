@@ -51,7 +51,7 @@ void logger_delete(struct logger* logger) {
 
 uint8_t logger_log_stdout(log_t* log) {
     string_t str = log_generate_string(log);
-    printf(str.content);
+    printf("%s", str.content);
     str_delete(&str);
 
     return 1;
@@ -61,7 +61,7 @@ uint8_t logger_log_file(struct logger* logger, log_t* log) {
     if (logger->output_file == NULL) return 0;
     string_t str = log_generate_string(log);
 
-    fprintf(logger->output_file, str.content);
+    fprintf(logger->output_file, "%s", str.content);
     fflush(logger->output_file);
 
     str_delete(&str);
