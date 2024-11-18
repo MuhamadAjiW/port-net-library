@@ -115,13 +115,16 @@ static pcap_t* extcap_fifo_h = NULL;
 static char extcap_buf[65536 + sizeof(struct ndpi_packet_trailer)];
 static char* extcap_capture_fifo = NULL;
 static u_int16_t extcap_packet_filter = (u_int16_t)-1;
-static int do_extcap_capture = 0;
 static int extcap_add_crc = 0;
 
 static u_int8_t doh_centroids[NUM_DOH_BINS][PLEN_NUM_BINS] = {
   { 23,25,3,0,26,0,0,0,0,0,0,0,0,0,2,0,0,15,3,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 },
   { 35,30,21,0,0,0,2,4,0,0,5,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 };
+
+#ifndef USE_DPDK
+static int do_extcap_capture = 0;
+#endif
 
 // Variables
 struct timeval startup_time, begin, end;
@@ -794,8 +797,9 @@ static void parseOptions(int argc, char** argv) {
     {
         int ret = rte_eal_init(argc, argv);
 
-        if (ret < 0)
+        if (ret < 0) {
             rte_exit(EXIT_FAILURE, "Error with EAL initialization\n");
+        }
 
         argc -= ret, argv += ret;
     }
@@ -1263,8 +1267,9 @@ static void parseOptions(int argc, char** argv) {
 
 #ifdef __linux__
 #ifndef USE_DPDK
-    for (thread_id = 0; thread_id < num_threads; thread_id++)
+    for (thread_id = 0; thread_id < num_threads; thread_id++) {
         core_affinity[thread_id] = -1;
+    }
 
     if (num_cores > 1 && bind_mask != NULL) {
         char* core_id = strtok(bind_mask, ":");
@@ -1465,14 +1470,17 @@ static void setupDetection(u_int16_t thread_id, pcap_t* pcap_handle,
         }
     }
 
-    if (_riskyDomainFilePath)
+    if (_riskyDomainFilePath) {
         ndpi_load_risk_domain_file(ndpi_thread_info[thread_id].workflow->ndpi_struct, _riskyDomainFilePath);
+    }
 
-    if (_maliciousJA3Path)
+    if (_maliciousJA3Path) {
         ndpi_load_malicious_ja3_file(ndpi_thread_info[thread_id].workflow->ndpi_struct, _maliciousJA3Path);
+    }
 
-    if (_maliciousSHA1Path)
+    if (_maliciousSHA1Path) {
         ndpi_load_malicious_sha1_file(ndpi_thread_info[thread_id].workflow->ndpi_struct, _maliciousSHA1Path);
+    }
 
     if (_customCategoryFilePath) {
         char* label = strrchr(_customCategoryFilePath, '/');
@@ -1632,18 +1640,7 @@ static pcap_t* openPcapFileOrDevice(u_int16_t thread_id, const u_char* pcap_file
     pcap_t* pcap_handle = NULL;
 
     /* trying to open a live interface */
-#ifdef USE_DPDK
-    struct rte_mempool* mbuf_pool = rte_pktmbuf_pool_create("MBUF_POOL", NUM_MBUFS,
-        MBUF_CACHE_SIZE, 0,
-        RTE_MBUF_DEFAULT_BUF_SIZE,
-        rte_socket_id());
-
-    if (mbuf_pool == NULL)
-        rte_exit(EXIT_FAILURE, "Cannot create mbuf pool: are hugepages ok?\n");
-
-    if (dpdk_port_init(dpdk_port_id, mbuf_pool) != 0)
-        rte_exit(EXIT_FAILURE, "DPDK: Cannot init port %u: please see README.dpdk\n", dpdk_port_id);
-#else
+#ifndef USE_DPDK
   /* Trying to open the interface */
     if ((pcap_handle = pcap_open_live((char*)pcap_file, snaplen,
         promisc, 500, pcap_error_buffer)) == NULL) {
@@ -1680,11 +1677,7 @@ static pcap_t* openPcapFileOrDevice(u_int16_t thread_id, const u_char* pcap_file
         live_capture = 1;
 
         if (!quiet_mode) {
-#ifdef USE_DPDK
-            printf("Capturing from DPDK (port 0)...\n");
-#else
             printf("Capturing live traffic from device %s...\n", pcap_file);
-#endif
         }
     }
 
@@ -1692,8 +1685,9 @@ static pcap_t* openPcapFileOrDevice(u_int16_t thread_id, const u_char* pcap_file
 #endif /* !DPDK */
 
     if (capture_for > 0) {
-        if (!quiet_mode)
+        if (!quiet_mode) {
             printf("Capturing traffic up to %u seconds\n", (unsigned int)capture_for);
+        }
 
 #ifndef WIN32
         alarm(capture_for);
@@ -1888,7 +1882,7 @@ static void ndpi_process_packet(u_char* args,
         ndpi_free(packet_checked);
         packet_checked = NULL;
     }
-            }
+}
 
 #ifndef USE_DPDK
 /**
@@ -2043,6 +2037,23 @@ void run_detection() {
     if (trace_fp) fprintf(trace_fp, "Num threads: %d\n", num_threads);
 #endif
 
+#ifdef USE_DPDK
+    struct rte_mempool* mbuf_pool = rte_pktmbuf_pool_create("MBUF_POOL", NUM_MBUFS,
+        MBUF_CACHE_SIZE, 0,
+        RTE_MBUF_DEFAULT_BUF_SIZE,
+        rte_socket_id());
+
+    if (mbuf_pool == NULL) {
+        rte_exit(EXIT_FAILURE, "Cannot create mbuf pool: are hugepages ok?\n");
+    }
+
+    if (dpdk_port_init(dpdk_port_id, mbuf_pool) != 0) {
+        rte_exit(EXIT_FAILURE, "DPDK: Cannot init port %u: please see README.dpdk\n", dpdk_port_id);
+    }
+
+    printf("Capturing from DPDK (port 0)...\n");
+#endif
+
     for (thread_id = 0; thread_id < num_threads; thread_id++) {
         pcap_t* cap;
 
@@ -2121,20 +2132,21 @@ void run_detection() {
     ILOG(TAG_GENERAL, "Printing completed...");
 
     for (thread_id = 0; thread_id < num_threads; thread_id++) {
-        if (ndpi_thread_info[thread_id].workflow->pcap_handle != NULL)
+        if (ndpi_thread_info[thread_id].workflow->pcap_handle != NULL) {
             pcap_close(ndpi_thread_info[thread_id].workflow->pcap_handle);
+        }
 
         terminateDetection(thread_id);
     }
 
     ndpi_global_deinit(g_ctx);
-    }
+}
 
-    /* *********************************************** */
+/* *********************************************** */
 
-    /**
-     * @brief Initialize port array
-     */
+/**
+ * @brief Initialize port array
+ */
 
 void bpf_filter_port_array_init(int array[], int size) {
     int i;
@@ -2205,8 +2217,9 @@ void run() {
         printf("Using nDPI (%s) [%d thread(s)]\n", ndpi_revision(), num_threads);
 
         const char* gcrypt_ver = ndpi_get_gcrypt_version();
-        if (gcrypt_ver)
+        if (gcrypt_ver) {
             printf("Using libgcrypt version %s\n", gcrypt_ver);
+        }
     }
 
     signal(SIGINT, sigproc);
@@ -2417,5 +2430,5 @@ int gettimeofday(struct timeval* tv, struct timezone* tz) {
     }
 
     return 0;
-    }
+}
 #endif /* WIN32 */
