@@ -115,13 +115,16 @@ static pcap_t* extcap_fifo_h = NULL;
 static char extcap_buf[65536 + sizeof(struct ndpi_packet_trailer)];
 static char* extcap_capture_fifo = NULL;
 static u_int16_t extcap_packet_filter = (u_int16_t)-1;
-static int do_extcap_capture = 0;
 static int extcap_add_crc = 0;
 
 static u_int8_t doh_centroids[NUM_DOH_BINS][PLEN_NUM_BINS] = {
   { 23,25,3,0,26,0,0,0,0,0,0,0,0,0,2,0,0,15,3,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 },
   { 35,30,21,0,0,0,2,4,0,0,5,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
 };
+
+#ifndef USE_DPDK
+static int do_extcap_capture = 0;
+#endif
 
 // Variables
 struct timeval startup_time, begin, end;
@@ -1888,7 +1891,7 @@ static void ndpi_process_packet(u_char* args,
         ndpi_free(packet_checked);
         packet_checked = NULL;
     }
-            }
+}
 
 #ifndef USE_DPDK
 /**
@@ -2121,20 +2124,21 @@ void run_detection() {
     ILOG(TAG_GENERAL, "Printing completed...");
 
     for (thread_id = 0; thread_id < num_threads; thread_id++) {
-        if (ndpi_thread_info[thread_id].workflow->pcap_handle != NULL)
+        if (ndpi_thread_info[thread_id].workflow->pcap_handle != NULL) {
             pcap_close(ndpi_thread_info[thread_id].workflow->pcap_handle);
+        }
 
         terminateDetection(thread_id);
     }
 
     ndpi_global_deinit(g_ctx);
-    }
+}
 
-    /* *********************************************** */
+/* *********************************************** */
 
-    /**
-     * @brief Initialize port array
-     */
+/**
+ * @brief Initialize port array
+ */
 
 void bpf_filter_port_array_init(int array[], int size) {
     int i;
@@ -2417,5 +2421,5 @@ int gettimeofday(struct timeval* tv, struct timezone* tz) {
     }
 
     return 0;
-    }
+}
 #endif /* WIN32 */

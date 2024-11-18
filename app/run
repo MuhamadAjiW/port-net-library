@@ -7,10 +7,18 @@ if [ -z "$INTERFACE" ]; then
 fi
 
 if [ ! -z "$REBUILD" ]; then
-    make clean
     if [ ! -z "$DPDK" ]; then
+        echo "Building with dpdk..."
         make dpdk
+        
+        echo "Setting hugepages..."
+        sudo chmod o+w /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages
+        sudo echo 64 > /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages
+        sudo chmod o-w /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages
     else
+        echo "Cleaning previous build..."
+        make clean
+        echo "Building without dpdk..."
         make
     fi
 fi
@@ -31,6 +39,12 @@ fi
 if [ ! -z "$ZMQ_FLOW_ADDR" ]; then
     ARG_STR+=" -z $ZMQ_FLOW_ADDR"
 fi
+if [ ! -z "$ZMQ_FLOW_ADDR" ]; then
+    ARG_STR+=" -z $ZMQ_FLOW_ADDR"
+fi
+if [ ! -z "$NUM_THREADS" ]; then
+    ARG_STR+=" -n $NUM_THREADS"
+fi
 
 if [ ! -z "$DPDK" ]; then
     EXEC_STR+=".dpdk"
@@ -50,5 +64,5 @@ else
 fi
 
 
-echo "$EXEC_STR"
+echo "Executing, command is: $EXEC_STR"
 eval "$EXEC_STR"
