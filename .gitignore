@@ -215,3 +215,6 @@ stamp-h1
 confdefs.h
 conftest.c
 conftest.err
+
+# Production configuration
+/app/etc/run.config
