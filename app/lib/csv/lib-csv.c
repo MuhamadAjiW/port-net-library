@@ -140,7 +140,7 @@ void csv_print_flow(FILE* csv_fp, struct ndpi_flow_info* flow, u_int16_t thread_
     fprintf(csv_fp, "|%s|", flow->info);
 
 #ifndef DIRECTION_BINS
-    // _TODO: Separate printing and csv printing
+    // _TODO: Modularize printing further
     // print_bin(csv_fp, NULL, &flow->payload_len_bin);
 #endif
 

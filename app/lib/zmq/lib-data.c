@@ -183,7 +183,7 @@ json_object* data_risk_to_json(struct data_risk* data) {
 json_object* data_flow_to_json(struct flow_info* data) {
     json_object* retval = json_object_new_object();
 
-    // _TODO: Optimize by fetching it during generation to avoid repetition
+    // _Note: Can be further optimized by fetching it during generation to avoid repetition
     struct ndpi_detection_module_struct* ndpi_dm_struct = ndpi_thread_info[0].workflow->ndpi_struct;
 
     struct ndpi_flow_info* flow = data->flow;

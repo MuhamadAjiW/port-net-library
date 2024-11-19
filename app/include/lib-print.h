@@ -13,5 +13,4 @@ void print_flow_serialized(struct ndpi_flow_info* flow);
 void print_bin(FILE* fout, const char* label, struct ndpi_bin* b);
 void print_ndpi_address_port_file(FILE* out, const char* label, ndpi_address_port* ap);
 
-
 #endif

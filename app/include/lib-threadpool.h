@@ -22,6 +22,8 @@ struct thread_pool_handler {
     pthread_mutex_t thread_mutex;
     pthread_cond_t thread_signal;
     struct thread_pool_task* task_queue;
+    int task_queue_first;
+    int task_queue_last;
     int task_queue_len;
     int task_queue_size;
     uint8_t __runner_flag;

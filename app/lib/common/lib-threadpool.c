@@ -7,6 +7,8 @@ void thread_pool_init(struct thread_pool* pool, int size) {
 
     for (int i = 0; i < size; i++) {
         pool->handler[i].task_queue = (struct thread_pool_task*)ndpi_malloc(sizeof(struct thread_pool_task) * INIT_TASK_SIZE);
+        pool->handler[i].task_queue_first = 0;
+        pool->handler[i].task_queue_last = 0;
         pool->handler[i].task_queue_len = 0;
         pool->handler[i].task_queue_size = INIT_TASK_SIZE;
         pool->handler[i].__runner_flag = 1;
@@ -43,18 +45,33 @@ void thread_pool_assign(
     void* __restrict__ arg,
     void** thread_return
 ) {
+    int index;
+
     DLOG(TAG_THREADING, "Assigning task to thread: %d", subthread_idx);
     pthread_mutex_lock(&(pool->handler[subthread_idx].thread_mutex));
-    int index = pool->handler[subthread_idx].task_queue_len++;
-    if (index > pool->handler[subthread_idx].task_queue_size) {
-        pool->handler[subthread_idx].task_queue = (struct thread_pool_task*)
-            ndpi_realloc(
-                pool->handler[subthread_idx].task_queue,
-                sizeof(struct thread_pool_task) * pool->handler[subthread_idx].task_queue_size,
+    pool->handler[subthread_idx].task_queue_len++;
+
+    if (pool->handler[subthread_idx].task_queue_len > pool->handler[subthread_idx].task_queue_size) {
+        struct thread_pool_task* new_queue = (struct thread_pool_task*)
+            ndpi_malloc(
                 sizeof(struct thread_pool_task) * pool->handler[subthread_idx].task_queue_size * 2
             );
+
+        index = pool->handler[subthread_idx].task_queue_first + 1;
+        for (int i = 1; i < pool->handler[subthread_idx].task_queue_len; i++) {
+            new_queue[i] = pool->handler[subthread_idx].task_queue[index];
+            index = increment_wrap(index, pool->handler[subthread_idx].task_queue_size);
+        }
+        ndpi_free(pool->handler[subthread_idx].task_queue);
+        pool->handler[subthread_idx].task_queue = new_queue;
+        pool->handler[subthread_idx].task_queue_first = 0;
+        pool->handler[subthread_idx].task_queue_last = pool->handler[subthread_idx].task_queue_size + 1;
         pool->handler[subthread_idx].task_queue_size *= 2;
     }
+    else {
+        pool->handler[subthread_idx].task_queue_last = increment_wrap(pool->handler[subthread_idx].task_queue_last, pool->handler[subthread_idx].task_queue_size);
+    }
+    index = pool->handler[subthread_idx].task_queue_last;
 
     pool->handler[subthread_idx].task_queue[index].routine = routine;
     pool->handler[subthread_idx].task_queue[index].arg = arg;
@@ -74,13 +91,14 @@ void* thread_pool_runner(void* thread_pool_runner_args) {
     int index = args->index;
 
     while (pool->handler[index].__runner_flag) {
-        while (pool->handler[index].task_queue_len == 0) {
+        while (!pool->handler[index].task_queue_len) {
             pthread_cond_wait(&pool->handler[index].thread_signal, &(pool->handler[index].thread_mutex));
             if (!pool->handler[index].__runner_flag) break;
         }
         if (!pool->handler[index].__runner_flag) break;
 
-        struct thread_pool_task* task = &pool->handler[index].task_queue[0];
+        pool->handler[index].task_queue_first = increment_wrap(pool->handler[index].task_queue_first, pool->handler[index].task_queue_size);
+        struct thread_pool_task* task = &pool->handler[index].task_queue[pool->handler[index].task_queue_first];
 
         if (task->thread_return != NULL) {
             *task->thread_return = task->routine(task->arg);
@@ -88,13 +106,8 @@ void* thread_pool_runner(void* thread_pool_runner_args) {
         else {
             task->routine(task->arg);
         }
-
-        // _TODO: Optimize with circular list
-        for (int i = 0; i < pool->handler[index].task_queue_len - 1; i++) {
-            pool->handler[index].task_queue[i] = pool->handler[index].task_queue[i + 1];
-        }
-
         pool->handler[index].task_queue_len--;
+
         pthread_mutex_unlock(&(pool->handler[index].thread_mutex));
     }
 

@@ -1702,7 +1702,7 @@ static pcap_t* openPcapFileOrDevice(u_int16_t thread_id, const u_char* pcap_file
  * @brief Check pcap packet
  */
 static void ndpi_process_packet(u_char* args,
-    // _NOTE: Here is where the packet is being processed
+    // _Note: Here is where the packet is being processed
 
     const struct pcap_pkthdr* header,
     const u_char* packet) {
@@ -2113,7 +2113,7 @@ void run_detection() {
 #ifdef DEPLOY_BUILD
     ldis_do_loop = 0;
     DLOG(TAG_GENERAL, "Execution completed...");
-    // _TODO: Execution completion event instead of busy waiting
+    // _Note: Can be further optimized by using execution completion event instead of busy waiting
     while (global_thread_pool.handler[THREAD_MAIN_WORKER].task_queue_len > 0) {
         zmq_sleep(1);
     }
