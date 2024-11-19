@@ -35,9 +35,9 @@ void* ldis_start(__attribute__((unused)) void* arg) {
         u_int64_t setup_time_usec = (u_int64_t)begin.tv_sec * 1000000 + begin.tv_usec - ((u_int64_t)startup_time.tv_sec * 1000000 + startup_time.tv_usec);
 
         global_data_generate(processing_time_usec, setup_time_usec);
-        thread_pool_assign(&global_thread_pool, THREAD_DISPLAY, ldis_refresh, (void*)&processing_time_usec, NULL);
-        thread_pool_assign(&global_thread_pool, THREAD_ZMQ_PRIMARY, global_data_send, NULL, NULL);
-        thread_pool_assign(&global_thread_pool, THREAD_ZMQ_SECONDARY, global_flow_send, NULL, NULL);
+        thread_group_assign(&global_thread_group, THREAD_DISPLAY, ldis_refresh, (void*)&processing_time_usec, NULL);
+        thread_group_assign(&global_thread_group, THREAD_ZMQ_PRIMARY, global_data_send, NULL, NULL);
+        thread_group_assign(&global_thread_group, THREAD_ZMQ_SECONDARY, global_flow_send, NULL, NULL);
 
         // printw("[DEV] That's all");
         napms(1000);

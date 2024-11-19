@@ -2,7 +2,7 @@
 #define _APP_GLOBAL_H
 
 #include "lib-data.h"
-#include "lib-threadpool.h"
+#include "lib-threadgroup.h"
 #include "lib-zmq.h"
 #include "lib-log.h"
 
@@ -41,7 +41,7 @@
 #define TAG_ZMQ         "ZMQ"
 #define TAG_DATA        "DATA"
 
-extern struct thread_pool global_thread_pool;
+extern struct thread_group global_thread_group;
 
 extern struct data_all global_data;
 

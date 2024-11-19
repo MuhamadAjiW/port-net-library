@@ -20,7 +20,7 @@
 #include "lib-receiver.h"
 #include "lib-scanner.h"
 #include "lib-string.h"
-#include "lib-threadpool.h"
+#include "lib-threadgroup.h"
 #include "lib-zmq.h"
 #include "reader_util.h"
 #include "uthash.h"

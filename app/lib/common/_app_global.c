@@ -1,7 +1,7 @@
 #include "../../include/_app_global.h"
 
 
-struct thread_pool global_thread_pool;
+struct thread_group global_thread_group;
 struct logger global_logger;
 struct lzmq_interface global_zmq_data_conn;
 struct lzmq_interface global_zmq_flow_conn;
@@ -15,7 +15,7 @@ uint8_t global_logger_type = DEFAULT_LOGGER_TYPE;
 char* global_logger_path = DEFAULT_LOGGER_PATH;
 
 uint8_t global_init() {
-    thread_pool_init(&global_thread_pool, INIT_TASK_SIZE);
+    thread_group_init(&global_thread_group, INIT_TASK_SIZE);
     logger_init(&global_logger, global_logger_type, global_logger_path);
 
     if (global_zmq_data_addr != NULL) {
@@ -29,7 +29,7 @@ uint8_t global_init() {
 }
 
 uint8_t global_clean() {
-    thread_pool_delete(&global_thread_pool);
+    thread_group_delete(&global_thread_group);
     logger_delete(&global_logger);
     lzmq_int_cleanup(&global_zmq_data_conn);
     lzmq_int_cleanup(&global_zmq_flow_conn);

@@ -2072,7 +2072,7 @@ void run_detection() {
 
 #ifdef DEPLOY_BUILD
     ILOG(TAG_GENERAL, "Program execution starting with %d threads...", num_threads);
-    thread_pool_assign(&global_thread_pool, THREAD_MAIN_WORKER, ldis_start, NULL, NULL);
+    thread_group_assign(&global_thread_group, THREAD_MAIN_WORKER, ldis_start, NULL, NULL);
 #endif
 
     /* Running processing threads */
@@ -2114,7 +2114,7 @@ void run_detection() {
     ldis_do_loop = 0;
     DLOG(TAG_GENERAL, "Execution completed...");
     // _Note: Can be further optimized by using execution completion event instead of busy waiting
-    while (global_thread_pool.handler[THREAD_MAIN_WORKER].task_queue_len > 0) {
+    while (global_thread_group.handler[THREAD_MAIN_WORKER].task_queue_len > 0) {
         zmq_sleep(1);
     }
 #endif
